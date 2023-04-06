@@ -1,3 +1,9 @@
+# Notice
+
+The library is currently in a very early development stage, with breaking changes being made often, out of date documentation and no versioning. Not recommended for use.
+
+<br>
+
 # Vide
 
 Vide is a declarative, reactive Luau library for building user interfaces on Roblox.

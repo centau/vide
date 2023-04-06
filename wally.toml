@@ -1,7 +1,7 @@
 [package]
-name = "centau/ecr"
-description = "A fast, lightweight Luau ECS library."
-version = "0.4.0"
+name = "centau/vide"
+description = ""
+version = ""
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 include = ["src", "LICENSE.md", "default.project.json"]

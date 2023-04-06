@@ -1,0 +1,10 @@
+[package]
+name = "centau/ecr"
+description = "A fast, lightweight Luau ECS library."
+version = "0.4.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+include = ["src", "LICENSE.md", "default.project.json"]
+exclude = ["CHANGELOG.md", ".gitignore", ".github", ".gitattributes", "test", "docs", "README.md", ".luaurc"]
+
+[dependencies]

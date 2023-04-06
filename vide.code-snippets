@@ -1,0 +1,26 @@
+{
+    "import vide": {
+        "scope": "lua",
+        "prefix": "getvide",
+        "body": [
+            "local vide = require($1.vide)",
+            "type State<T> = vide.State<T>",
+            "type Prop<T> = vide.Prop<T>",
+            "local create = vide.create",
+            "local apply = vide.apply",
+            "local wrap = vide.wrap",
+            "local derive = vide.derive",
+            "local foreach = vide.foreach",
+            "local match = vide.match",
+            "local watch = vide.watch",
+            "local spring = vide.spring",
+            "local Event = vide.Event",
+            "local Changed = vide.Changed",
+            "local Bind = vide.Bind",
+            "local Layout = vide.Layout",
+            "local Children = vide.Children",
+            "local Created = vide.Created",
+            ""
+        ]
+    }
+}

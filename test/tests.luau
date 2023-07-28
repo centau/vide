@@ -105,8 +105,8 @@ TEST("graph", function()
         set(a, get(a) + 1) -- mark `b` for recomputation again
         captureAndLink(c, function(from) return from(b) end)
         -- check that only `b` was linked
-        CHECK(not rawfind(assert(a.children), c))
-        CHECK(rawfind(assert(b.children), c))
+        CHECK(not rawfind(assert(a.__children), c))
+        CHECK(rawfind(assert(b.__children), c))
     end 
 
     do CASE "Nodes garbage collection"
@@ -290,6 +290,30 @@ TEST("derive()", function()
             CHECK(unwrap(text) == "11")
             set(2)
             CHECK(unwrap(text) == "22")
+        end
+
+        do
+            local a, seta = wrap { b = { c = 1 } }
+            local b = a.b
+            local c = b.c
+
+            CHECK(unwrap(c) == 1)
+
+            seta { b = { c = 2 } }
+
+            CHECK(unwrap(c) == 2)
+        end
+
+        do
+            local state, set = wrap { profiles = { decimal = { level = 1 }}}
+            local stringified = "Level: " .. state.profiles.decimal.level
+
+            set(function(state)
+                state.profiles.decimal.level += 1
+                return state
+            end, true)
+
+            CHECK(unwrap(stringified) == "Level: 2")
         end
     end
 
@@ -704,7 +728,7 @@ TEST("create()", function()
                 }
 
                 wref.instance = instance
-                wref.binding = next((state :: any).effects)
+                wref.binding = next((state :: any).__effects)
             end
             
             CHECK(wref.binding)

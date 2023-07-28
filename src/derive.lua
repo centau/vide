@@ -24,7 +24,7 @@ local function derive<T>(deriveValue: (Unwrapper) -> T, cleanup: (T) -> ()?): St
     end
 
     local value: T = captureAndLink(node, deriveValue)
-    node.cache = value
+    rawset(node, "__cache", value)
 
     return node :: State<T>
 end

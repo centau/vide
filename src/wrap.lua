@@ -27,7 +27,7 @@ local function wrap<T>(value: MaybeState<T>?): (State<T>, Setter<T>)
 
         local v = if wrapped(vi) then get(vi :: State<T>) else vi :: T
 
-        if v ~= state.cache or force then
+        if v ~= state.__cache or force then
             set(state, v)
         elseif flags.strict and type(v) == "table" then
             throw("attempt to set same table object")   

@@ -55,7 +55,7 @@ local function map<K, VI, VO>(input: unknown, transform: (K, VI) -> VO, cleanup:
         end
 
         link(input :: State<Map<K, VI>>, output, derive)
-        output.updated = true
+        output.__updated = true
 
         return output
     elseif type(input) == "table" then

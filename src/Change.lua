@@ -39,7 +39,7 @@ local getChangeSymbol = memoize(function(name: string): Types.Symbol<MaybeState<
                     end
                 end)
 
-                state.updated = true
+                state.__updated = true
                 bind.event(state :: State<any>, instance, event)
             else 
                 error("Attempt to connect non-function to changed event", 2)

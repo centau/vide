@@ -6,49 +6,29 @@ if not game then script = (require :: any) "test/wrap-require" end
 
 local flags = require(script.Parent.flags)
 
-export type State<T> = typeof(setmetatable(
-    {} :: { 
-        __cache: T,
-        __updated: boolean,
-        __derive: (any) -> T,
-        __effects:  { [(unknown) -> ()]: unknown } | false, -- weak values
-        __children: { State<T> } | false -- weak values
-    }, {} :: {
-        __concat: (any, any) -> any,
-        __add: (any, any) -> any,
-        __sub: (any, any) -> any,
-        __mul: (any, any) -> any,
-        __div: (any, any) -> any,
-        --__pow
-        --__mod
-        --__unm
-        --__eq: (unknown, unknown) -> State<boolean>
-        --__lt
-        --__le
-    }
-))
+export type Node<T> = {
+    cache: T,
+    derive: () -> T,
+    effects:  { [(unknown) -> ()]: unknown }, -- weak values
+    children: { Node<T> } | false -- weak values
+}
 
-export type MaybeState<T> = State<T> | T 
-export type Unwrapper = <T>(T) -> T
+local reff = false
+local refs = {} :: { Node<unknown> }
 
 local WEAK_VALUES_RESIZABLE = { __mode = "vs" }
-local EVALUATION_ERR = "error while evaluating state:\n\n"
+local EVALUATION_ERR = "error while evaluating node:\n\n"
 
-local State = {} 
+setmetatable(refs, WEAK_VALUES_RESIZABLE)
 
-local function wrapped(value: any): boolean
-    return getmetatable(value) == State
-end
-
-local unwrap: <T>(T) -> T;
-
-local checkForYield do
+local check_for_yield do
     local t = { __mode = "kv" }
     setmetatable(t, t)
 
-    checkForYield = function(fn: (Unwrapper) -> ())
+    check_for_yield = function<T..., U...>(fn: (T...) -> (), ...: U...)
+        local args = { ... }
         t.__unm = function()
-            fn(unwrap)
+            fn(unpack(args))
         end
         local ok, err = pcall(function()
             return -t :: any
@@ -56,7 +36,7 @@ local checkForYield do
 
         if not ok then
             if err == "attempt to yield across metamethod/C-call boundary" or err == "thread is not yieldable" then
-                error(EVALUATION_ERR .. "cannot yield when deriving state in watcher", 3)
+                error(EVALUATION_ERR .. "cannot yield when deriving node in watcher", 3)
             else
                 error(EVALUATION_ERR..err, 3)
             end
@@ -64,199 +44,100 @@ local checkForYield do
     end
 end
 
-local function setEffect<T>(state: State<unknown>, fn: (T) -> (), key: T)
-    if not state.__effects then
-        state.__effects = setmetatable({ [fn] = key }, WEAK_VALUES_RESIZABLE) :: any
-    else
-        state.__effects[fn :: () -> ()] = key
-    end
+local function set_effect<T>(node: Node<unknown>, fn: (T) -> (), key: T)
+    node.effects[fn :: () -> ()] = key
 end
 
-local function runEffects(state: State<unknown>)
-    if state.__effects then
-        for effect, key in next, state.__effects do
-            if flags.strict then effect(key) end
-            effect(key)
-        end 
-    end
+local function run_effects(node: Node<unknown>)
+    for effect, key in next, node.effects do
+        if flags.strict then effect(key) end
+        effect(key)
+    end 
 end
 
--- retrieves a state's cached value
+-- retrieves a node's cached value
 -- recalculates value if an ancestor was updated
-local function get<T>(state: State<T>): T
-    if state.__updated then
-        state.__updated = false
-
-        if flags.strict then checkForYield(state.__derive) end
-
-        local ok, result: T|string? = pcall(state.__derive, unwrap); if ok then
-            rawset(state :: any, "__cache", result :: T)
-        else error(EVALUATION_ERR .. result :: string, 0) end 
-    end
-
-    return rawget(state :: any, "__cache")
+local function get<T>(node: Node<T>): T
+    if reff then table.insert(refs, node) end
+    return node.cache
 end
 
--- utility function for retrieving a value from state and allowing passthrough of non-state
-unwrap = function<T>(value: MaybeState<T>): T
-    if wrapped(value) then
-        return get(value :: State<T>)
+local function set_child(parent: Node<unknown>, child: Node<unknown>)
+    if parent.children then
+        table.insert(parent.children, child)    
     else
-        return value :: T
+        parent.children = { child }
+        setmetatable(parent.children :: any, WEAK_VALUES_RESIZABLE)
     end
 end
 
-local function addChild(parent: State<unknown>, child: State<unknown>)
-    if parent.__children then
-        table.insert(parent.__children, child)    
-    else
-        parent.__children = setmetatable({ child }, WEAK_VALUES_RESIZABLE) :: any
-    end
-end
-
--- marks all state descendants for recalculation and runs effects
-local function update(state: State<unknown>)
-    runEffects(state)
-    if state.__children then
-        for _, child in state.__children do
-            if not child.__updated then
-                child.__updated = true
-                update(child)
-            end
+-- runs node effects, recalculates descendants and runs descendant effects
+local function update(node: Node<unknown>)
+    run_effects(node)
+    if node.children then
+        for _, child in node.children do
+            if flags.strict then check_for_yield(child.derive) end
+            child.cache = child.derive()
+            update(child)
         end
     end
 end
 
--- sets a state's cached value and updates all descendants
-local function set<T>(state: State<T>, value: T)
-    state.__cache = value
-    update(state)
+-- sets a node's cached value and updates all descendants
+local function set<T>(node: Node<T>, value: T)
+    node.cache = value
+    update(node)
 end
 
--- links two states as parent-child
-local function link(parent: State<unknown>, child: State<unknown>, derive: () -> unknown)
-    child.__derive = derive
-    addChild(parent, child)
+-- links two nodes as parent-child with a function to compute a new value for child
+local function link<T>(parent: Node<unknown>, child: Node<T>, derive: () -> T)
+    child.derive = derive
+    set_child(parent, child)
 end
 
--- detect what states were referenced in the given callback and returns them in an array
-local function capture<T>(callback: (Unwrapper) -> T): ({ State<unknown> }, T)
-    if flags.strict then checkForYield(callback) end
+-- detect what nodes were referenced in the given callback and returns them in an array
+local function capture<T, U>(fn: (U) -> T, arg: U): ({ Node<unknown> }, T)
+    if flags.strict then check_for_yield(fn, arg) end
 
-    local states = table.create(2)
+    table.clear(refs)
+    reff = true
 
-    local ok: boolean, result: T|string = pcall(callback, function<T>(value: MaybeState<T>): T
-        if wrapped(value) then
-            table.insert(states, value :: State<T>)    
-            return get(value :: State<T>)  
-        else
-            return value :: T
-        end
-    end)
+    local ok: boolean, result: T|string = pcall(fn, arg)
+
+    reff = false
 
     if not ok then error("error while detecting watcher: " .. result :: string, 0) end
 
-    return states, result :: T
+    return refs, result :: T
 end
 
--- captures and links any detected states
-local function captureAndLink<T>(child: State<T>, callback: (Unwrapper) -> T): T
-    local states, value = capture(callback)
+-- captures and links any detected nodes
+local function capture_and_link<T>(child: Node<T>, fn: () -> T): T
+    local nodes, value = capture(fn, nil)
 
-    child.__derive = callback
-    for _, parent: State<unknown> in next, states do
-        addChild(parent, child)
+    child.derive = fn
+    for _, parent: Node<unknown> in next, nodes do
+        set_child(parent, child)
     end
 
     return value :: T
 end
 
-local create: <T>(value: T) -> State<T>
-
--- factory function for creating operator overloads for shorthands to derive state
-local function overload(op: (unknown, unknown) -> unknown): (any, any) -> any
-    return function(a: MaybeState<unknown>, b: MaybeState<unknown>): State<unknown>
-        local derived: State<unknown> = create(nil :: any)
-
-        local aIsState = wrapped(a)
-        local bIsState = wrapped(b)   
-
-        if aIsState and bIsState then
-            local function derive() return op(get(a :: State<unknown>), get(b :: State<unknown>)) end
-            link(a :: State<unknown>, derived, derive)
-            link(b :: State<unknown>, derived, derive)
-        elseif aIsState then
-            link(a :: State<unknown>, derived, function() return op(get(a :: State<unknown>), b) end)
-        else--if bIsState then
-            link(b :: State<unknown>, derived, function() return op(a, get(b :: State<unknown>)) end)
-        end
-
-        derived.__updated = true
-        return derived
-    end
-end
-
-local function __unm(self: State<unknown>)
-    local derived = create(nil :: any)
-
-    link(self, derived, function()
-        return -get(self) :: number
-    end)
-
-    derived.__updated = true
-    return derived
-end
-
-local function __index(self: State<unknown>, index: unknown)
-    local derived = create(nil :: any)
-
-    link(self, derived, function()
-        return (get(self) :: {})[index]
-    end)
-
-    derived.__updated = true
-    return derived
-end
-
-State.__index = __index
-State.__concat = overload(function(a: any, b: any) return tostring(a) .. tostring(b) end)
-State.__add = overload(function(a: any, b: any) return a + b end)
-State.__sub = overload(function(a: any, b: any) return a - b end)
-State.__mul = overload(function(a: any, b: any) return a * b end)
-State.__div = overload(function(a: any, b: any) return a / b end)
-State.__pow = overload(function(a: any, b: any) return a ^ b end)
-State.__mod = overload(function(a: any, b: any) return a % b end)
-State.__unm = __unm
-
--- todo: what to do
-do
-    local function err()
-        error("cannot perform equality comparison with state", 2)
-    end
-    State.__eq = err
-    State.__lt = err
-    State.__le = err
-end
-
-
-function create<T>(value: T): State<T>
-    return setmetatable({
-        __cache = value,
-        __updated = false,
-        __derive  = function() return nil end :: any,
-        __effects = false :: false,
-        __children = false :: false
-    }, State)
+local function create<T>(value: T): Node<T>
+    return {
+        cache = value,
+        derive  = function() return nil :: any end,
+        effects = setmetatable({}, WEAK_VALUES_RESIZABLE) :: any,
+        children = false :: false
+    }
 end
 
 return table.freeze {
-    setEffect = setEffect,
+    set_effect = set_effect,
     get = get,
     set = set,
-    unwrap = unwrap,
     link = link,
     capture = capture,
-    captureAndLink = captureAndLink,
-    wrapped = wrapped,
+    capture_and_link = capture_and_link,
     create = create,
 }

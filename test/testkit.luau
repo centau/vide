@@ -1,43 +1,101 @@
-------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- testkit.luau
--- v0.2.0
-------------------------------------------------------------------------------------------
+-- v0.7.0
+--------------------------------------------------------------------------------
 
---[[
+local color = {
+    white_underline = function(s: string)
+        return `\27[1;4m{s}\27[0m`
+    end,
 
-EXAMPLE USAGE:
+    white = function(s: string)
+        return `\27[37;1m{s}\27[0m`
+    end,
 
-local testkit = require "path-to-testkit"
+    green = function(s: string)
+        return `\27[32;1m{s}\27[0m`
+    end,
 
-local TEST, CASE, CHECK = testkit.getUnitTestTools()
+    red = function(s: string)
+        return `\27[31;1m{s}\27[0m`
+    end,
 
-TEST("test name", function()
-    do CASE "A"
-        CHECK(condition)
+    yellow =  function(s: string)
+        return `\27[33;1m{s}\27[0m`  
+    end,
+
+    red_highlight = function(s: string)
+        return `\27[41;1;30m{s}\27[0m`
+    end,
+
+    green_highlight = function(s: string)
+        return `\27[42;1;30m{s}\27[0m`
+    end,
+
+    gray = function(s: string)
+        return `\27[30;1m{s}\27[0m`
+    end,
+}
+
+local function convert_units(unit: string, value: number): (number, string)
+    local prefix_colors = {
+        [3] = color.red,
+        [2] = color.yellow,
+        [1] = color.yellow,
+        [0] = color.green,
+        [-1] = color.red,
+        [-2] = color.yellow,
+        [-3] = color.green
+    }
+
+    local prefixes = {
+        [3] ="G",
+        [2] ="M",
+        [1] = "k",
+        [0] = " ",
+        [-1] = "m",
+        [-2] = "u",
+        [-3] = "n"
+    }
+
+    local order = 0
+    
+    while value >= 1000 do
+        order += 1
+        value /= 1000
     end
-end)
 
-local BENCH, START = testkit.getBenchmarkTools()
-
-BENCH("benchmark name", function()
-    local x = 0
-
-    for i = 1, START(1e6) do
-        x += 1
+    while value ~= 0 and value < 1 do
+        order -= 1
+        value *= 1000
     end
-end)
-]]
 
-------------------------------------------------------------------------------------------
--- Unit Testing
-------------------------------------------------------------------------------------------
+    if value >= 100 then
+        value = math.floor(value)
+    elseif value >= 10 then
+        value = math.floor(value * 1e1) / 1e1
+    elseif value >= 1 then
+        value = math.floor(value * 1e2) / 1e2
+    end
+
+    return value, prefix_colors[order](prefixes[order] .. unit)
+end
+
+local WALL = color.gray "│"
+
+--------------------------------------------------------------------------------
+-- Testing
+--------------------------------------------------------------------------------
 
 type Test = {
     name: string,
-    activeCase: Case?,
+    case: Case?,
     cases: { Case },
     duration: number,
-    error: string?
+    error: {
+        message: string,
+        trace: string
+    }?
 }
 
 type Case = {
@@ -46,185 +104,220 @@ type Case = {
     line: number?
 }
 
-local PASS = 1
-local FAIL = 2
-local NONE = 3
-local ERROR = 4
+local PASS, FAIL, NONE, ERROR = 1, 2, 3, 4
 
-local activeTest: Test?
+local skip: string?
+local test: Test?
 local tests: { Test } = {}
 
-local function outputTestResults(test: Test)
-    print("\27[1;4m"..test.name.."\27[0m")
+local function output_test_result(test: Test)
+    print(color.white(test.name))
+
     for _, case in test.cases do
-        print(
-            "[" ..
-            (if case.result == PASS then
-                "\27[32;1mPASS\27[0m"
-            elseif case.result == FAIL then
-                "\27[31;1mFAIL:"..assert(case.line).."\27[0m"
-            elseif case.result == NONE then  
-                "\27[33;1mNONE\27[0m"
-            else
-                "\27[41;1;30mERROR\27[0m")
-            .. "] " .. case.name
-        )
+        local status = ({
+            [PASS] = color.green "PASS",
+            [FAIL] = color.red "FAIL",
+            [NONE] = color.yellow "NONE",
+            [ERROR] = color.red "FAIL"
+        })[case.result]
+
+        local line = case.result == FAIL and color.red(`{case.line}:`) or ""
+
+        print(`{status}{WALL} {line}{color.gray(case.name)}`)
     end
 
     if test.error then
-        print("\27[31;1;30merror: " .. test.error .. "\27[0m")
+        print(color.gray "error: " .. color.red(test.error.message))  
+        print(color.gray "trace: " .. color.red(test.error.trace))
+    else
+        print()
     end
-
-    print ""
 end
 
 local function CASE(name: string)
-    assert(activeTest, "no active test")
+    assert(test, "no active test")
 
-    local case: Case = {
+    local case = {
         name = name,
         result = NONE
     }
 
-    activeTest.activeCase = case
-    table.insert(activeTest.cases, case)
+    test.case = case
+    table.insert(test.cases, case)
 end
 
-local function CHECK(value: any): boolean
-    assert(activeTest, "no active test")
-    local activeCase = activeTest.activeCase
+local function CHECK<T>(value: T, stack: number?): T
+    assert(test, "no active test")
+    local case = test.case
 
-    if not activeCase then
+    if not case then
         CASE ""
-        activeCase = activeTest.activeCase
-    end; assert(activeCase, "no active case")
-
-    local result = value and PASS or FAIL
-
-    if activeCase.result == NONE or activeCase.result == PASS then
-        activeCase.result = result
-        activeCase.line = debug.info(2, "l")
+        case = test.case
     end
 
-    return result == PASS
+    assert(case, "no active case")
+
+    if case.result ~= FAIL then
+        case.result = value and PASS or FAIL
+        case.line = debug.info(stack and stack + 1 or 2, "l")
+    end
+
+    return value
 end
 
 local function TEST(name: string, fn: () -> ())
-    assert(not activeTest, "new test was started while a test was in progress")
-    local test: Test = {
+    if skip and name ~= skip then return end
+
+    local active = test
+    assert(not active, "cannot start test while another test is in progress")
+
+    test = {
         name = name,
         cases = {},
         duration = 0
-    }
+    }; assert(test)
 
-    activeTest = test
     table.insert(tests, test)
 
     local start = os.clock()
-    local msg: string?
-    local success = xpcall(fn, function(m: string) msg = m .. debug.traceback("", 2) end)
+    local err
+    local success = xpcall(fn, function(m: string)
+        err = { message = m, trace = debug.traceback(nil, 2) }
+    end)
     test.duration = os.clock() - start
 
-    if not test.activeCase then CASE "" end
-    assert(test.activeCase, "no active case")
+    if not test.case then CASE "" end
+    assert(test.case, "no active case")
 
     if not success then
-        test.activeCase.result = ERROR
-        test.error = msg
+        test.case.result = ERROR
+        test.error = err
     end
 
-    activeTest = nil
-    outputTestResults(test)
+    test = nil
 end
 
 local function FINISH(): boolean
     local success = true
-    local totalCases = 0
-    local passedCases = 0
+    local total_cases = 0
+    local passed_cases = 0
     local duration = 0
 
     for _, test in tests do
         duration += test.duration
         for _, case in test.cases do
-            totalCases += 1
+            total_cases += 1
             if case.result == PASS or case.result == NONE then
-                passedCases += 1
+                passed_cases += 1
             else
                 success = false
             end
         end
+
+        output_test_result(test)
     end
 
-    print(string.format("%d/%d test cases passed in %.3f ms.", passedCases, totalCases, duration*1e3))
+    print(color.gray(string.format(
+        `{passed_cases}/{total_cases} test cases passed in %.3f ms.`,
+        duration*1e3
+    )))
 
-    local fails = totalCases - passedCases
+    local fails = total_cases - passed_cases
 
-    print(string.format("\27[%d;1;30m%d fail%s\27[0m", fails > 0 and 41 or 42, fails, fails == 1 and "" or "s"))
+    print(
+        (
+            fails > 0
+            and color.red 
+            or color.green
+        )(`{fails} {fails == 1 and "fail" or "fails"}`)
+    )
 
     return success, table.clear(tests)
 end
 
-------------------------------------------------------------------------------------------
+local function SKIP(name: string)
+    assert(not test, "cannot skip during test")
+    skip = name
+end
+
+--------------------------------------------------------------------------------
 -- Benchmarking
-------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 type Bench = {
-    timeStart: number?,
-    memStart: number?,
+    time_start: number?,
+    memory_start: number?,
     iterations: number?
 }
 
-local activeBench: Bench? = nil
+local bench: Bench?
 
 function START(iter: number?): number
     local n = iter or 1
-    if n < 1 then error("iteration count must be greater than 0", 2) end
-    assert(activeBench, "no active benchmark")
-    assert(not activeBench.timeStart, "clock was already started")
+    assert(n > 0, "iterations must be greater than 0")
+    assert(bench, "no active benchmark")
+    assert(not bench.time_start, "clock was already started")
 
-    activeBench.iterations = n
-    activeBench.memStart = gcinfo()
-    activeBench.timeStart = os.clock()
+    bench.iterations = n
+    bench.memory_start = gcinfo()
+    bench.time_start = os.clock()
     return n
 end
 
 local function BENCH(name: string, fn: () -> ())
-    assert(not activeBench, "cannot run benchmark, a benchmark is already in progress")
+    local active = bench
+    assert(not active, "a benchmark is already in progress")
 
-    local bench: Bench = {}
-    activeBench = bench
+    bench = {}; assert(bench)
 
-    local memStart = gcinfo()
-    local timeStart = os.clock()
-    local msg: string?
-    local success = xpcall(fn, function(m: string) msg = m .. debug.traceback("", 2) end)
-    local timeStop = os.clock()
-    local memStop = gcinfo()
+    ;(collectgarbage :: any)("collect")
+
+    local mem_start = gcinfo()
+    local time_start = os.clock()
+    local err_msg: string?
+
+    local success = xpcall(fn, function(m: string)
+        err_msg = m .. debug.traceback(nil, 2)
+    end)
+
+    local time_stop = os.clock()
+    local mem_stop = gcinfo()
 
     if not success then
-        print("[\27[41;1mERROR\27[0m] " .. name)
-        print("\27[31;1m" .. "error: " .. msg :: string .. "\27[0m")
-        activeBench = nil
-        return
+        print(`{WALL}{color.red("ERROR")}{WALL} {name}`)
+        print(color.gray(err_msg :: string))
+    else
+        time_start = bench.time_start or time_start
+        mem_start = bench.memory_start or mem_start
+
+        local n = bench.iterations or 1
+        local d, d_unit = convert_units("s", (time_stop - time_start) / n)
+        local a, a_unit = convert_units("B", math.floor((mem_stop - mem_start) / n * 1e3))
+
+        local function round(x: number): string
+            return x > 0 and x < 10 and (x - math.floor(x)) > 0
+                and string.format("%2.1f", x)
+                or  string.format("%3.f", x)
+        end
+        
+        print(string.format(
+            `%s %s %s %s{WALL} %s`,
+            color.gray(tostring(round(d))),
+            d_unit,
+            color.gray(tostring(round(a))),
+            a_unit,
+            color.gray(name)
+        ))
     end
 
-    timeStart = bench.timeStart or timeStart
-    memStart = bench.memStart or memStart
-
-    local n = bench.iterations or 1
-    local duration = timeStop - timeStart
-    local allocated = memStop - memStart
-
-    print(string.format("[ %.3f us | %4.0f B ] %s", duration/n * 1e6, allocated/n * 1e3, name))
-
-    activeBench = nil
+    bench = nil
 end
 
-------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- Printing
-------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
-local function printa(v: unknown)
+local function print2(v: unknown)
     type Buffer = { n: number, [number]: string }
 
     -- overkill concatenationless string buffer
@@ -291,31 +384,67 @@ local function printa(v: unknown)
     print(table.concat(str))
 end
 
-printa "string"
+--------------------------------------------------------------------------------
+-- Equality
+--------------------------------------------------------------------------------
 
-printa(1)
+local function shallow_eq(a: {}, b: {}): boolean
+    if #a ~= #b then return false end
 
-printa {
-    hello = 1,
-    bye = "ok",
+    for i, v in next, a do
+        if b[i] ~= v then
+            return false
+        end
+    end
 
-    test = {
-        1, 2, 3
-    }
-}
+    for i, v in next, b do
+        if a[i] ~= v then
+            return false
+        end
+    end
 
-------------------------------------------------------------------------------------------
+    return true
+end
+
+local function deep_eq(a: {}, b: {}): boolean
+    if #a ~= #b then return false end
+
+    for i, v in next, a do
+        if type(b[i]) == "table" and type(v) == "table" then 
+            if deep_eq(b[i], v) == false then return false end   
+        elseif b[i] ~= v then
+            return false
+        end
+    end
+
+    for i, v in next, b do
+        if type(a[i]) == "table" and type(v) == "table" then 
+            if deep_eq(a[i], v) == false then return false end   
+        elseif a[i] ~= v then
+            return false
+        end
+    end
+
+    return true
+end
+
+--------------------------------------------------------------------------------
 -- Return
-------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 return {
-    getUnitTestTools = function()
-        return TEST, CASE, CHECK, FINISH
+    test = function()
+        return TEST, CASE, CHECK, FINISH, SKIP
     end,
 
-    getBenchmarkTools = function()
+    benchmark = function()
         return BENCH, START
     end,
 
-    printa = printa
+    print2 = print2,
+
+    seq = shallow_eq,
+    deq = deep_eq,
+
+    color = color
 }

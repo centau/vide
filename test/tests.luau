@@ -2,7 +2,7 @@
 -- unit.lua
 ----------------------------------------------------------------------------------------------------------------------
 
-local TEST, CASE, CHECK, FINISH = require("test/testkit").getUnitTestTools()
+local TEST, CASE, CHECK, FINISH, SKIP = require("test/testkit").test()
 
 local mock = require "test/mock"
 local Signal = require "test/goodsignal"
@@ -17,19 +17,23 @@ local function gc(n: number?)
     end
 end
 
+local function weak<T>(t: T & {}): T
+    setmetatable(t :: {}, { __mode = "kv" })
+    return t
+end
+
 -- weak reference table used for gc tests
-local wref = setmetatable({}, { __mode = "kv" }) :: any
+--local wref = setmetatable({}, { __mode = "kv" }) :: any
 
 TEST("graph", function()
     local graph = require "src/graph"
     local create = graph.create
     local get = graph.get
-    local unwrap = graph.unwrap
     local set = graph.set
     local capture = graph.capture
-    local captureAndLink = graph.captureAndLink
+    local capture_and_link = graph.capture_and_link
     local link = graph.link
-    local setEffect = graph.setEffect
+    local set_effect = graph.set_effect
 
     do CASE "Create"
         local node = create(1)
@@ -47,8 +51,8 @@ TEST("graph", function()
     do CASE "Capture"
         local node1 = create(nil)
         local node2 = create(nil)
-        local nodes = capture(function(from)
-            return from(node1), from(node2)
+        local nodes = capture(function()
+            return get(node1), get(node2)
         end)
         CHECK(nodes[1] == node1)
         CHECK(nodes[2] == node2)
@@ -56,7 +60,7 @@ TEST("graph", function()
 
     do CASE "Link"
         local parent = create(1)
-        local child = create(nil)
+        local child = create(0)
         link(parent, child, function() 
             return get(parent)
         end)
@@ -68,14 +72,15 @@ TEST("graph", function()
         local parent = create(1)
         local child = create(nil :: any)
 
-        captureAndLink(child, function(from)
-            return tostring(from(parent))
+        capture_and_link(child, function()
+            return tostring(get(parent))
         end)
 
         set(parent, get(parent) + 1)
         CHECK(get(child) == "2")
     end
 
+    --[[
     do CASE "Scoped captures"
         -- table.find but uses `rawequal` since nodes have overloaded __eq metamethod
         local function rawfind(t, x)
@@ -100,52 +105,54 @@ TEST("graph", function()
         CHECK(not rawfind(captures, a))
         CHECK(rawfind(captures, b))
 
-        -- repeat for `captureAndLink`
+        -- repeat for `capture_and_link`
         local c = graph.create(1)
         set(a, get(a) + 1) -- mark `b` for recomputation again
-        captureAndLink(c, function(from) return from(b) end)
+        capture_and_link(c, function(from) return from(b) end)
         -- check that only `b` was linked
         CHECK(not rawfind(assert(a.__children), c))
         CHECK(rawfind(assert(b.__children), c))
     end 
+]]
 
     do CASE "Nodes garbage collection"
-        local node = create(1) :: Node?
-        wref.node, node = node, nil
-
+        local wref
+        do
+            wref = weak { create(1) }
+        end
         gc()
-        CHECK(not wref.node)
+        CHECK(not wref[1])
     end
 
     do CASE "Node effect garbage collection"
+        local wref
         do
             local function factory(p) -- factory function to prevent closure caching
                 return function()
-                    return unwrap(p)
+                    return get(p)
                 end
             end
 
             local node = create(1)
-            local effect1 = factory(node)
-            local effect2 = factory(node)
-            wref.node = node
-            wref.effect1 = effect1
-            wref.effect2 = effect2
+            
+            do
+                local effect1 = factory(node)
+                local effect2 = factory(node)
 
-            local t = {}
-            setEffect(node, effect1, t)
-            setEffect(node, effect2, true)
+                wref = weak { effect1, effect2, node :: any }
 
-            t = nil :: any
-            effect1, effect2 = nil :: any, nil :: any
+                set_effect(node, effect1, {})
+                set_effect(node, effect2, true)
+            end
 
             gc()
 
-            CHECK(not wref.effect1) -- effect1 should gc since nothing is referencing table `t`
-            CHECK(wref.effect2) -- effect2 should not gc as `true` is not garbage collectable
+            CHECK(not wref[1]) -- effect1 should gc since nothing is referencing table `t`
+            CHECK(wref[2]) -- effect2 should not gc as `true` is not garbage collectable
         end
+
         gc()
-        CHECK(not wref.node and not wref.effect2) -- node should now gc along with effect2
+        CHECK(not wref[3] and not wref[2]) -- node should now gc along with effect2
 
         do -- same test but for multiple nodes referenced by watcher
             local function factory(a, b)
@@ -162,8 +169,8 @@ TEST("graph", function()
             wref.effect = effect
 
             local t1 = {}
-            setEffect(node1, effect, t1)
-            setEffect(node2, effect, t1)
+            set_effect(node1, effect, t1)
+            set_effect(node2, effect, t1)
 
             t1 = nil :: any
             effect = nil :: any
@@ -182,171 +189,69 @@ end)
 
 TEST("wrap()", function()
     local wrap = vide.wrap
-    local unwrap = vide.unwrap
-    local wrapped = vide.wrapped
     local watch = vide.watch
 
     do CASE "Wrap value"
         local state = wrap(1)
-        CHECK(wrapped(state))
-        CHECK(unwrap(state) == 1)
+        CHECK(state() == 1)
     end
 
     do CASE "Setter"
-        local state, set = wrap(1)
-        set(2) -- set directly
-        CHECK(unwrap(state) == 2)
-        set(function(x) return x + 1 end) -- set via function
-        CHECK(unwrap(state) == 3)
-        set((wrap(4))) -- set using value of another state
-        CHECK(unwrap(state) == 4)
+        local state = wrap(1)
+        state(2) -- set directly
+        CHECK(state() == 2)
     end
 
     do CASE "Does not update if same value"
-        local state, set = wrap(1)
+        local state = wrap(1)
 
         local updates = -1
-        watch(function(from)
-            from(state)
+        watch(function()
+            state()
             updates += 1
         end)
-        set(1)
-        CHECK(unwrap(state) == 1)
+        state(1)
         CHECK(updates == 0)
-        set(1, true)
+        state(2)
         CHECK(updates == 1)
-    end
-
-    do CASE "Does not rewrap state"
-        local state = wrap((wrap(1)))
-        CHECK(not wrapped(unwrap(state)))
-    end
-end)
-
-TEST("unwrap()", function()
-    local wrap = vide.wrap
-    local unwrap = vide.unwrap
-
-    do CASE "Gets state value"
-        local a = wrap(1)
-        CHECK(unwrap(a) == 1)
-    end
-
-    do CASE "Allow passthrough of non-state"
-        CHECK(unwrap(5) == 5)
-    end
-end)
-
-
-TEST("wrapped()", function()
-    local wrap = vide.wrap
-    local wrapped = vide.wrapped
-
-    do CASE "Check if value is a state object"
-        local state = wrap()
-        CHECK(wrapped(state))        
-    end
-
-    do CASE "Refuse non-state"
-        CHECK(not wrapped(0))
     end
 end)
 
 TEST("derive()", function()
     local wrap = vide.wrap
-    local unwrap = vide.unwrap
     local derive = vide.derive
 
     do CASE "Derive new value on state change"
-        local state, set = wrap(1)
+        local state = wrap(1)
 
-        local derived = derive(function(from)
-            return tostring(from(state))
+        local derived = derive(function()
+            return tostring(state())
         end)
 
-        CHECK(unwrap(derived) == "1") -- check initial run during detection
-        set(function(x) return x + 1 end)
-        CHECK(unwrap(derived) == "2") -- check actually updates
-    end
-
-    do CASE "Shorthand derivation"
-        do
-            local count, set = wrap(1 :: any)
-            local text = "Count: " .. count
-            CHECK(unwrap(text) == "Count: 1")
-            set(2)
-            CHECK(unwrap(text) == "Count: 2")
-        end
-        do
-            local count, set = wrap(1 :: any)
-            local text = count .. "x"
-            CHECK(unwrap(text) == "1x")
-            set(2)
-            CHECK(unwrap(text) == "2x")
-        end
-        do
-            local count, set = wrap(1 :: any)
-            local text = count .. count
-            CHECK(unwrap(text) == "11")
-            set(2)
-            CHECK(unwrap(text) == "22")
-        end
-
-        do
-            local a, seta = wrap { b = { c = 1 } }
-            local b = a.b
-            local c = b.c
-
-            CHECK(unwrap(c) == 1)
-
-            seta { b = { c = 2 } }
-
-            CHECK(unwrap(c) == 2)
-        end
-
-        do
-            local state, set = wrap { profiles = { decimal = { level = 1 }}}
-            local stringified = "Level: " .. state.profiles.decimal.level
-
-            set(function(state)
-                state.profiles.decimal.level += 1
-                return state
-            end, true)
-
-            CHECK(unwrap(stringified) == "Level: 2")
-        end
+        CHECK(derived() == "1") -- check initial run during detection
+        state(state() + 1)
+        CHECK(derived() == "2") -- check updates
     end
 
     do CASE "Derive from updated"
         do
-            local a, set = wrap(1)
+            local a = wrap(1)
 
-            local b = derive(function(from)
-                return from(a) + 1
+            local b = derive(function()
+                return a() + 1
             end)
 
-            set(2)
+            a(2)
 
-            local c = derive(function(from)
-                return from(b) + 1
+            local c = derive(function()
+                return b() + 1
             end)
 
-            CHECK(unwrap(c) == 4)
-        end
-
-        do
-            local a, set = wrap(1)
-
-            local b = a + 1
-
-            set(2)
-
-            local c = b + 1
-
-            CHECK(unwrap(c) == 4)
+            CHECK(c() == 4)
         end
     end
 
+    --[[
     do CASE "Cleanup"
         local count, set = wrap(1)
 
@@ -356,69 +261,67 @@ TEST("derive()", function()
             v.Destroyed = true
         end)
 
-        local first = unwrap(derived)
+        local first = derived()
         CHECK(first.Destroyed == false)
         set(2)
-        local _ = unwrap(derived) -- trigger recalc
+        local _ = derived() -- trigger recalc
         CHECK(first.Destroyed == true)
     end
+    ]]
 
     do CASE "Garbage collection"
-        do -- check that `derived` does not allow gc of `state`
-            local state = wrap(1) :: State?
+        do -- check that `b` does not allow gc of `a`
+            local a = wrap(1)
 
-            local _derived = derive(function(from)
-                return from(state)
+            local _b = derive(function()
+                return a()
             end)
 
-            wref.state, state = state, nil
+            local wref = weak { a }
+            a = nil :: any
 
             gc()
-            CHECK(not wref.state) 
+
+            CHECK(not wref[1]) 
         end
 
-        do -- check that `state` allows gc of `derived`
-            local state = wrap(1)
+        do -- check that `a` allows gc of `b`
+            local a = wrap(1)
 
-            local derived = derive(function(from)
-                return from(state)
-            end) :: State?
+            local b = derive(function()
+                return a()
+            end)
 
-            wref.derived, derived = derived, nil
+            local wref = weak { b }
+            b = nil :: any
 
             gc()
-            CHECK(not wref.derived)
+            CHECK(not wref[1])
         end
     end
 
     do CASE "Garbage collection 2"
         -- creats a chain `a -> b -> c` where `a` is the root
         local function setup()
-            local weak = setmetatable({}, { __mode = "v" })
+            local a = wrap(1)
 
-            local a, setA = wrap(1)
-
-            local b = derive(function(from)
-                return from(a)
+            local b = derive(function()
+                return a()
             end)
 
-            local c = derive(function(from)
-               return from(b)
+            local c = derive(function()
+               return b()
             end)
 
-            weak.a = a
-            weak.b = b
-            weak.c = c
-
-            return weak, a, b, c, setA
+            return weak { a, b, c }, a, b, c
         end
 
         do -- check that b and c can gc if a is referenced
-            local weak, _a = setup()
+            local wref, _a = setup()
 
             gc()
-            CHECK(not weak.b)
-            CHECK(not weak.c)
+            CHECK(not wref[2])
+            CHECK(not wref[3])
         end
 
         do -- check that a and b wont gc if c is referenced
@@ -427,21 +330,21 @@ TEST("derive()", function()
             _a, _b = nil :: any, nil :: any
 
             gc()
-            CHECK(weak.a)
-            CHECK(weak.b)
+            CHECK(weak[1])
+            CHECK(weak[2])
         end
 
         do -- check that b wont gc if a and c are referenced
-            local weak, _a, _b, c, setA = setup()
+            local weak, a, _b, c = setup()
 
             _b = nil :: any
 
             gc()
 
-            setA(2)
+            a(2)
     
-            CHECK(weak.b)
-            CHECK(unwrap(c) == 2)
+            CHECK(weak[2])
+            CHECK(c() == 2)
         end
     end
 end)
@@ -451,54 +354,54 @@ TEST("watch()", function()
     local watch = vide.watch
 
     do CASE "Capture states"
-        local a, setA = wrap(1)
-        local b, setB = wrap(1)
+        local a = wrap(1)
+        local b = wrap(1)
         local runcount = 0
 
-        watch(function(from)
-            local _ = from(a) + from(b)
+        watch(function()
+            a()
+            b()
             runcount += 1
         end)
 
         CHECK(runcount == 1) -- immediate callback execution
-        setA(2)
+        a(2)
         CHECK(runcount == 2)
-        setB(2)
+        b(2)
         CHECK(runcount == 3)
     end
 
     do CASE "Stop watch"
-        local a, setA = wrap(1)
-        local b, setB = wrap(1)
+        local a = wrap(1)
+        local b = wrap(1)
         local runcount = 0
 
-        local unwatch = watch(function(from)
-            local _ = from(a) + from(b)
+        local unwatch = watch(function()
+            a()
             runcount += 1
         end)
         
         CHECK(runcount == 1)
         unwatch()
-        setA(2)
-        setB(2)
+        a(2)
         CHECK(runcount == 1)
     end
 
     do CASE "Side-effect cleanup"
-        local state, set = wrap(1)
+        local state = wrap(1)
 
         local effect_runcount = 0
         local cleanup_runcount = 0
 
-        local unwatch = watch(function(from)
-            local _ = from(state)
+        local unwatch = watch(function()
+            state()
             effect_runcount += 1
             return function() cleanup_runcount += 1 end
         end)
 
         CHECK(effect_runcount == 1)
         CHECK(cleanup_runcount == 0)
-        set(2)
+        state(2)
         CHECK(effect_runcount == 2)
         CHECK(cleanup_runcount == 1)
         unwatch()
@@ -508,22 +411,24 @@ TEST("watch()", function()
 
     do CASE "Garbage collection"
         local function factory(p)
-            return function(from: any)
-                from(p)
+            return function()
+                p()
             end
         end
 
         do -- state prevents gc of watcher
             local state = wrap(1)
-            local effect = factory(state)
-        
-            watch(effect)
 
-            wref.effect = effect
-            effect = nil :: any
+            local wref
+
+            do
+                local effect = factory(state)
+                watch(effect)
+                wref = { effect }
+            end
 
             gc()
-            CHECK(wref.effect) -- should still exist
+            CHECK(wref[1]) -- should still exist
 
         end
 
@@ -533,42 +438,42 @@ TEST("watch()", function()
         
             local unwatch = watch(effect)
 
-            wref.effect = effect
+            local wref = weak { effect }
             effect = nil :: any
 
             gc()
-            CHECK(wref.effect) -- should still exist
+            CHECK(wref[1]) -- should still exist
             unwatch(); unwatch = nil :: any
             gc()
-            CHECK(not wref.effect) -- should gc
+            CHECK(not wref[1]) -- should gc
 
         end
 
         do -- state can gc with watcher
-            local state = wrap(1)
-            local effect = factory(state)
-        
-            watch(effect)
+            local wref
 
-            wref.state = state
-            state = nil :: any
-
-            effect = nil :: any
+            do
+                local state = wrap(1)
+                local effect = factory(state)
+                watch(effect)
+                wref = weak { state }
+            end
 
             gc()
-            CHECK(not wref.state) -- should gc
+
+            CHECK(not wref[1]) -- should gc
         end
 
         do -- watcher can gc if no state captured
-            local effect = factory()
+            local effect = factory(function() end)
         
             watch(effect)
 
-            wref.effect = effect
+            local wref = weak { effect }
             effect = nil :: any
 
             gc()
-            CHECK(not wref.effect) -- should gc
+            CHECK(not wref[1]) -- should gc
         end
     end
 end)
@@ -576,7 +481,6 @@ end)
 TEST("create()", function()
     local create = vide.create
     local wrap = vide.wrap
-    local Children: "Children" = vide.Children :: "Children"
 
     do CASE "Apply default properties"
         local defaults = require("src/defaults")
@@ -601,15 +505,13 @@ TEST("create()", function()
 
     do CASE "Assign children"
         local frame = create "Frame" {
-            [Children] = {
-                create "TextLabel" { Name = "A" } :: any,
-                create "TextLabel" { Name = "B" },
+            create "TextLabel" { Name = "A" } :: any,
+            create "TextLabel" { Name = "B" },
+            {
+                create "TextLabel" { Name = "C" } :: any,
+                create "TextLabel" { Name = "D" },
                 {
-                    create "TextLabel" { Name = "C" } :: any,
-                    create "TextLabel" { Name = "D" },
-                    {
-                        create "TextLabel" { Name = "E" }
-                    }
+                    create "TextLabel" { Name = "E" }
                 }
             }
         }
@@ -620,14 +522,14 @@ TEST("create()", function()
         CHECK(frame:FindFirstChild "E")
 
         local image = create "ImageLabel" {
-            [Children] = create "TextLabel" { Name = "A" }
+            create "TextLabel" { Name = "A" }
         }
         CHECK(image:FindFirstChild "A")
     end
 
     do CASE "Binding properties to state"
-        local name, setName = wrap("Hi")
-        local text, setText = wrap("Bye")
+        local name = wrap("Hi")
+        local text = wrap("Bye")
 
         local label = create "TextLabel" {
             Name = name,
@@ -637,8 +539,8 @@ TEST("create()", function()
         CHECK(label.Name == "Hi")
         CHECK(label.Text == "Bye")
 
-        setName "Foo"
-        setText "Bar"
+        name "Foo"
+        text "Bar"
 
         CHECK(label.Name == "Foo")
         CHECK(label.Text == "Bar")
@@ -648,14 +550,14 @@ TEST("create()", function()
         do -- instance should gc despite property bound to state
             local state = wrap("Hi")
 
-            do
-                wref.instance = create "TextLabel" {
+            local wref = weak {
+                create "TextLabel" {
                     Text = state,
                 }
-            end
+            }
 
             gc()
-            CHECK(not wref.instance)
+            CHECK(not wref[1])
         end
 
         do -- instance should NOT gc despite property bound to state when parented
@@ -663,45 +565,47 @@ TEST("create()", function()
 
             local parent = create "Frame" {}
 
-            do
-                wref.instance = create "TextLabel" {
+            local wref = weak {
+                create "TextLabel" {
                     Parent = parent,
                     Text = state,
                 }
-            end
+            }
 
             gc()
-            CHECK(wref.instance)
+            CHECK(wref[1])
 
-            wref.instance.Parent = nil
-            wref.instance.Parent = parent
-
-            gc()
-            CHECK(wref.instance)
-
-            wref.instance:Destroy()
+            wref[1].Parent = nil
+            wref[1].Parent = parent
 
             gc()
-            CHECK(not wref.instance)
+            CHECK(wref[1])
+
+            wref[1]:Destroy()
+
+            gc()
+            CHECK(not wref[1])
         end
         
         do -- state should not gc once exits scope while instance still exists
             local _label
+            local wref
 
             do
                 local state = wrap("Hi")
-                wref.state = state
-
+                wref = weak { state }
                 _label = create "TextLabel" {
                     Name = state,
                 }
             end
 
             gc()
-            CHECK(wref.state)
+            CHECK(wref[1])
         end
         
         do -- state and instance should gc once both exit scope
+            local wref
+    
             do
                 local text = wrap("Hi")
 
@@ -709,16 +613,16 @@ TEST("create()", function()
                     Text = text,
                 }
 
-                wref.text = text
-                wref.box = box
+                wref = weak { text = text, box = box}
             end
 
             gc()
-            CHECK(not wref.state)
+            CHECK(not wref.text)
             CHECK(not wref.box)
 
         end
         
+        --[[
         do -- binding should gc despite state still existing after instance is gc
             local state = wrap("Hi")
 
@@ -727,8 +631,13 @@ TEST("create()", function()
                     Text = state,
                 }
 
+                local wref = {
+                    instance = instance,
+                    brinding = next((state :: any).effects
+                }
+
                 wref.instance = instance
-                wref.binding = next((state :: any).__effects)
+                wref.binding = )
             end
             
             CHECK(wref.binding)
@@ -737,11 +646,11 @@ TEST("create()", function()
 
             CHECK(not wref.instance)
             CHECK(not wref.binding)
-        end
+        end]]
     end
 
     do CASE "Bind same state to multiple instance properties"
-        local state, set = wrap "1"
+        local state = wrap "1"
 
         local text = create "TextBox" {
             Name = state,
@@ -749,7 +658,7 @@ TEST("create()", function()
             PlaceholderText = state
         }
 
-        set "2"
+        state "2"
 
         CHECK(text.Name == "2")
         CHECK(text.Text == "2")
@@ -757,7 +666,7 @@ TEST("create()", function()
     end
 
     do CASE "Bind children"
-        local state, set = wrap({} :: {}?)
+        local state = wrap({} :: {}?)
 
         local a, b, c = 
             create "TextLabel" { Name = "A" },
@@ -765,31 +674,32 @@ TEST("create()", function()
             create "TextLabel" { Name = "C" }
 
         local frame = create "Frame" {
-            [Children] = state
+            state
         }
   
-        set { a, b }
+        state { a, b }
 
         CHECK(frame:FindFirstChild "A")
         CHECK(frame:FindFirstChild "B")
 
         -- check that b is removed and c is added while a remains untouched
         
-        set { a, c }
+        state { a, c }
 
         CHECK(frame:FindFirstChild "A")
         CHECK(frame:FindFirstChild "C")
         CHECK(not frame:FindFirstChild "B")
 
-        set(nil)
+        state(nil)
 
         CHECK(#frame:GetChildren() == 0)
     end
 
+    --[[
     do CASE "Parent set to nil by state does not allow gc"
         -- this is technically a bug but we test for this anyways to confirm behavior
         local parent = create "Frame" { Name = "Parent" }
-        local state, set = wrap(parent :: Frame?)
+        local state = wrap(parent :: Frame?)
 
         do
             wref.child = create "Frame" { Parent = state, Name = "Child" } :: Frame?
@@ -808,6 +718,7 @@ TEST("create()", function()
         gc()
         CHECK(not wref.child)
     end
+    ]]
 
     do CASE "GC test"
         local data = setmetatable({}, {})
@@ -872,9 +783,9 @@ TEST("map()", function()
             return tostring(v)    
         end)
 
-        local t = unwrap(derived)
+        local t = derived()
 
-        for i, v in next, unwrap(state) do
+        for i, v in next, state() do
             CHECK(tostring(v) == t[i])
         end
     end
@@ -889,10 +800,10 @@ TEST("map()", function()
             return tostring(v)    
         end)
 
-        local _ = unwrap(derived) -- trigger evaluation (so the next set is forced to be re-calculated)
+        local _ = derived() -- trigger evaluation (so the next set is forced to be re-calculated)
         set { 1, 2, 4 }
 
-        local t = unwrap(derived)
+        local t = derived()
 
         CHECK(t[1] == "1")
         CHECK(t[2] == "2")
@@ -910,10 +821,10 @@ TEST("map()", function()
             return tostring(v)    
         end)
 
-        local _ = unwrap(derived) -- trigger evaluation (so the next set is forced to be re-calculated)
+        local _ = derived() -- trigger evaluation (so the next set is forced to be re-calculated)
         set { 1, 2 }
 
-        local t = unwrap(derived)
+        local t = derived()
 
         CHECK(t[1] == "1")
         CHECK(t[2] == "2")
@@ -962,13 +873,13 @@ TEST("map()", function()
             v.Destroyed = true
         end)
 
-        local first = unwrap(derived)
+        local first = derived()
 
         CHECK(first[1].Destroyed == false)
 
         set { 1, 2, 4 }
 
-        local _ = unwrap(derived)
+        local _ = derived()
 
         CHECK(first[1].Destroyed == false)
         CHECK(first[2].Destroyed == false)
@@ -1033,10 +944,10 @@ TEST("spring()", function()
         local springed = spring(number, 1, 1)
 
         set(20)
-        CHECK(unwrap(springed) == 10)
+        CHECK(springed() == 10)
         vide.step(1/60)
-        CHECK(unwrap(springed) ~= 10)
-        CHECK(unwrap(springed) > 10)
+        CHECK(springed() ~= 10)
+        CHECK(springed() > 10)
     end
 
     do CASE "Garbage collection"
@@ -1077,23 +988,6 @@ TEST("spring()", function()
 
         gc()
         CHECK(wref.springed) -- `springed` should not gc
-    end
-end)
-
-TEST("Layout", function()
-    local create = vide.create
-    local Layout = vide.Layout
-    
-    do CASE "Apply layout properties"
-        local frame = create "Frame" {
-            [Layout] = {
-                AnchorPoint = Vector2.new(0, 0.5),
-                Position = UDim2.fromScale(0.5, 0.5)
-            }
-        }
-
-        CHECK(frame.AnchorPoint == Vector2.new(0, 0.5))
-        CHECK(frame.Position == UDim2.fromScale(0.5, 0.5))
     end
 end)
 
@@ -1199,6 +1093,7 @@ TEST("Changed", function()
     end
 end)
 
+--[[
 TEST("Created", function()
     local create = vide.create
     local Created = vide.Created
@@ -1218,7 +1113,7 @@ TEST("Created", function()
 
         CHECK(ran)
     end
-end)
+end)]]
 
 TEST("strict", function()
     vide.strict = true
@@ -1265,7 +1160,7 @@ TEST("strict", function()
 
         CHECK(runcount == 2)
         set(2)
-        local _ = unwrap(derived)
+        local _ = derived()
         CHECK(runcount == 4)
     end
 

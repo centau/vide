@@ -5,27 +5,27 @@
 if not game then script = (require :: any) "test/wrap-require" end
 
 local graph = require(script.Parent.graph)
-type State<T> = graph.State<T>
-type Unwrapper = graph.Unwrapper
-local setEffect = graph.setEffect
+local set_effect = graph.set_effect
 local capture = graph.capture
-local unwrap = graph.unwrap
 
-local function watch(effect: (Unwrapper) -> ()): () -> ()
-    local states, cleanup = capture(effect :: () -> (() -> ()?))
+local function watch(effect: () -> ()): () -> ()
+    -- todo: call cleanup on initial debug call when strict
+    local nodes, cleanup = capture(effect :: () -> (() -> ()?))
+
+    nodes = table.clone(nodes)
 
     local function fn()
         if cleanup then cleanup(); cleanup = nil end
-        cleanup = effect(unwrap)
+        cleanup = effect()
     end
 
-    for _, state in next, states do
-        setEffect(state, fn, true)  
+    for _, node in next, nodes do
+        set_effect(node, fn, true)  
     end
 
     local function unwatch()
-        for _, state in next, states do
-            setEffect(state, fn, nil)    
+        for _, node in next, nodes do
+            set_effect(node, fn, nil)    
         end
         if cleanup then cleanup(); cleanup = nil end
     end

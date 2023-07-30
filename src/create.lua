@@ -9,7 +9,7 @@ end
 
 local throw = require(script.Parent.throw)
 local defaults = require(script.Parent.defaults)
-local applyProperties = require(script.Parent.applyProperties)
+local apply = require(script.Parent.apply)
 local memoize = require(script.Parent.memoize)
 
 local function createInstance(className: string)
@@ -24,7 +24,7 @@ local function createInstance(className: string)
     end
 
     return function(properties: { [any]: unknown }): Instance
-        return applyProperties(instance:Clone(), properties)    
+        return apply(instance:Clone(), properties)    
     end  
 end; createInstance = memoize(createInstance)
 
@@ -32,7 +32,7 @@ local function cloneInstance(instance: Instance)
     return function(properties: { [any]: unknown }): Instance
         local clone = instance:Clone()
         if not clone then error("Attempt to clone a non-archivable instance", 3) end
-        return applyProperties(clone, properties)
+        return apply(clone, properties)
     end
 end
 

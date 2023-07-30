@@ -25,13 +25,9 @@ if not game then script = (require :: any) "test/wrap-require" end
 local throw = require(script.Parent.throw)
 
 local graph = require(script.Parent.graph)
-type State<T> = graph.State<T>
-type MaybeState<T> = graph.MaybeState<T>
 local create = graph.create
 local get = graph.get
 local set = graph.set
-local unwrap = graph.unwrap
-local wrapped = graph.wrapped
 
 type Animatable = number | CFrame | Color3 | UDim | UDim2 | Vector2 | Vector3
 

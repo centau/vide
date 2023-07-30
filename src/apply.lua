@@ -16,7 +16,7 @@ local function recurse(instance: Instance, properties: { [unknown]: unknown }, e
             recurse(instance, value :: {}, event_buffer)
         elseif type(property) == "string" then
             if type(value) == "function" then
-                if typeof((instance :: any)[property] == "RBXScriptSignal") then
+                if typeof((instance :: any)[property]) == "RBXScriptSignal" then
                     event_buffer[property] = value 
                 else
                     bind.property(instance, property, value :: () -> ())

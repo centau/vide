@@ -1,12 +1,12 @@
-----------------------------------------------------------------------------------------------------------------------
--- unit.lua
-----------------------------------------------------------------------------------------------------------------------
+local testkit = require("test/testkit")
+local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
 
-local TEST, CASE, CHECK, FINISH, SKIP = require("test/testkit").test()
-
-local mock = require "test/mock"
 local Signal = require "test/goodsignal"
-local Instance, Vector3, Color3, Vector2, UDim2 = mock.Instance, mock.Vector3, mock.Color3, mock.Vector2, mock.UDim2
+local mock = require "test/mock"
+
+
+local Instance, Vector3, Color3, Vector2, UDim2 =
+    mock.Instance, mock.Vector3, mock.Color3, mock.Vector2, mock.UDim2
 
 local vide = require "src/init"
 
@@ -187,23 +187,23 @@ TEST("graph", function()
     end
 end)
 
-TEST("wrap()", function()
-    local wrap = vide.wrap
+TEST("source()", function()
+    local source = vide.source
     local watch = vide.watch
 
-    do CASE "Wrap value"
-        local state = wrap(1)
+    do CASE "source value"
+        local state = source(1)
         CHECK(state() == 1)
     end
 
     do CASE "Setter"
-        local state = wrap(1)
+        local state = source(1)
         state(2) -- set directly
         CHECK(state() == 2)
     end
 
     do CASE "Does not update if same value"
-        local state = wrap(1)
+        local state = source(1)
 
         local updates = -1
         watch(function()
@@ -218,11 +218,11 @@ TEST("wrap()", function()
 end)
 
 TEST("derive()", function()
-    local wrap = vide.wrap
+    local source = vide.source
     local derive = vide.derive
 
     do CASE "Derive new value on state change"
-        local state = wrap(1)
+        local state = source(1)
 
         local derived = derive(function()
             return tostring(state())
@@ -235,7 +235,7 @@ TEST("derive()", function()
 
     do CASE "Derive from updated"
         do
-            local a = wrap(1)
+            local a = source(1)
 
             local b = derive(function()
                 return a() + 1
@@ -253,7 +253,7 @@ TEST("derive()", function()
 
     --[[
     do CASE "Cleanup"
-        local count, set = wrap(1)
+        local count, set = source(1)
 
         local derived = derive(function(from)
             return { Value = from(count), Destroyed = false }
@@ -271,7 +271,7 @@ TEST("derive()", function()
 
     do CASE "Garbage collection"
         do -- check that `b` does not allow gc of `a`
-            local a = wrap(1)
+            local a = source(1)
 
             local _b = derive(function()
                 return a()
@@ -286,7 +286,7 @@ TEST("derive()", function()
         end
 
         do -- check that `a` allows gc of `b`
-            local a = wrap(1)
+            local a = source(1)
 
             local b = derive(function()
                 return a()
@@ -303,7 +303,7 @@ TEST("derive()", function()
     do CASE "Garbage collection 2"
         -- creats a chain `a -> b -> c` where `a` is the root
         local function setup()
-            local a = wrap(1)
+            local a = source(1)
 
             local b = derive(function()
                 return a()
@@ -350,12 +350,12 @@ TEST("derive()", function()
 end)
 
 TEST("watch()", function()
-    local wrap = vide.wrap
+    local source = vide.source
     local watch = vide.watch
 
     do CASE "Capture states"
-        local a = wrap(1)
-        local b = wrap(1)
+        local a = source(1)
+        local b = source(1)
         local runcount = 0
 
         watch(function()
@@ -372,8 +372,8 @@ TEST("watch()", function()
     end
 
     do CASE "Stop watch"
-        local a = wrap(1)
-        local b = wrap(1)
+        local a = source(1)
+        local b = source(1)
         local runcount = 0
 
         local unwatch = watch(function()
@@ -388,7 +388,7 @@ TEST("watch()", function()
     end
 
     do CASE "Side-effect cleanup"
-        local state = wrap(1)
+        local state = source(1)
 
         local effect_runcount = 0
         local cleanup_runcount = 0
@@ -417,7 +417,7 @@ TEST("watch()", function()
         end
 
         do -- state prevents gc of watcher
-            local state = wrap(1)
+            local state = source(1)
 
             local wref
 
@@ -433,7 +433,7 @@ TEST("watch()", function()
         end
 
         do -- watcher can gc if stopped
-            local state = wrap(1)
+            local state = source(1)
             local effect = factory(state)
         
             local unwatch = watch(effect)
@@ -453,7 +453,7 @@ TEST("watch()", function()
             local wref
 
             do
-                local state = wrap(1)
+                local state = source(1)
                 local effect = factory(state)
                 watch(effect)
                 wref = weak { state }
@@ -480,7 +480,7 @@ end)
 
 TEST("create()", function()
     local create = vide.create
-    local wrap = vide.wrap
+    local source = vide.source
 
     do CASE "Apply default properties"
         local defaults = require("src/defaults")
@@ -528,8 +528,8 @@ TEST("create()", function()
     end
 
     do CASE "Binding properties to state"
-        local name = wrap("Hi")
-        local text = wrap("Bye")
+        local name = source("Hi")
+        local text = source("Bye")
 
         local label = create "TextLabel" {
             Name = name,
@@ -548,7 +548,7 @@ TEST("create()", function()
 
     do CASE "Binding garbage collection"
         do -- instance should gc despite property bound to state
-            local state = wrap("Hi")
+            local state = source("Hi")
 
             local wref = weak {
                 create "TextLabel" {
@@ -561,7 +561,7 @@ TEST("create()", function()
         end
 
         do -- instance should NOT gc despite property bound to state when parented
-            local state = wrap("Hi")
+            local state = source("Hi")
 
             local parent = create "Frame" {}
 
@@ -588,18 +588,20 @@ TEST("create()", function()
         end
         
         do -- state should not gc once exits scope while instance still exists
-            local _label
+            local label
             local wref
 
             do
-                local state = wrap("Hi")
-                wref = weak { state }
-                _label = create "TextLabel" {
+                local state = source("Hi")
+                label = create "TextLabel" {
                     Name = state,
                 }
+                wref = weak { state :: any, label }
+
             end
 
             gc()
+            CHECK(wref[2])
             CHECK(wref[1])
         end
         
@@ -607,7 +609,7 @@ TEST("create()", function()
             local wref
     
             do
-                local text = wrap("Hi")
+                local text = source("Hi")
 
                 local box = create "TextLabel" {
                     Text = text,
@@ -624,7 +626,7 @@ TEST("create()", function()
         
         --[[
         do -- binding should gc despite state still existing after instance is gc
-            local state = wrap("Hi")
+            local state = source("Hi")
 
             do
                 local instance = create "TextLabel" {
@@ -650,7 +652,7 @@ TEST("create()", function()
     end
 
     do CASE "Bind same state to multiple instance properties"
-        local state = wrap "1"
+        local state = source "1"
 
         local text = create "TextBox" {
             Name = state,
@@ -666,7 +668,7 @@ TEST("create()", function()
     end
 
     do CASE "Bind children"
-        local state = wrap({} :: {}?)
+        local state = source({} :: {}?)
 
         local a, b, c = 
             create "TextLabel" { Name = "A" },
@@ -699,7 +701,7 @@ TEST("create()", function()
     do CASE "Parent set to nil by state does not allow gc"
         -- this is technically a bug but we test for this anyways to confirm behavior
         local parent = create "Frame" { Name = "Parent" }
-        local state = wrap(parent :: Frame?)
+        local state = source(parent :: Frame?)
 
         do
             wref.child = create "Frame" { Parent = state, Name = "Child" } :: Frame?
@@ -721,35 +723,38 @@ TEST("create()", function()
     ]]
 
     do CASE "GC test"
-        local data = setmetatable({}, {})
-        local proxy = setmetatable({}, { __mode = "v" })
+        local wref
 
-        local ref = setmetatable({}, { __mode = "v" })
+        do
+            local data = setmetatable({}, {})
+            local proxy = setmetatable({}, { __mode = "v" })
 
-        --proxy.data = data --? (this line should not affect outcome)
-        -- `data` strongly references `proxy`
-        data.connection = proxy
+            local ref = setmetatable({}, { __mode = "v" })
 
-        -- `ref` strongly references `data`
-        ref[data] = proxy
+            --proxy.data = data --? (this line should not affect outcome)
+            -- `data` strongly references `proxy`
+            data.connection = proxy
 
-        -- although `ref` is weak to values, `data` keeps `proxy` alive
-        -- this forms a sort of cyclic reference that the luau gc is unable to detect
+            -- `ref` strongly references `data`
+            ref[data] = proxy
 
-        wref.data = data
-        wref.proxy = proxy
-        data = nil :: any
-        proxy = nil :: any
+            -- although `ref` is weak to values, `data` keeps `proxy` alive
+            -- this forms a sort of cyclic reference that the luau gc is unable to detect
+
+            wref = { data = data, proxy = proxy }
+        end
 
         gc()
 
         CHECK(wref.data and wref.proxy)
     end
+
+    
 end)
 
 TEST("map()", function()
-    local wrap = vide.wrap
-    local unwrap = vide.unwrap
+    local source = vide.source
+    local unsource = vide.unsource
     local map = vide.map
 
     do CASE "Use integer"
@@ -777,7 +782,7 @@ TEST("map()", function()
     end
 
     do CASE "Use state"
-        local state = wrap { 1, 2, 3 }
+        local state = source { 1, 2, 3 }
 
         local derived = map(state, function(_, v)
             return tostring(v)    
@@ -791,7 +796,7 @@ TEST("map()", function()
     end
 
     do CASE "Cache result"
-        local state, set = wrap { 1, 2, 3 }
+        local state, set = source { 1, 2, 3 }
 
         local runcount = table.create(3, 0)
 
@@ -815,7 +820,7 @@ TEST("map()", function()
     end
 
     do CASE "Removal reflected"
-        local state, set = wrap { 1, 2, 3 }
+        local state, set = source { 1, 2, 3 }
 
         local derived = map(state, function(i, v)
             return tostring(v)    
@@ -835,7 +840,7 @@ TEST("map()", function()
     local Children = vide.Children
 
     do CASE "Bind children"
-        local state, set = wrap { "A", "B", "C" }
+        local state, set = source { "A", "B", "C" }
 
         local derived = map(state, function(i, v)
             return create "TextLabel" {
@@ -866,7 +871,7 @@ TEST("map()", function()
     end
 
     do CASE "Use optional destructor"
-        local state, set = wrap { 1, 2, 3 }
+        local state, set = source { 1, 2, 3 }
         local derived = map(state, function(i, v)
             return { Value = v, Destroyed = false }
         end, function(v)
@@ -888,7 +893,7 @@ TEST("map()", function()
 
     do CASE "Garbage collection"
         do -- check that `derived` does not allow gc of `state`
-            local state = wrap {}
+            local state = source {}
 
             local derived = map(state, function(i, v)
                 return v
@@ -902,7 +907,7 @@ TEST("map()", function()
         end
 
         do -- check that `state` allows gc of `derived`
-            local state = wrap {}
+            local state = source {}
 
             local derived = map(state, function(i, v)
                 return i, v
@@ -917,33 +922,15 @@ TEST("map()", function()
     end
 end)
 
-TEST("apply()", function()
-    local apply = vide.apply
-
-    -- uses same application method as `create()` internally, further testing unnecessary
-    do CASE "Apply properties"
-        local part = Instance.new("Part") :: Part
-
-        apply(part) {
-            Position = Vector3.new(1, 1, 1),
-            Color = Color3.new(1, 0, 0)   
-        }
-
-        CHECK(part.Position == Vector3.new(1, 1, 1))
-        CHECK(part.Color == Color3.new(1, 0, 0))
-    end
-end)
-
 TEST("spring()", function()
-    local wrap = vide.wrap
-    local unwrap = vide.unwrap
+    local source = vide.source
     local spring = vide.spring
 
     do CASE "Update state (on next hearbeat resumption cycle)"
-        local number, set = wrap(10)
-        local springed = spring(number, 1, 1)
+        local value = source(10)
+        local springed = spring(value, 1, 1)
 
-        set(20)
+        value(20)
         CHECK(springed() == 10)
         vide.step(1/60)
         CHECK(springed() ~= 10)
@@ -952,7 +939,7 @@ TEST("spring()", function()
 
     do CASE "Garbage collection"
         do -- `spring` should not allow gc of `state`
-            local state = wrap(10)
+            local state = source(10)
             local _springed = spring(state, 1, 1)   
 
             wref.state, state = state, nil :: any
@@ -962,9 +949,9 @@ TEST("spring()", function()
 
         end
 
-        do -- `number` should allow gc of `spring`
-            local number = wrap(10)
-            local springed = spring(number, 1, 1) :: State?
+        do -- `value` should allow gc of `spring`
+            local value = source(10)
+            local springed = spring(value, 1, 1) :: State?
         
             wref.springed, springed = springed, nil
             
@@ -977,7 +964,7 @@ TEST("spring()", function()
     local create = vide.create
 
     do CASE "Garbage collection (binded)"
-        local number = wrap(10)
+        local number = source(10)
         local springed = spring(number, 1, 1) :: State?
 
         local _label = create "TextLabel" {
@@ -994,7 +981,7 @@ end)
 TEST("Event", function()
     local create = vide.create
     local Event = vide.Event
-    local wrap = vide.wrap
+    local source = vide.source
 
     do CASE "Connect event"
         local connected = false
@@ -1018,7 +1005,7 @@ TEST("Event", function()
     do CASE "Bind connection to state"
         local countA = 0
         local countB = 0
-        local listener, set = wrap(function() countA += 1 end :: () -> ()?)
+        local listener, set = source(function() countA += 1 end :: () -> ()?)
 
         local event = (Signal.new() :: any) :: RBXScriptSignal & { Fire: any }
 
@@ -1049,7 +1036,7 @@ end)
 TEST("Changed", function()
     local create = vide.create
     local Changed = vide.Changed
-    local wrap = vide.wrap
+    local source = vide.source
 
     do CASE "Connects event"
         local connected = false
@@ -1067,7 +1054,7 @@ TEST("Changed", function()
     do CASE "Bind connection to state"
         local countA = 0
         local countB = 0
-        local listener, set = wrap(function() countA += 1 end :: () -> ()?)
+        local listener, set = source(function() countA += 1 end :: () -> ()?)
 
 
         local label = create "TextLabel" {
@@ -1118,13 +1105,13 @@ end)]]
 TEST("strict", function()
     vide.strict = true
 
-    local wrap = vide.wrap
-    local unwrap = vide.unwrap
+    local source = vide.source
+    local unsource = vide.unsource
     local derive = vide.derive
     local watch = vide.watch
 
     do CASE "Error on derived callback yield"
-        local state = wrap(1)
+        local state = source(1)
 
         local ok = pcall(function()
             local _derived = derive(function(from)
@@ -1137,7 +1124,7 @@ TEST("strict", function()
     end
 
     do CASE "Error on watcher callback yield"
-        local state = wrap(1)
+        local state = source(1)
 
         local ok = pcall(function()
             local _derived = watch(function(from)
@@ -1150,7 +1137,7 @@ TEST("strict", function()
     end
 
     do CASE "Run derived callback twice"
-        local state, set = wrap(1)
+        local state, set = source(1)
         local runcount = 0
 
         local derived = derive(function(from)
@@ -1165,7 +1152,7 @@ TEST("strict", function()
     end
 
     do CASE "Run watcher callback twice"
-        local state, set = wrap(1)
+        local state, set = source(1)
         local runcount = 0
 
         watch(function(from)
@@ -1192,7 +1179,7 @@ TEST("strict", function()
     end
 
     do CASE "Does not allow same table set"
-        local _, set = wrap()
+        local _, set = source()
 
         local t = {}
 

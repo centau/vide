@@ -319,9 +319,10 @@ end
 
 local function print2(v: unknown)
     type Buffer = { n: number, [number]: string }
+    type Cyclic = { [{}]: true }
 
     -- overkill concatenationless string buffer
-    local function tos(value: any, stack: number, str: Buffer)
+    local function tos(value: any, stack: number, str: Buffer, cyclic: Cyclic)
         local TAB = "    "
         local indent = table.concat(table.create(stack, TAB))
 
@@ -339,10 +340,18 @@ local function print2(v: unknown)
             local n = str.n
             str[n + 1] = "{}"
             str.n = n + 1
-        else
+        else -- is table
             local tabbed_indent = indent .. TAB
 
             str.n += 1
+
+            if cyclic[value] then
+                str[str.n] = color.gray "*cyclic reference*"
+                return
+            else
+                cyclic[value] = true
+            end
+
             str[str.n] = "{\n"
 
             local i, v = next(value, nil)
@@ -363,7 +372,7 @@ local function print2(v: unknown)
                 str[n + 1] = " = "
                 str.n = n + 1
 
-                tos(v, stack + 1, str)
+                tos(v, stack + 1, str, cyclic)
                 
                 i, v = next(value, i)
 
@@ -380,7 +389,8 @@ local function print2(v: unknown)
     end
 
     local str = { n = 0 }
-    tos(v, 0, str)
+    local cyclic = {}
+    tos(v, 0, str, cyclic)
     print(table.concat(str))
 end
 

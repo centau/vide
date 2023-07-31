@@ -29,18 +29,20 @@ local create = graph.create
 local get = graph.get
 local set = graph.set
 
+type Node<T> = graph.Node<T>
+
 type Animatable = number | CFrame | Color3 | UDim | UDim2 | Vector2 | Vector3
 
 type SpringData<T> = {
-    Alpha: number;
-    Duration: number;
-    Period: number;
-    Damping: number;
-    Velocity: number;
-    InitialVelocity: number;
-    Initial: T;
-    Target: T;
-    Input: State<T>;
+    alpha: number,
+    duration: number,
+    period: number,
+    damping_ratio: number,
+    velocity: number,
+    initial_velocity: number,
+    initial_position: T,
+    target_position: T,
+    target: () -> T
 }
 
 type Lerp<T> = (initial: T, target: T, alpha: number) -> T
@@ -88,78 +90,76 @@ local lerpable: { [string]: Lerp<any> } = {
     end :: Lerp<Vector3>,
 }
 
-local activeSprings: { [State<any>]: SpringData<any> } = {}
-setmetatable(activeSprings, { __mode = "ks" })
+local springs: { [SpringData<any>]: Node<any> } = {}
+setmetatable(springs, { __mode = "vs" })
 
-local function spring<T>(input: MaybeState<T>, period: number, damping: number?): State<T>
-    local initial = unwrap(input) :: T
-    local output = create(initial)
+local function spring<T>(target: () -> T, period: number, damping_ratio: number?): () -> T
+    local initial_position = target()
+    local node = create(initial_position)
 
-    local springData: SpringData<T> = {
-        Alpha = 0,
-        Duration = 0,
-        Period = period,
-        Damping = damping or 1,
-        Velocity = 0,
-        InitialVelocity = 0,
-        Initial = initial,
-        Target = initial,
-        Input = input :: any,
-        LastInput = initial,
-        LastOutput = initial
+    local data: SpringData<T> = {
+        alpha = 0,
+        duration = 0,
+        period = period,
+        damping_ratio = damping_ratio or 1,
+        velocity = 0,
+        initial_velocity = 0,
+        initial_position = initial_position,
+        target_position = initial_position,
+        target = target
     }
 
-    activeSprings[output] = springData
+    springs[data] = node
 
-    return output
-end
-
-local function updateSprings(dt: number)
-    for node, data in next, activeSprings do
-        local currentTarget = get(data.Input)
-        if currentTarget ~= data.Target then
-            data.Target = currentTarget
-            data.Initial = get(node)
-            data.Target = get(data.Input)
-            data.Alpha = 0
-            data.Duration = 0
-            data.InitialVelocity = data.Velocity
-        end
-
-        local initial: Animatable = data.Initial
-        local target: Animatable = data.Target
-        local targetType: string = typeof(target)
-
-        if targetType ~= typeof(initial) then 
-            activeSprings[node] = nil
-            warn(string.format(
-                "Mismatched state value types, cancelling state update (initial value: %s, target value: %s)",
-                typeof(initial),
-                targetType
-            ))
-            throw(`Cannot tween type { typeof(initial) } and { targetType }`)
-            continue
-        end
-
-        local lerp: Lerp<Animatable> = lerpable[targetType]
-
-        if lerp == nil then 
-            activeSprings[node] = nil
-            throw(`Cannot animate type { targetType }`)
-            continue
-        end
-
-        local newTime = data.Duration + dt
-        local newAlpha = solve(data.Period, data.Damping, data.InitialVelocity, newTime)
-
-        data.Velocity = -(newAlpha - data.Alpha)/dt
-        data.Alpha = newAlpha
-        data.Duration = newTime
-
-        local value = lerp(initial, target, newAlpha)
-
-        set(node, value)
+    return function()
+        return get(node)
     end
 end
 
-return function() return spring, updateSprings end
+local function update_springs(dt: number)
+    for data, output in next, springs do
+        if data.target() ~= data.target_position then
+            data.target = data.target()
+            data.initial_position = get(output)
+            data.alpha = 0
+            data.duration = 0
+            data.initial_velocity = data.velocity
+        end
+
+        local initial_position: Animatable = data.initial_position
+        local target_position: Animatable = data.target_position
+        local target_type: string = typeof(target_position)
+
+        if target_type ~= typeof(initial_position) then 
+            springs[data] = nil
+            warn(string.format(
+                "Mismatched state value types, cancelling state update (initial value: %s, target value: %s)",
+                typeof(initial_position),
+                target_type
+            ))
+            throw(`Cannot tween type { typeof(initial_position) } and { target_type }`)
+            continue
+        end
+
+        local lerp: Lerp<Animatable> = lerpable[target_type]
+
+        if lerp == nil then 
+            springs[data] = nil
+            throw(`Cannot animate type { target_type }`)
+            continue
+        end
+
+        local new_time = data.duration + dt
+        local new_alpha = solve(data.period, data.damping_ratio, data.initial_velocity, new_time)
+
+        data.velocity = -(new_alpha - data.alpha)/dt
+        data.alpha = new_alpha
+        data.duration = new_time
+
+        local value = lerp(initial_position, target_position, new_alpha)
+
+        set(output, value)
+    end
+end
+
+return function() return spring, update_springs end

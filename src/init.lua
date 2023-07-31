@@ -6,7 +6,7 @@
 if not game then script = (require :: any) "test/wrap-require" end
 
 local create = require(script.create)
-local wrap = require(script.wrap)
+local source = require(script.source)
 local watch = require(script.watch)
 local derive = require(script.derive)
 local map = require(script.map)
@@ -14,18 +14,17 @@ local map = require(script.map)
 -- local Changed = require(script.Change)
 -- local Created = require(script.Created)
 
-local spring, updateSprings = require(script.spring)()
+local spring, update_springs = require(script.spring)()
 
 local flags = require(script.flags)
 
 type Map<K, V> = { [K]: V }
-type Unwrapper = <T>(T) -> T
 type Setter<T> = ( (new: T, force: true?) -> T ) & ( (update: (old: T) -> T, force: true?) -> T )
 
 local vide = {
     -- core
     create = create,
-    wrap = wrap,
+    source = source,
     derive = derive,
     map = map,
     watch = watch,
@@ -45,7 +44,7 @@ local vide = {
 
     -- test
     step = function(dt: number)
-        updateSprings(dt)
+        update_springs(dt)
     end
 }
 

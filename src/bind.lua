@@ -47,7 +47,7 @@ local function traceback() -- ensures trace begins outside of any vide library f
     return debug.traceback("", s)
 end
 
-function setup(instance: Instance, deriver: () -> unknown, setter: (Instance) -> ())
+function setup(instance: Instance, setter: (Instance) -> ())
     if flags.strict then
         local fn = setter
         local trace = traceback()
@@ -70,7 +70,8 @@ function setup(instance: Instance, deriver: () -> unknown, setter: (Instance) ->
     weak[key] = instance
 
     local function ref()
-        local _ = nodes -- prevent gc of state while instance exists
+        --todo:local _ = nodes -- prevent gc of state while instance exists
+        local _ = setter
         local instance = weak[key] :: Instance
         hold[key] = instance.Parent and instance or nil -- prevent gc of instance while parented
     end
@@ -79,8 +80,10 @@ function setup(instance: Instance, deriver: () -> unknown, setter: (Instance) ->
     instance:GetPropertyChangedSignal("Parent"):Connect(ref)
 end
 
+-- todo: move `fn` as arg?
+
 local function bind_property(instance: Instance, property: string, fn: () -> unknown)
-    setup(instance, fn, function(instance_weak: any)
+    setup(instance, function(instance_weak: any)
         instance_weak[property] = fn()
     end)
 end
@@ -89,7 +92,7 @@ local function bind_parent(instance: Instance, fn: () -> Instance?)
     instance.Destroying:Connect(function()
         instance= nil :: any -- allow gc when destroyed
     end)
-    setup(instance, fn, function(instance)
+    setup(instance, function(instance)
         local _ = instance -- state will strongly reference instance when parent is bound
         instance.Parent = fn()    
     end)
@@ -99,7 +102,7 @@ local function bind_children(parent: Instance, fn: () -> { Instance })
     local currentChildrenSet: { [Instance]: true } = {} -- cache of all children parented before update
     local newChildrenSet: { [Instance]: true } = {} -- cache of all children parented after update
 
-    setup(parent, fn, function(parent_weak)
+    setup(parent, function(parent_weak)
         local newChildren = fn() -- all (and only) children that should be parented after this update
         if newChildren and type(newChildren) ~= "table" then
             throw(`Cannot parent instance of type { type(newChildren) } `)

@@ -1,10 +1,9 @@
 # Vide Crash Course
 
-Hello! This is a brief tutorial designed to give you a quick runthrough of the usage of Vide.
+This is a brief tutorial designed to give you a quick run through the usage of
+Vide.
 
-Vide is inspired by the popular libraries Vue and Fusion.
-
-- Note that this tutorial assumes that you are familiar with Luau and the Roblox UI system.
+Vide is largely inspired by Solid.
 
 <br>
 
@@ -12,21 +11,22 @@ Vide is inspired by the popular libraries Vue and Fusion.
 
 In Vide, it is intended to create all UI instances through code.
 
-Instances are created using [`vide.create`](../api/creation#create).
+Instances are created using [`vide.create()`](../api/creation#create).
 
 ```lua
-local vide = require(...)
+local vide = require(vide)
 local create = vide.create
 ```
 
 ```lua
-local frame = create("Frame") {
+local frame = create "Frame" {
     Name = "Background",
     Position = UDim2.fromScale(0.5, 0.5)
 }
 ```
 
-The function returns a constructor for a given class which then takes a table of properties to assign to create a new instance for that class.
+`create()` returns a constructor for a given class which then takes a table of
+properties to assign when creating a new instance for that class.
 
 Sometimes you want to do more than setting properties, such as setting children or connecting to events.
 Vide uses special keys called *symbols* which provide unique functionality like the above mentioned.
@@ -250,33 +250,33 @@ Often, you need components that maintain their own internal state, such as a tog
 Below you can see how a simple counter component can be implemented.
 
 ```lua
-local function Counter(args)
+local function Counter(props: {
+    Layout: Layout
+})
     -- create internal state unique to each component instance
-    local count = wrap(0)
+    local count = source(0)
 
-    return create("TextButton") {
-        Name = "Counter",
-
-        Text = "Count: " .. count
-
-        [Event.Activated] = function()
-            count.value += 1
+    return create "TextButton" {
+        Text = function()
+            return "Count: " .. count
         end
 
-        [Layout] = args[Layout]
+        Activated = function()
+            count(count() + 1)
+        end,
+
+        Layout = props.Layout
     }
 end
 
 create "ScreenGui" {
     Parent = game.StarterGui,
 
-    [Children] = {
-        Counter {
-            [Layout] = {
-                AnchorPoint = Vector2.new(0.5, 0),
-                Position = UDim2.fromScale(0.5, 0),
-                Size = UDim2.fromScale(0.3, 0.1)
-            }
+    Counter {
+        Layout = {
+            AnchorPoint = Vector2.new(0.5, 0),
+            Position = UDim2.fromScale(0.5, 0),
+            Size = UDim2.fromScale(0.3, 0.1)
         }
     }
 }

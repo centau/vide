@@ -13,7 +13,7 @@ local set = graph.set
 
 type State<T> = (() -> T) & ((T) -> T)
 
-local function wrap<T>(value: T | () -> T): State<T>
+local function source<T>(value: T | () -> T): State<T>
     if type(value) == "function" then value = value() end
 
     local node = create(value :: T)
@@ -29,4 +29,4 @@ local function wrap<T>(value: T | () -> T): State<T>
     end
 end
 
-return wrap
+return source

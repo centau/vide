@@ -19,13 +19,13 @@ local refs = {} :: { Node<unknown> }
 local WEAK_VALUES_RESIZABLE = { __mode = "vs" }
 local EVALUATION_ERR = "error while evaluating node:\n\n"
 
-setmetatable(refs, WEAK_VALUES_RESIZABLE)
+setmetatable(refs :: any, WEAK_VALUES_RESIZABLE)
 
 local check_for_yield do
     local t = { __mode = "kv" }
     setmetatable(t, t)
 
-    check_for_yield = function<T..., U...>(fn: (T...) -> (), ...: U...)
+    check_for_yield = function<T..., U...>(fn: (T...) -> (), ...: any)
         local args = { ... }
         t.__unm = function()
             fn(unpack(args))
@@ -96,13 +96,19 @@ local function link<T>(parent: Node<unknown>, child: Node<T>, derive: () -> T)
 end
 
 -- detect what nodes were referenced in the given callback and returns them in an array
-local function capture<T, U>(fn: (U) -> T, arg: U): ({ Node<unknown> }, T)
+local function capture<T, U>(fn: (U?) -> T, arg: U?): ({ Node<unknown> }, T)
     if flags.strict then check_for_yield(fn, arg) end
 
     table.clear(refs)
     reff = true
 
-    local ok: boolean, result: T|string = pcall(fn, arg)
+    local ok: boolean, result: T|string
+    
+    if arg == nil then
+        ok, result = pcall(fn)
+    else
+        ok, result = pcall(fn, arg)
+    end
 
     reff = false
 
@@ -123,13 +129,19 @@ local function capture_and_link<T>(child: Node<T>, fn: () -> T): T
     return value :: T
 end
 
-local function create<T>(value: T): Node<T>
-    return {
+local function create<T>(value: T): (Node<T>, () -> T)
+    local node = {
         cache = value,
         derive  = function() return nil :: any end,
         effects = setmetatable({}, WEAK_VALUES_RESIZABLE) :: any,
         children = false :: false
     }
+
+    local function get_value()
+        return get(node)
+    end
+
+    return node, get_value
 end
 
 return table.freeze {
@@ -139,5 +151,5 @@ return table.freeze {
     link = link,
     capture = capture,
     capture_and_link = capture_and_link,
-    create = create,
+    create = create :: (<T>(value: T) -> (Node<T>, () -> T)) & (<T>() -> (Node<T>, () -> T)),
 }

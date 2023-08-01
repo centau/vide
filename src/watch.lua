@@ -10,7 +10,7 @@ local capture = graph.capture
 
 local function watch(effect: () -> ()): () -> ()
     -- todo: call cleanup on initial debug call when strict
-    local nodes, cleanup = capture(effect :: () -> (() -> ()?))
+    local nodes, cleanup = capture(effect :: () -> (() -> ()?), nil)
 
     nodes = table.clone(nodes)
 

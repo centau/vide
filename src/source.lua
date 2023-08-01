@@ -11,15 +11,13 @@ local get = graph.get
 local set = graph.set
 
 
-type State<T> = (() -> T) & ((T) -> T)
+type Source<T> = (() -> T) & ((T) -> T)
 
-local function source<T>(value: T | () -> T): State<T>
-    if type(value) == "function" then value = value() end
-
-    local node = create(value :: T)
+local function source<T>(value: T): Source<T>
+    local node, get_value = create(value :: T)
 
     return function(...): T
-        if select("#", ...) == 0 then return get(node) end
+        if select("#", ...) == 0 then return get_value() end
 
         local v = ... :: T
         if node.cache == v and type(v) ~= "table" then return v end
@@ -29,4 +27,4 @@ local function source<T>(value: T | () -> T): State<T>
     end
 end
 
-return source
+return source :: (<T>(value: T) -> Source<T>) & (<T>() -> Source<T>)

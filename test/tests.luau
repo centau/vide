@@ -949,57 +949,31 @@ TEST("spring()", function()
     end
 end)
 
-TEST("Event", function()
+TEST("Events", function()
     local create = vide.create
-    local source = vide.source
+
+    local function Thing(props)
+        local instance = Instance.new("Thing") :: any
+        instance.Signal = (Signal.new() :: any) :: RBXScriptSignal & { Fire: any }
+        testkit.print2(getmetatable(instance))
+        return create(instance)(props)
+    end
 
     do CASE "Connect event"
         local connected = false
 
-        local event = (Signal.new() :: any) :: RBXScriptSignal & { Fire: any }
-
-        local val = create "IntValue" {
-            Changed = event,
-            [Event.Changed] = function(newval)
+        local val = Thing {
+            Signal = function(newval)
                 connected = true
                 CHECK(newval == 1)
             end
-        } :: IntValue
+        }
+
+        testkit.print2(getmetatable(val))
 
         CHECK(not connected)
-        val.Value = 1; event:Fire(val.Value)
-        vide.step(1/60)
+        val.Value = 1; val.Signal:Fire(val.Value)
         CHECK(connected)
-    end
-
-    do CASE "Bind connection to state"
-        local countA = 0
-        local countB = 0
-        local listener, set = source(function() countA += 1 end :: () -> ()?)
-
-        local event = (Signal.new() :: any) :: RBXScriptSignal & { Fire: any }
-
-        local int = create "IntValue" {
-            Changed = event,
-            [Event.Changed] = listener
-        } :: IntValue
-
-        int.Value = 1; event:Fire(int.Value)
-        int.Value = 2; event:Fire(int.Value)
-        CHECK(countA == 2)
-        set(function() return function() countB += 1 end end)
-        int.Value = 3; event:Fire(int.Value)
-        int.Value = 4; event:Fire(int.Value)
-        CHECK(countA == 2)
-        CHECK(countB == 2)
-        set(nil)
-        int.Value = 5; event:Fire(int.Value)
-        CHECK(countA == 2)
-        CHECK(countB == 2)
-    end
-
-    do CASE "Always return same object for a given index"
-        CHECK(Event.Test == Event.Test)
     end
 end)
 

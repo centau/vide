@@ -5,6 +5,7 @@
 if not game then
     script = (require :: any) "test/wrap-require"
     Instance = require("test/mock").Instance
+    typeof = require("test/mock").typeof
 end
 
 local throw = require(script.Parent.throw)

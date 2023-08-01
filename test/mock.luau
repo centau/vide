@@ -21,6 +21,18 @@ local Instance = {} do
         Type: "Instance"
     }
 
+    local function deepclone<T>(template: T & {}): T
+        local t = table.clone(template :: {}) :: {}
+
+        for i, v in next, t do
+            if type(v) == "table" then
+                t[i] = deepclone(v)
+            end
+        end
+
+        return t :: T & {}
+    end
+
     --[[
         attempt to mimic roblox engine's method of userdata proxy to actual instance data
         proxy can gc independantly of actual instance data
@@ -115,10 +127,10 @@ local Instance = {} do
         local clone_userdata = (Instance.new("") :: any) :: userdata
         local clone_data = getdata(clone_userdata)
 
-        table.clear(clone_data)
-        for i, v in next, data do
-            clone_data[i] = type(v) == "table" and table.clone(v) or v
+        for i, v in next, deepclone(data) do
+            clone_data[i] = v
         end
+
         return clone_userdata
     end
 

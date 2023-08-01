@@ -37,6 +37,8 @@ untrack
 batch
 async/loading/suspense
 
+define order with nested properties
+
 ## version 1
 
 ```lua

@@ -3,15 +3,21 @@
 This is a brief tutorial designed to give you a quick run through the usage of
 Vide.
 
-Vide is largely inspired by Solid.
+Vide is largely inspired by Solid and Fusion.
 
 <br>
 
+## Why Vide?
+
+Creating UI is a slow and tedious process. The purpose of Vide is to make UI
+declarative and concise, making it faster to create and more importantly easier
+to maintain. Vide achieves this using a reactive style of programming which
+allows you to focus on the flow of data through your application without
+worrying about manually updating UI instances.
+
 ## Creating UI Instances
 
-In Vide, it is intended to create all UI instances through code.
-
-Instances are created using [`vide.create()`](../api/creation#create).
+Instances are created using [`create()`](../api/creation#create).
 
 ```lua
 local vide = require(vide)
@@ -28,112 +34,79 @@ local frame = create "Frame" {
 `create()` returns a constructor for a given class which then takes a table of
 properties to assign when creating a new instance for that class.
 
-Sometimes you want to do more than setting properties, such as setting children or connecting to events.
-Vide uses special keys called *symbols* which provide unique functionality like the above mentioned.
-
-Children can be assigned to instances using the `Children` symbol.
+String keys are assumed to be properties, integer keys are assumed to be
+children.
 
 ```lua
-local Children = vide.Children
-```
-
-```lua
-local screenGui = create("ScreenGui") {
+create "ScreenGui" {
     Parent = game.StarterGui,
 
-    [Children] = create("Frame") {
+    create("Frame") {
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.fromScale(0.5, 0.5),
         Size = UDim2.fromScale(0.4, 0.7),
 
-        [Children] = {
-            create("TextLabel") {
-                Text = "Hi"
-            },
+        create("TextLabel") {
+            Text = "hi"
+        },
 
-            create("TextLabel") {
-                Text = "Bye"
-            }
+        create("TextLabel") {
+            Text = "bye"
         }
     }
 }
 ```
 
-Here, we import the symbol [`vide.Children`](../api/creation#Children).
-
-This symbol can accept an instance, an array of instances and nested arrays of instances.
-All given instances will be parented to the instance the symbol was used on.
-
-<br>
-
-## Connecting To Events
-
-Built-in instance events and property changed events can be connected to using two other symbols, [`vide.Event`](../api/creation#Event) and [`vide.Changed`](../api/creation#Changed).
+To connect to an event, just set the event property name to a function.
 
 ```lua
-local Event = vide.Event
-local Changed = vide.Changed
-```
-
-```lua
-local textBox = create("TextBox") {
-    PlaceholderText = "Enter text",
-    
-    [Event.Focused] = function(...)
-        print("User is focusing on text box")   
-    end,
-
-    [Changed.Text] = function(newText)
-        print("New text: " .. newText)
+create "TextButton" {
+    Activated = function()
+        print "clicked!"
     end
 }
 ```
 
-Both of these symbols can be indexed into to get a specific symbol for an event to connect to.
-The callback function for `Event` receives any event-specific arguments and the callback function for
-`Changed` receives the new property value as the only argument (unlike `Instance:GetPropertyChangedSignal()`).
+All event arguments are passed into the function.
 
 <br>
 
 ## State
 
-*State* is the condition something is in at a specific time. The state of a program is simply the data it contains at some timepoint.
+State in Vide are special objects that store data.
 
-The purpose of all UI is to take some state and reflect that state visually.
-
-In Vide, UI state is represented using special objects simply called *state*.
-
-A state object in Vide can be created using [`vide.wrap`](../api/reactivity-core#wrap).
+A state object in Vide can be created using
+[`source()`](../api/reactivity-core#source).
 
 ```lua
-local wrap = vide.wrap
+local source = vide.source
 ```
 
 ```lua
-local isVisible = wrap(false)
+local visible = source(false)
 
 local image = create("ImageLabel") {
-    Image = "rbxassetid://xxx",
-    Visible = isVisible
+    Visible = visible -- bind property to state
 }
 
-while true do
-    wait(1)
-    isVisible.Value = not isVisible.Value
-end
+visible(false) -- image label is hidden
+
+visible(true) -- image label is shown
 ```
 
-The function `wrap` will *wrap* any given value with a state object of type `State<T>` which can be read from/wrote to through its `.value` property.
+`source()` creates a new data source which can be set by calling it with the new
+value to set.
 
-In the above code, the `ImageLabel.Visible` property is assigned a state. Now any time that state's value is assigned to, `ImageLabel.Visible` will also update with the new value assigned, without you having to explicitly set the property. The above code gives the effect of the image label toggling visibility at a 1 second interval forever.
+Any time the value is set, anything depending on it will automatically be
+updated using the new value.
 
+Vide detects when you assign a state object as a property value. This is known
+as *binding* and doing so will cause the property to *automatically* update
+whenever that state object's value is changed.
 
-There are a few reasons why we use state objects instead of plain variables:
-
-1. Vide detects when you assign a state object as a property value. This is known as *binding* and doing so will cause the property to *automatically* update whenever that state object's value is changed.
-2. We can create new state objects that derive from other state objects, which again, *automatically* update when the derived state objects change.
-
-The reason why this is useful, is that you as the programmer do not have to worry about manually updating variables or UI instances, you can just focus on defining how the data maps to UI and everything will automatically update when changes occur.
+You as the programmer do not have to worry about manually updating variables or
+UI instances, you can just focus on defining how the data maps to UI and
+everything will update when changes occur.
 
 <br>
 
@@ -142,44 +115,62 @@ The reason why this is useful, is that you as the programmer do not have to worr
 You can create new state from other states. This is known as *deriving state*.
 
 ```lua
+local count = source(0)
+
+local function text()
+    return "count: " .. count()
+end
+
+create "TextLabel" {
+    Text = text
+}
+```
+
+To read from a state, you call without any arguments which returns its stored
+value.
+
+Assigning a non-event property a function will bind that property to that
+function, anytime a state being read from inside that function is changed, the
+function will be re-ran and the property value updated.
+
+Sometimes when using expensive computations to derive state, you only want to
+recalculate it when a source state has changed.
+
+```lua
 local derive = vide.derive
 ```
 
 ```lua
 local count = wrap(0)
 
-local text = derive(function(from)
-    return "Count: " .. from(count)
+local factorial = derive(function()
+    local n = 1
+    for i = 2, count() do
+        n *= i
+    end
+    return n
 end)
-
-print(text.value) -- "Count: 0"
-
-count.value += 1
-
-print(text.value) -- "Count: 1"
 ```
 
-Here we use [`vide.derive`](../api/reactivity-core#derive) to *derive* a new state `text` which depends on `count`.
-
-A function is used to transform the value of `count`, where the value returned becomes the new value of `text`. The function receives an argument named `from` which is used to *capture* dependent states. This is used to link `count` to `text`, so that whenever `count` is updated, `text` will be too.
-
-Whenever `count`'s value is changed, `text` will recompute its value and update anything dependent on `text`, such as UI.
-
-States can be derived in a more concise manner when doing single operations such as concatenation:
+`derive()` will cache and return the same value until a source state has
+changed, where it will recompute and cache a new value.
 
 ```lua
-local text = "Count: " .. count
-```
+create "TextLabel" {
+    Text = function()
+        "factorial: " .. factorial()
+    end
+}
 
-You can derive new states using any Luau operator in this manner.
+count(3) -- displays "factorial: 6"
+count(4) -- displays "factorial: 24"
+```
 
 <br>
 
 ## Components
 
-*Components* in UI are just custom-made reusable pieces of UI made from other pieces of UI.
-
-The recommended way to create components is to use functions that take a table of properties as an argument and return the new UI instance.
+Components are custom-made reusable pieces of UI made from other pieces of UI.
 
 ```lua
 local function Background(args)
@@ -196,97 +187,128 @@ local background = Background {
 }
 ```
 
-Above is a simple example of a frame component with its background color set to black.
+Above is a simple example of a frame component with its background color set to
+black.
 
 A single parameter `args` is used to pass properties to the component.
 
-Components allow you to *encapsulate* behavior. You can only modify the component in ways that are defined in the component.
-Looking at the above example, the only properties you are allowed to modify is `Position` and `Size`.
-This is a good approach to use for organised code.
+Components allow you to *encapsulate* behavior. You can only modify the
+component in ways that you allow in the component.
 
-However, properties concering layout (positional and size properties) aren't usually intrinsinc to the component. In most cases the user would want to be able to pass these properties without having to manually pass each one in the component.
-
-For these cases, the [`vide.Layout`](../api/creation#Layout) symbol can be used.
-
-```lua
-local Layout = vide.Layout
-```
-
-```lua
-local function Background(props)
-    return create("Frame") {
-        BackgroundColor3 = Color3.new(0, 0, 0),
-        [Layout] = props[Layout],
-        [Children] = props[Children]
-    }
-end
-
-local background = Background {
-    [Layout] = {
-        AnchorPoint = Vector2.new(),
-        Position = UDim2.new(),
-        Size = UDim2.new(),
-    },
-
-    [Children] = {
-        create("TextLabel") {},
-        create("ImageLabel") {}
-    }
-}
-```
-
-Here, the `Layout` symbol automatically assigns those layout-specific properties without having to explicitly assign each one in the component definition. This is a very common case and for this reason it is recommended to only assign layout properties using the `Layout` symbol for consistency when dealing with components.
-
-This allows you to pass through layout properties without breaking encapsulation.
-
-Additionally, the above example shows how children can be passed to components in a similar manner.
+This also promotes code reusability. Anytime you want a black frame all you do
+is call `Background {}` instead of creating a new frame and settings it color
+each time.
 
 <br>
 
 ## Stateful components
 
-Often, you need components that maintain their own internal state, such as a toggle button or a counter.
+Often, you need components that maintain their own internal state, such as a
+toggle-able button or a counter.
 
 Below you can see how a simple counter component can be implemented.
 
 ```lua
-local function Counter(props: {
-    Layout: Layout
-})
-    -- create internal state unique to each component instance
+local function Counter()
     local count = source(0)
 
     return create "TextButton" {
         Text = function()
-            return "Count: " .. count
+            return "count: " .. count()
         end
 
         Activated = function()
             count(count() + 1)
         end,
+    }
+end
+```
 
-        Layout = props.Layout
+Each time you call `Counter {}`, it will create a new counter component which
+each maintains their own count state.
+
+Clicking on the UI element will automatically increment and display its count.
+
+## Nested Properties and Typechecking
+
+When a key is assigned a table, Vide does not attempt to assign it to a
+property, instead, the table is iterated and processed just like the nesting
+table.
+
+Below is an example of how you can use this to pass groups of similar properties
+together such as position and size, while also using typechecking.
+
+```lua
+type Layout = {
+    Layout = {
+        Position: UDim2?,
+        Size: UDim2?,
+        AnchorPoint: Vector2?
+    }
+}
+
+local function Button(args: Layout & {
+    Text: string,
+    Callback: () -> ()
+})
+    local count = source(0)
+
+    return create "TextButton" {
+        Text = args.Text
+        Activated = args.Callback,
+        Layout = args.Layout
     }
 end
 
-create "ScreenGui" {
-    Parent = game.StarterGui,
+Button {
+    Text = "Click me!",
+    
+    Callback = function()
+        print "clicked me!"
+    end,
 
-    Counter {
-        Layout = {
-            AnchorPoint = Vector2.new(0.5, 0),
-            Position = UDim2.fromScale(0.5, 0),
-            Size = UDim2.fromScale(0.3, 0.1)
-        }
+    Layout = {
+        Position = UDim2.new(),
+        Size = UDim2.new()
     }
 }
 ```
 
-Here a reusable counter component is created, that when clicked on will increase its count and display it independent from other counter instances.
+Here the button component is assigned a position and size as if you passed those
+properties directly.
+
+The same can be done for properties such as children.
+
+```lua
+type Children = {
+    Children = Array<Instance>
+}
+
+local function List(args: Children & Layout)
+    return create "Frame" {
+        Layout = args.Layout,
+        Children = args.Children,
+
+        create "UIListLayout" {}
+    }
+end
+
+List {
+    Layout = {
+        Position = UDim2.new()
+    },
+
+    Children = {
+        create "TextLabel" { Text = "1" }
+    }
+}
+```
 
 ## Tables of data
 
-basic inventory
+Vide has functions for dealing with table states.
+
+Below is an example using the above `List` class.
 
 ```lua
 type Item = {
@@ -294,44 +316,28 @@ type Item = {
     Icon: number    
 }
 
-local items = wrap({} :: Array<Item>)
+local items = source({} :: Array<Item>)
 
-local function ItemSlot(args)
-    return create("Frame") {
-        [Layout] = args[Layout]
+List {
+    Children = map(items, function(item, i)
+        return create "ImageLabel" {
+            Image = function()
+                return "rbxassetid://" .. item().Icon
+            end,
 
-        [Children] = {
-            create("TextLabel") {
-                Name = args.Name,
-                [Layout] = ...
-            },
-
-            create("ImageLabel") {
-                Image = "rbxassetid://" .. args.Icon,
-                [Layout] = ...
-            }
+            LayoutOrder = i
         }
-    }
-end
+    end)
+}
+```
 
-local function Inventory(args)
-    return create("Frame") {
-        [Layout] = args[Layout],
+Here we map each element in `items` to a value returned by a callback.
 
-        [Children] = {
-            create("UIListLayout") {},
+The callback is called only *once* per key. The first argument given to the
+callback is a state that has the value of the table key's value.
 
-            map(items, function(i, item)
-                return ItemSlot {
-                    Name = item.Name,
-                    Icon = item.Icon,
-                    [Layout] = { LayoutOrder = i, ... }
-                }
-            end)
-        }
-    }
-end
+Anytime the value of the corresponding table key changes, the state value
+changes too. This saves us from having to recreate a UI element any time a
+table index changes.
 
-
-
-More comprehensive tutorials are in the works. To find out more refer to the [`API documentation`](../../README#API).
+## WIP

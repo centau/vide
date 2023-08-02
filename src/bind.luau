@@ -18,10 +18,6 @@ local hold: { Instance? } = {}
 local weak: { Instance? } = setmetatable({}, { __mode = "v" }) :: any 
 local bindcount = 0
 
-
-
-
-
 local srcs do
     local src1 = debug.info(1, "s")
     local srctrunc = string.sub(src1, 1, #src1-4)
@@ -52,12 +48,11 @@ function setup(instance: Instance, setter: (Instance) -> ())
         end
     end
 
-    local nodes = table.clone((capture(setter :: (Instance) -> unknown, instance)))
+    local nodes = (capture(setter :: () -> unknown, instance))
 
     for _, node in next, nodes do
         set_effect(node, setter, instance)
     end
-    
 
     bindcount += 1
     local key = bindcount
@@ -65,7 +60,6 @@ function setup(instance: Instance, setter: (Instance) -> ())
     weak[key] = instance
 
     local function ref()
-        --todo:local _ = nodes -- prevent gc of state while instance exists
         local _ = setter
         local instance = weak[key] :: Instance
         hold[key] = instance.Parent and instance or nil -- prevent gc of instance while parented

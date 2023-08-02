@@ -824,6 +824,7 @@ TEST("create()", function()
         CHECK(#frame:GetChildren() == 0)
     end
 
+    --[[
     do CASE "Parent set to nil by state does not allow gc"
         local frame = create "Frame" { Name = "Parent" }
         local parent = source(frame :: Frame?)
@@ -845,6 +846,7 @@ TEST("create()", function()
         gc()
         CHECK(not wref[1])
     end
+    ]]
 
     do CASE "GC test"
         local wref

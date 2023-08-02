@@ -11,10 +11,6 @@ local watch = require(script.watch)
 local cleanup, clean_garbage = require(script.cleanup)()
 local derive = require(script.derive)
 local map = require(script.map)
-
--- local Changed = require(script.Change)
--- local Created = require(script.Created)
-
 local spring, update_springs = require(script.spring)()
 
 local flags = require(script.flags)

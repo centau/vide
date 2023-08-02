@@ -6,7 +6,6 @@ local create = graph.create
 local set = graph.set
 local capture = graph.capture
 local link = graph.link
-local capture_and_link = graph.capture_and_link
 
 type Map<K, V> = { [K]: V }
 

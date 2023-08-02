@@ -2,153 +2,94 @@
 -- benchmark.lua
 ------------------------------------------------------------------------------------------
 
-local BENCH, START = require("test/testkit").getBenchmarkTools()
+local BENCH, START = require("test/testkit").benchmark()
 
 local vide = require "src/init"
-type State<T> = vide.State<T>
 
-local function gc(n: number?)
-    for i = 1, n or 3 do
-        (collectgarbage :: any)("collect")
-    end
-end
-
-local N = 1e5
-
-gc()
+local N = 1e6
 
 BENCH("Create state", function()
     local cache = table.create(N)
-    local wrap = vide.wrap
+    local source = vide.source
 
     for i = 1, START(N) do
-        cache[i] = wrap(1)
+        cache[i] = source(1)
     end
 end)
-
-gc()
 
 BENCH("Get state value", function()
-    local state = vide.wrap(1)
-    local unwrap = vide.unwrap
+    local state = vide.source(1)
 
     for i = 1, START(N) do
-        unwrap(state)
+        state()
     end
 end)
-
-gc()
 
 BENCH("Set state value", function()
-    local _, set = vide.wrap(1)
+    local state = vide.source(1)
 
     for i = 1, START(N) do
-        set(i)
+        state(i)
     end
 end)
 
-gc()
-
-BENCH("Derive state", function()
+BENCH("Derive 1 state", function()
     local cache = table.create(N)
-    local state = vide.wrap(1)
+    local state = vide.source(1)
     local derive = vide.derive
 
     for i = 1, START(N) do
-        cache[i] = derive(function(from)
-            return from(state)
+        cache[i] = derive(function()
+            return state()
         end)
     end
 end)
 
-gc()
-
-BENCH("Derive state (2)", function()
+BENCH("Derive 2 states", function()
     local cache = table.create(N)
-    local state = vide.wrap(1)
-    local state2 = vide.wrap(2)
+    local state = vide.source(1)
+    local state2 = vide.source(2)
     local derive = vide.derive
 
     for i = 1, START(N) do
-        cache[i] = derive(function(from)
-            return from(state) + from(state2)
+        cache[i] = derive(function()
+            return state() + state2()
         end)
     end
 end)
 
-gc()
-
-BENCH("Derive state (shorthand)", function()
-    local cache = table.create(N)
-    local state = vide.wrap(1)
+BENCH("Set state value derived", function()
+    local state = vide.source(1)
+    local _derived = vide.derive(state)
 
     for i = 1, START(N) do
-        cache[i] = state + 1
+        state(i)
     end
 end)
 
-gc()
-
-BENCH("Derive state (shorthand 2)", function()
-    local cache = table.create(N)
-    local state = vide.wrap(1)
-    local state2 = vide.wrap(2)
-
-    for i = 1, START(N) do
-        cache[i] = state + state2
-    end
-end)
-
-gc()
-
-BENCH("Derived state update", function()
-    local stateA, setA = vide.wrap(1)
-    local stateB = vide.derive(function(from) return from(stateA) end)
-    local unwrap = vide.unwrap
-
-    for i = 1, START(N) do
-        setA(i)
-        unwrap(stateB)
-    end
-end)
-
-gc()
-
-BENCH("Derived state update (shorthand)", function()
-    local stateA, setA = vide.wrap(1)
-    local stateB = stateA + 1
-    local unwrap = vide.unwrap
-
-    for i = 1, START(N) do
-        setA(i)
-        unwrap(stateB)
-    end
-end)
-
-gc()
-
-BENCH("Apply single property", function()
+BENCH("Apply 4 properties", function()
+    local apply = require "src/apply"
     local instance = vide.create("Frame") {}
-    local apply = vide.apply
 
     for i = 1, START(N) do
-        apply(instance) {
-            Name = i
-        }
+        apply(instance, {
+            Name = i,
+            Name2 = i,
+            Name3 = i,
+            Name4 = i
+        })
     end
 end)
-
-gc()
 
 BENCH("Bind state", function()
+    local apply = require "src/apply"
     local instance = vide.create("Frame") {}
-    local state = vide.wrap(1)
-    local apply = vide.apply
+    local state = vide.source(1)
 
     for i = 1, START(N) do
-        apply(instance) {
+        apply(instance, {
             Name = state
-        }
+        })
     end
 end)
 

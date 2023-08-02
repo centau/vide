@@ -158,7 +158,7 @@ changed, where it will recompute and cache a new value.
 ```lua
 create "TextLabel" {
     Text = function()
-        "factorial: " .. factorial()
+        return "factorial: " .. factorial()
     end
 }
 

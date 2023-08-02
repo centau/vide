@@ -141,7 +141,7 @@ local derive = vide.derive
 ```
 
 ```lua
-local count = wrap(0)
+local count = source(0)
 
 local factorial = derive(function()
     local n = 1

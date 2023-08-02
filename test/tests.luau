@@ -363,6 +363,7 @@ end)
 TEST("watch()", function()
     local source = vide.source
     local watch = vide.watch
+    local cleanup = vide.cleanup
 
     do CASE "Capture states"
         local a = source(1)
@@ -405,7 +406,7 @@ TEST("watch()", function()
         local unwatch = watch(function()
             state()
             effect_runcount += 1
-            return function() cleanup_runcount += 1 end
+            cleanup(function() cleanup_runcount += 1 end)
         end)
 
         CHECK(effect_runcount == 1)
@@ -413,7 +414,12 @@ TEST("watch()", function()
         state(2)
         CHECK(effect_runcount == 2)
         CHECK(cleanup_runcount == 1)
+
         unwatch()
+        unwatch = nil :: any
+        gc()
+        vide.step(0)
+
         CHECK(effect_runcount == 2)
         CHECK(cleanup_runcount == 2)
     end
@@ -475,6 +481,117 @@ TEST("watch()", function()
             gc()
             CHECK(not wref[1])
         end
+    end
+end)
+
+TEST("cleanup()", function()
+    local source = vide.source
+    local derive = vide.derive
+    local watch = vide.watch
+    local cleanup = vide.cleanup
+
+    do CASE "Cleanup runs for watcher"
+        local state = source(1)
+
+        local watched = 0
+        local cleaned = 0
+
+        local stop = watch(function()
+            state()
+            watched += 1
+            cleanup(function()
+                cleaned += 1  
+            end)
+        end)
+
+        CHECK(watched == 1)
+        CHECK(cleaned == 0)
+
+        state(2)
+
+        CHECK(watched == 2)
+        CHECK(cleaned == 1)
+
+        stop()
+
+        do -- vide detects by iterating through and checking for gc'd refs
+            stop = nil :: any
+            gc()
+            vide.step(0)
+        end
+
+        CHECK(watched == 2)
+        CHECK(cleaned == 2)
+    end
+
+    do CASE "Scoped"
+        local function setup()
+            local state = source(1)
+            local obj = { cleaned = 0 }
+
+            local _stop = watch(function()
+                state()
+                cleanup(function()
+                    obj.cleaned += 1
+                end)
+            end)
+
+            return state, obj
+        end
+
+        local stateA, objA = setup()
+        local stateB, objB = setup()
+
+        CHECK(objA.cleaned == 0)
+        CHECK(objB.cleaned == 0)
+
+        stateA(2)
+
+        CHECK(objA.cleaned == 1)
+        CHECK(objB.cleaned == 0)
+
+        stateB(2)
+
+        CHECK(objA.cleaned == 1)
+        CHECK(objB.cleaned == 1)
+
+        do
+            stateA = nil :: any
+            stateB = nil :: any
+            gc()
+            vide.step(0)
+        end
+
+        CHECK(objA.cleaned == 2)
+        CHECK(objB.cleaned == 2)
+    end
+
+    do CASE "Multiple cleanup"
+        local state = source(1)
+
+        local queue = {}
+    
+        watch(function()
+            state()
+            cleanup(function() table.insert(queue, 1) end)
+            cleanup(function() table.insert(queue, 2) end)
+        end)
+
+        CHECK(testkit.seq(queue, {}))
+        state(2)
+        CHECK(testkit.seq(queue, { 1, 2 }))
+        state(3)
+        CHECK(testkit.seq(queue, { 1, 2, 1, 2 }))
+
+        do
+            state = nil :: any
+            gc()
+            vide.step(0)
+        end
+
+        -- todo: guarantee call order when gc? (currently not)
+        --testkit.print2(queue)
+        --CHECK(testkit.seq(queue, { 1, 2, 1, 2, 1, 2 }))
     end
 end)
 
@@ -894,6 +1011,7 @@ TEST("map()", function()
 end)
 
 TEST("spring()", function()
+    local create = vide.create
     local source = vide.source
     local spring = vide.spring
 
@@ -909,43 +1027,43 @@ TEST("spring()", function()
     end
 
     do CASE "Garbage collection"
-        do -- `spring` should not allow gc of `state`
-            local state = source(10)
-            local _springed = spring(state, 1, 1)   
+        do -- `output` should not allow gc of `input`
+            local input = source(10)
+            local output = spring(input)
 
-            wref.state, state = state, nil :: any
+            local wref = { input }
+            input = nil :: any
 
             gc()
-            CHECK(wref.state)
-
+            CHECK(wref[1])
         end
 
-        do -- `value` should allow gc of `spring`
-            local value = source(10)
-            local springed = spring(value, 1, 1) :: State?
+        do -- `input` should allow gc of `output`
+            local input = source(10)
+            local output = spring(input)
         
-            wref.springed, springed = springed, nil
+            local wref = { output }
+            output = nil :: any
             
             gc()
-            CHECK(not wref.springed)
-
+            CHECK(not wref[1])
         end
     end
 
-    local create = vide.create
 
     do CASE "Garbage collection (binded)"
-        local number = source(10)
-        local springed = spring(number, 1, 1) :: State?
+        local input = source(10)
+        local output = spring(input, 1, 1)
 
         local _label = create "TextLabel" {
-            Text = springed
+            Text = output
         }
 
-        wref.springed, springed = springed, nil
+        local wref = { output }
+        output = nil :: any
 
         gc()
-        CHECK(wref.springed) -- `springed` should not gc
+        CHECK(wref[1]) -- `output` should not gc
     end
 end)
 
@@ -954,9 +1072,11 @@ TEST("Events", function()
 
     local function Thing(props)
         local instance = Instance.new("Thing") :: any
-        instance.Signal = (Signal.new() :: any) :: RBXScriptSignal & { Fire: any }
-        testkit.print2(getmetatable(instance))
-        return create(instance)(props)
+        instance.Signal = Signal.new()
+
+        local clone = create(instance)(props)
+
+        return clone
     end
 
     do CASE "Connect event"
@@ -969,7 +1089,7 @@ TEST("Events", function()
             end
         }
 
-        testkit.print2(getmetatable(val))
+        -- testkit.print2(getmetatable(val))
 
         CHECK(not connected)
         val.Value = 1; val.Signal:Fire(val.Value)
@@ -977,6 +1097,7 @@ TEST("Events", function()
     end
 end)
 
+--[[
 TEST("Changed", function()
     local create = vide.create
     local Changed = vide.Changed
@@ -1023,6 +1144,7 @@ TEST("Changed", function()
         CHECK(Changed.Test == Changed.Test)
     end
 end)
+]]
 
 --[[
 TEST("Created", function()
@@ -1050,7 +1172,6 @@ TEST("strict", function()
     vide.strict = true
 
     local source = vide.source
-    local unsource = vide.unsource
     local derive = vide.derive
     local watch = vide.watch
 
@@ -1058,9 +1179,9 @@ TEST("strict", function()
         local state = source(1)
 
         local ok = pcall(function()
-            local _derived = derive(function(from)
+            local _derived = derive(function()
                 coroutine.yield()
-                return from(state)
+                return state()
             end)
         end)
 
@@ -1071,9 +1192,9 @@ TEST("strict", function()
         local state = source(1)
 
         local ok = pcall(function()
-            local _derived = watch(function(from)
+            local _derived = watch(function()
                 coroutine.yield()
-                local _ = from(state)
+                state()
             end)
         end)
 
@@ -1081,57 +1202,31 @@ TEST("strict", function()
     end
 
     do CASE "Run derived callback twice"
-        local state, set = source(1)
+        local state = source(1)
         local runcount = 0
 
-        local derived = derive(function(from)
+        local _ = derive(function()
             runcount += 1
-            return from(state)
+            return state()
         end)
 
         CHECK(runcount == 2)
-        set(2)
-        local _ = derived()
+        state(2)
         CHECK(runcount == 4)
     end
 
     do CASE "Run watcher callback twice"
-        local state, set = source(1)
+        local state = source(1)
         local runcount = 0
 
-        watch(function(from)
+        watch(function()
             runcount += 1
-            local _ = from(state)
+            state()
         end)
 
         CHECK(runcount == 2)
-        set(2)
-        vide.step(1/60)
+        state(2)
         CHECK(runcount == 4)
-    end
-
-    do CASE "Does not allow non-layout properties"
-        local ok = pcall(function()
-            vide.create "Frame" {
-                [vide.Layout] = {
-                    AnchorPoint = Vector2.new(0, 0.5),
-                    BackgroundColor3 = Color3.new(0, 0, 0)
-                }
-            }
-        end)
-        CHECK(not ok)
-    end
-
-    do CASE "Does not allow same table set"
-        local _, set = source()
-
-        local t = {}
-
-        set(t)
-        
-        local ok = pcall(set, t)
-
-        CHECK(not ok)
     end
 
     -- todo: add case for strict mode bindings

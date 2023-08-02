@@ -93,14 +93,14 @@ local lerpable: { [string]: Lerp<any> } = {
 local springs: { [SpringData<any>]: Node<any> } = {}
 setmetatable(springs, { __mode = "vs" })
 
-local function spring<T>(target: () -> T, period: number, damping_ratio: number?): () -> T
+local function spring<T>(target: () -> T, period: number?, damping_ratio: number?): () -> T
     local initial_position = target()
     local node = create(initial_position)
 
     local data: SpringData<T> = {
         alpha = 0,
         duration = 0,
-        period = period,
+        period = period or 1,
         damping_ratio = damping_ratio or 1,
         velocity = 0,
         initial_velocity = 0,

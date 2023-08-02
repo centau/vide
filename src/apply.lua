@@ -2,7 +2,10 @@
 -- vide/apply.lua
 ------------------------------------------------------------------------------------------
 
-if not game then script = (require :: any) "test/wrap-require" end
+if not game then
+    script = (require :: any) "test/wrap-require"
+    typeof = require "test/mock".typeof
+end
 
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>

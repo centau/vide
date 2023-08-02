@@ -9,25 +9,18 @@ local set_effect = graph.set_effect
 local capture = graph.capture
 
 local function watch(effect: () -> ()): () -> ()
-    -- todo: call cleanup on initial debug call when strict
-    local nodes, cleanup = capture(effect :: () -> (() -> ()?), nil)
+    local nodes = capture(effect :: () -> nil)
 
     nodes = table.clone(nodes)
 
-    local function fn()
-        if cleanup then cleanup(); cleanup = nil end
-        cleanup = effect()
-    end
-
     for _, node in next, nodes do
-        set_effect(node, fn, true)  
+        set_effect(node, effect, true)  
     end
 
     local function unwatch()
         for _, node in next, nodes do
-            set_effect(node, fn, nil)    
+            set_effect(node, effect, nil)    
         end
-        if cleanup then cleanup(); cleanup = nil end
     end
 
     return unwatch

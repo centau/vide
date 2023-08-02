@@ -1,8 +1,11 @@
+--!nocheck
 -- wrapped task library for use in pure luau
 local task = { spawn = function(thread, ...)
     local ok, err = coroutine.resume(thread, ...)
     if not ok then error(err, 3) end
 end }
+
+export type Type = RBXScriptSignal & { Fire: (Type, ...any)-> () }
 
 ----------------------------------------------------------------------------------------------------
 --               Batched Yield-Safe Signal Implementation                     --
@@ -106,10 +109,12 @@ setmetatable(Connection, {
 local Signal = {}
 Signal.__index = Signal
 
-function Signal.new()
+Signal.__type = "RBXScriptSignal"
+
+function Signal.new(): Type
 	return setmetatable({
 		_handlerListHead = false,
-	}, Signal)
+	}, Signal) :: any
 end
 
 function Signal:Connect(fn)
@@ -173,15 +178,5 @@ function Signal:Once(fn)
 	end)
 	return cn
 end
-
--- Make signal strict
-setmetatable(Signal, {
-	__index = function(tb, key)
-		error(("Attempt to get Signal::%s (not a valid member)"):format(tostring(key)), 2)
-	end,
-	__newindex = function(tb, key, value)
-		error(("Attempt to set Signal::%s (not a valid member)"):format(tostring(key)), 2)
-	end
-})
 
 return Signal

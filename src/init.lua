@@ -8,6 +8,7 @@ if not game then script = (require :: any) "test/wrap-require" end
 local create = require(script.create)
 local source = require(script.source)
 local watch = require(script.watch)
+local cleanup, clean_garbage = require(script.cleanup)()
 local derive = require(script.derive)
 local map = require(script.map)
 
@@ -25,9 +26,10 @@ local vide = {
     -- core
     create = create,
     source = source,
+    watch = watch,
+    cleanup = cleanup,
     derive = derive,
     map = map,
-    watch = watch,
 
     -- animations
     spring = spring,
@@ -45,6 +47,7 @@ local vide = {
     -- test
     step = function(dt: number)
         update_springs(dt)
+        clean_garbage()
     end
 }
 

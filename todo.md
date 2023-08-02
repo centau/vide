@@ -39,6 +39,32 @@ async/loading/suspense
 
 define order with nested properties
 
+```lua
+type Action<T> = {
+    type: T,
+    priority: number,
+    callback: (Instance) -> ()
+}
+
+local function action(priority: number, fn: (Instance) -> ()): Action
+
+end
+
+local function Changed(property: string, callback: () -> ())
+    return action(1, function(instance)
+        instance:GetPropertyChangedSignal(property):Connect(callback)
+    end) :: Action<"Changed">
+end
+
+create "TextBox" {
+    Text = "test",
+
+    Changed "Text" < function(self, data)
+
+    end
+}
+```
+
 ## version 1
 
 ```lua

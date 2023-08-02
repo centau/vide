@@ -1,101 +1,111 @@
 local Instance = {} do
     local Signal = require "test/goodsignal"
+    type Signal = Signal.Type
 
-    type userdata = { __USERDATA__: true }
+    type userdata = { __USERDATA: true }
 
-    type Proxy = {
-        _Userdata: userdata,
-        _Data: Data,
+    --[[
+
+    attempt to mimic roblox engine's method of userdata proxy to actual instance data
+    proxy can gc independantly of actual instance data
+    proxy prevents gc of actual instance data
+    luau code never has direct access to actual instance data, only to proxy
+
+    proxy knows data
+    data does not know proxy
+    separate weak map kept data -> proxy
+    
+    ]]
+
+    type ProxyMT = {
+        proxy: userdata,
+        data: Data,
         __index: any,
         __newindex: any
     }
 
     type Data = {
-        Name: string,
-        Parent: Data?,
-        Children: { Data },
-        Changed: { [string]: RBXScriptSignal & { Fire: any } },
-        Table: { [string]: unknown },
-        Destroying: RBXScriptSignal,
-        ClassName: string,
-        Type: "Instance"
+        name: string,
+        parent: Data?,
+        children: { Data },
+        changed: { [string]: Signal },
+        properties: { [string]: unknown },
+        destroying: Signal,
+        class: string,
+        type: "Instance"
     }
 
-    local function deepclone<T>(template: T & {}): T
+    local function deep_clone<T>(template: T & {}): T
         local t = table.clone(template :: {}) :: {}
 
         for i, v in next, t do
             if type(v) == "table" then
-                t[i] = deepclone(v)
+                t[i] = deep_clone(v)
             end
         end
 
         return t :: T & {}
     end
 
-    --[[
-        attempt to mimic roblox engine's method of userdata proxy to actual instance data
-        proxy can gc independantly of actual instance data
-        proxy prevents gc of actual instance data
-        luau code never has direct access to actual instance data, only to proxy
-    ]]
+    
+
     local proxies = {} :: { [Data]: userdata? }
     setmetatable(proxies :: any, { __mode = "v" })
 
-    local function getdata(userdata: userdata): Data
-        local function getproxy(userdata: userdata): Proxy
+    local function get_data(userdata: userdata): Data
+        local function f(userdata: userdata): ProxyMT
             return getmetatable(userdata :: any)
         end
 
-        return getproxy(userdata)._Data
+        return f(userdata).data
     end
 
-    local function isInstance(value: unknown): boolean
+    local function is_instance(value: unknown): boolean
         local mt = getmetatable(value :: any)
-        return mt and mt._Data and mt._Data.Type == "Instance"
+        return mt and mt.data and mt.data.type == "Instance"
     end
 
     local methods = {}
 
     local function __index(userdata: userdata, property: string): ()
-        local data = getdata(userdata)
+        local data = get_data(userdata)
         return if methods[property] then methods[property]
-            elseif property == "Name" then data.Name
-            elseif property == "Parent" then data.Parent
-            elseif property == "Destroying" then data.Destroying
-            else data.Table[property] 
+            elseif property == "Name" then data.name
+            elseif property == "Parent" then data.parent
+            elseif property == "Destroying" then data.destroying
+            else data.properties[property] 
     end
 
     local function __newindex(userdata: userdata, property: string, value: unknown)
-        local data = getdata(userdata)
+        local data = get_data(userdata)
         if property == "Name" then
-            data.Name = value :: string
+            data.name = value :: string
         elseif property == "Parent" then
-            assert(value == nil or isInstance(value), "attempt to set non-instance as parent")
-            local parent = data.Parent
+            assert(value == nil or is_instance(value), "attempt to set non-instance as parent")
+            local parent = data.parent
             if parent then
-                data.Parent = nil
-                table.remove(parent.Children, table.find(parent.Children, data))
+                data.parent = nil
+                table.remove(parent.children, table.find(parent.children, data))
             end
             if value then
-                data.Parent = getdata(value :: userdata)
-                table.insert(getdata(value :: userdata).Children, data)
+                data.parent = get_data(value :: userdata)
+                table.insert(get_data(value :: userdata).children, data)
             end
         else
-            data.Table[property] = value
+            data.properties[property] = value
         end
 
-        if data.Changed[property] then
-            data.Changed[property]:Fire()
+        if data.changed[property] then
+            data.changed[property]:Fire()
         end
     end
 
-    local function getuserdata(data: Data): userdata
+    local function get_proxy(data: Data): userdata
         return proxies[data] or (function()
             local userdata = newproxy(true)
             local proxy = getmetatable(userdata)
-            proxy._Userdata = userdata
-            proxy._Data = data
+            proxy.proxy = userdata
+            proxy.data = data
             proxy.__index = __index
             proxy.__newindex = __newindex
             proxies[data] = userdata   
@@ -105,29 +115,29 @@ local Instance = {} do
 
     function Instance.new(class: string): Instance
         local data = {
-            Name = "UNNAMED",
-            Parent = nil,
-            Children = {},
-            Changed = {},
-            Table = {},
-            ClassName = class,
-            Destroying = Signal.new() :: any,
-            Type = "Instance" :: "Instance"
+            name = "UNNAMED",
+            parent = nil,
+            children = {},
+            changed = {},
+            properties = {},
+            class = class,
+            destroying = Signal.new() :: any,
+            type = "Instance" :: "Instance"
         }
 
-        return getuserdata(data) :: any
+        return get_proxy(data) :: any
     end
 
-    function Instance.isInstance(value: unknown): boolean
-        return isInstance(value)
+    function Instance.is_instance(value: unknown): boolean
+        return is_instance(value)
     end
 
     function methods.Clone(userdata: userdata): userdata
-        local data = getdata(userdata)
+        local data = get_data(userdata)
         local clone_userdata = (Instance.new("") :: any) :: userdata
-        local clone_data = getdata(clone_userdata)
+        local clone_data = get_data(clone_userdata)
 
-        for i, v in next, deepclone(data) do
+        for i, v in next, deep_clone(data) do
             clone_data[i] = v
         end
 
@@ -135,40 +145,40 @@ local Instance = {} do
     end
 
     function methods.FindFirstChild(userdata: userdata, target: string): userdata?
-        local data = getdata(userdata)
-        for _, child in data.Children do
-            if child.Name == target then
-                return getuserdata(child)
+        local data = get_data(userdata)
+        for _, child in data.children do
+            if child.name == target then
+                return get_proxy(child)
             end
         end
         return nil
     end
 
     function methods.GetChildren(userdata: userdata): { userdata }
-        local children = getdata(userdata).Children
+        local children = get_data(userdata).children
         local userdatas = table.create(#children)
 
         for i, child in next, children do
-            userdatas[i] = getuserdata(child)
+            userdatas[i] = get_proxy(child)
         end
 
         return userdatas
     end
 
     function methods.GetPropertyChangedSignal(userdata: userdata, property: string): RBXScriptSignal
-        local data = getdata(userdata)
-        if not data.Changed[property] then
-            data.Changed[property] = Signal.new() :: any
+        local data = get_data(userdata)
+        if not data.changed[property] then
+            data.changed[property] = Signal.new() :: any
         end
-        return data.Changed[property]
+        return data.changed[property]
     end
 
     function methods.Destroy(userdata: userdata)
-        local data = getdata(userdata);
-        (data.Destroying :: any):Fire()
-        data.Parent = nil
-        if data.Changed["Parent"] then
-            data.Changed["Parent"]:Fire()
+        local data = get_data(userdata);
+        data.destroying:Fire()
+        data.parent = nil
+        if data.changed["Parent"] then
+            data.changed["Parent"]:Fire()
         end
     end
 end
@@ -227,8 +237,10 @@ local Enum = {} :: any do
     end})
 end
 
-local function typeof(v)
-    return Instance.isInstance(v) and "Instance" or type(v)
+local function typeof(v): string
+    return if Instance.is_instance(v) then "Instance"
+        elseif getmetatable(v) and getmetatable(v).__type then getmetatable(v).__type
+        else type(v)
 end
 
 return {

@@ -1,14 +1,9 @@
---------------------------------------------------------------------------------------------------------------
--- vide/bind.lua
---------------------------------------------------------------------------------------------------------------
-
 local warn = warn -- todo
 
 if not game then
     script = (require :: any) "test/wrap-require"
     warn = print
 end
-
 
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>

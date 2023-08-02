@@ -1,7 +1,3 @@
-------------------------------------------------------------------------------------------
--- vide/cleanup.lua
-------------------------------------------------------------------------------------------
-
 if not game then script = require "test/wrap-require" end
 
 -- todo: verify correct behavior in non-standard usage

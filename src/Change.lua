@@ -1,7 +1,3 @@
-------------------------------------------------------------------------------------------
--- vide/Change.lua
-------------------------------------------------------------------------------------------
-
 if not game then script = (require :: any) "test/wrap-require" end
 
 local memoize = require(script.Parent.memoize)

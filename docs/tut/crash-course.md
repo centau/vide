@@ -15,6 +15,14 @@ to maintain. Vide achieves this using a reactive style of programming which
 allows you to focus on the flow of data through your application without
 worrying about manually updating UI instances.
 
+Some of the main focuses behind Vide's design choices:
+
+- Concise syntax to reduce verbosity as much as possible.
+- Reducing the amount of imports needed for usage by using Luau's syntax and
+  semantics.
+- Being completely typecheckable.
+- Flexibility, particularly with integrating other libraries.
+
 ## Creating UI Instances
 
 Instances are created using [`create()`](../api/creation#create).

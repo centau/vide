@@ -1,21 +1,21 @@
 if not game then script = (require :: any) "test/wrap-require" end
 
 --[[
-    Spring animation library adapted from RDL::spring v1.0
 
-    Supported datatypes:
-    *number
-    !bool
-    *CFrame
-    ?Rect
-    *Color3
-    *UDim
-    *UDim2
-    *Vector2
-    !Vector2int16
-    *Vector3
-    !Vector3int16
-    !EnumItem
+Supported datatypes:
+*number
+!bool
+*CFrame
+?Rect
+*Color3
+*UDim
+*UDim2
+*Vector2
+!Vector2int16
+*Vector3
+!Vector3int16
+!EnumItem
+
 ]]
 
 local throw = require(script.Parent.throw)
@@ -24,6 +24,8 @@ local graph = require(script.Parent.graph)
 local create = graph.create
 local get = graph.get
 local set = graph.set
+local set_effect = graph.set_effect
+local capture = graph.capture
 
 type Node<T> = graph.Node<T>
 
@@ -38,6 +40,7 @@ type SpringData<T> = {
     initial_velocity: number,
     initial_position: T,
     target_position: T,
+    target_updated: boolean,
     target: () -> T
 }
 
@@ -90,8 +93,9 @@ local springs: { [SpringData<any>]: Node<any> } = {}
 setmetatable(springs, { __mode = "vs" })
 
 local function spring<T>(target: () -> T, period: number?, damping_ratio: number?): () -> T
-    local initial_position = target()
-    local node = create(initial_position)
+    local inputs, initial_position = capture(target)
+
+    local output, output_get = create(initial_position)
 
     local data: SpringData<T> = {
         alpha = 0,
@@ -102,19 +106,28 @@ local function spring<T>(target: () -> T, period: number?, damping_ratio: number
         initial_velocity = 0,
         initial_position = initial_position,
         target_position = initial_position,
+        target_updated = false,
         target = target
     }
 
-    springs[data] = node
-
-    return function()
-        return get(node)
+    local function input_changed()
+        data.target_updated = true
+        data.target_position = target()
     end
+
+    for _, input in next, inputs do
+        set_effect(input, input_changed, output)
+    end
+
+    springs[data] = output
+
+    return output_get
 end
 
 local function update_springs(dt: number)
     for data, output in next, springs do
-        if data.target() ~= data.target_position then
+        if data.target_updated then
+            data.target_updated = false
             data.target = data.target()
             data.initial_position = get(output)
             data.alpha = 0
@@ -122,9 +135,9 @@ local function update_springs(dt: number)
             data.initial_velocity = data.velocity
         end
 
-        local initial_position: Animatable = data.initial_position
-        local target_position: Animatable = data.target_position
-        local target_type: string = typeof(target_position)
+        local initial_position = data.initial_position
+        local target_position = data.target_position
+        local target_type = typeof(target_position)
 
         if target_type ~= typeof(initial_position) then 
             springs[data] = nil

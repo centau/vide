@@ -49,7 +49,7 @@ local function map<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI, K) 
         return recompute(input())
     end
 
-    local output, get_output = create(output_cache)
+    local output, output_get = create(output_cache)
 
     local nodes, value = capture(input)
 
@@ -59,7 +59,7 @@ local function map<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI, K) 
 
     output.cache = recompute(value)
 
-    return get_output
+    return output_get
 end
 
 return map

@@ -3,7 +3,6 @@ if not game then script = require "test/wrap-require" end
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
 local create = graph.create
-local get = graph.get
 local set = graph.set
 
 

@@ -1,43 +1,13 @@
-```lua
-function TextInput(p: {
-    DefaultText: string,
-    Output: (string) -> ()
-} & Layout)
-    return create "TextBox" {
-        Layout = p.Layout,
-        Children = p.Children
+# todo
 
-        BackgroundText = DefaultText,
-
-        [{"Changed"}] = function(self)
-            p.Output(self.Text)
-        end
-    }
-end
-
-function Counter()
-    local count = source(0)
-
-    return create "TextButton" {
-        Text = count
-    }
-end
-
-source
-derive
-map
-
-spring
-```
-
-onCleanup
-Index
-For
-untrack
-batch
-async/loading/suspense
-
-define order with nested properties
+- Implement from solid
+  - onCleanup
+  - Index
+  - For
+  - untrack
+  - batch
+  - async/loading/suspense
+  - define order with nested properties
 
 ```lua
 type Action<T> = {
@@ -50,7 +20,7 @@ local function action(priority: number, fn: (Instance) -> ()): Action
 
 end
 
-local function Changed(property: string, callback: () -> ())
+local function changed(property: string, callback: () -> ())
     return action(1, function(instance)
         instance:GetPropertyChangedSignal(property):Connect(callback)
     end) :: Action<"Changed">
@@ -59,7 +29,7 @@ end
 create "TextBox" {
     Text = "test",
 
-    Changed "Text" < function(self, data)
+    changed "Text" < function(self, data)
 
     end
 }

@@ -1031,9 +1031,9 @@ TEST("spring()", function()
     do CASE "Garbage collection"
         do -- `output` should not allow gc of `input`
             local input = source(10)
-            local output = spring(input)
+            local _output = spring(input)
 
-            local wref = { input }
+            local wref = weak { input }
             input = nil :: any
 
             gc()
@@ -1044,7 +1044,7 @@ TEST("spring()", function()
             local input = source(10)
             local output = spring(input)
         
-            local wref = { output }
+            local wref = weak { output }
             output = nil :: any
             
             gc()
@@ -1099,76 +1099,38 @@ TEST("Events", function()
     end
 end)
 
---[[
-TEST("Changed", function()
+TEST("actions", function()
     local create = vide.create
-    local Changed = vide.Changed
-    local source = vide.source
+    local action = vide.action
 
-    do CASE "Connects event"
-        local connected = false
-        local label = create "TextLabel" {
-            [Changed.Text] = function(text)
-                CHECK(text == "hi")
-                connected = true
-            end
-        }
-        CHECK(not connected)
-        label.Text = "hi"
-        CHECK(connected)
-    end
-
-    do CASE "Bind connection to state"
-        local countA = 0
-        local countB = 0
-        local listener, set = source(function() countA += 1 end :: () -> ()?)
-
-
-        local label = create "TextLabel" {
-            [Changed.Text] = listener
-        }
-
-        label.Text = "1"
-        label.Text = "2"
-        CHECK(countA == 2)
-        set(function() return function() countB += 1 end end)
-        label.Text = "3"
-        label.Text = "4"
-        CHECK(countA == 2)
-        CHECK(countB == 2)
-        set(nil)
-        label.Text = "5"
-        CHECK(countA == 2)
-        CHECK(countB == 2)
-    end
-
-    do CASE "Always return same object for a given index"
-        CHECK(Changed.Test == Changed.Test)
-    end
-end)
-]]
-
---[[
-TEST("Created", function()
-    local create = vide.create
-    local Created = vide.Created
-
-    do CASE "Run after instance creation"
+    do CASE "Run action"
         local ran = false
 
         create "Frame" {
-            A = true,
-            B = true,
-            C = true,
-            [Created] = function(self)
+            action(function(self)
                 ran = true
-                CHECK(self.A and self.B and self.C)
-            end
+            end, 1)
         }
 
         CHECK(ran)
     end
-end)]]
+
+    do CASE "Priorities"
+        local queue = {}
+
+        create "Frame" {
+            action(function(self)
+                table.insert(queue, 2)
+            end, 2),
+
+            action(function(self)
+                table.insert(queue, 1)
+            end, 1)
+        }
+
+        CHECK(testkit.seq(queue, { 1, 2 }))
+    end
+end)
 
 TEST("strict", function()
     vide.strict = true

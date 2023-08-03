@@ -486,7 +486,6 @@ end)
 
 TEST("cleanup()", function()
     local source = vide.source
-    local derive = vide.derive
     local watch = vide.watch
     local cleanup = vide.cleanup
 

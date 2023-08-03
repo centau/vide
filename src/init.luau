@@ -36,8 +36,14 @@ local vide = {
 
     -- runtime
     step = function(dt: number)
+        -- debug.profilebegin("VIDE STEP")
+        -- debug.profilebegin("VIDE SPRING")
         update_springs(dt)
+        -- debug.profileend()
+        -- debug.profilebegin("VIDE GARBAGE CLEANUP")
         clean_garbage()
+        -- debug.profileend()
+        -- debug.profileend()
     end
 }
 

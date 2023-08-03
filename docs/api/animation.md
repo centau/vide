@@ -1,56 +1,39 @@
 # Animation API
 
-<br/>
-
 ## spring()
 
-Returns a new state with an animated value of the original.
+Returns a new state with a dynamically animated value of the source.
 
-### Type
+- ### Type
 
-```lua
-function spring<T>(state: State<T>, period: number, dampingRatio: number = 1): State<T>
-```
+    ```lua
+    function spring<T>(
+        source: () -> T & Animatable,
+        period: number = 1,
+        damping_ratio: number = 1
+    ): () -> T
 
-### Details
+    type Animatable = number | CFrame | Color3 | UDim | UDim2 | Vector2 | Vector3
+    ```
 
-The output state's value is updated every frame based on the current input state's value.
+- ### Details
 
-The change is physically simulated according to a [spring](https://en.wikipedia.org/wiki/Simple_harmonic_motion).
+    The output state value is updated every frame based on the source state
+    value.
 
-`period` is the amount of time in seconds it takes for the spring to complete one full cycle
+    The change is physically simulated according to a
+    [spring](https://en.wikipedia.org/wiki/Simple_harmonic_motion).
 
-`dampingRatio` is relared to the amount of resistant force applied to the spring.
+    `period` is the amount of time in seconds it takes for the spring to
+    complete one full oscillation.
 
-- \>1 = Overdamped (Not currently supported)
-- 1 = Critically damped
-- <1 = Underdamped
-- 0 = Undamped
+    `damping_ratio` is the amount of resistance applied to the spring.
 
-Velocity is conserved between input state updates for smooth animation.
+    - \>1 = Overdamped (not currently supported).
+    - 1 = Critically damped - reaches target without any overshoot.
+    - <1 = Underdamped - reaches target with some overshoot.
+    - 0 = Undamped - never stabilizes, oscillates forever.
 
-### Example
+    Velocity is conserved between source state updates for smooth animation.
 
-```lua
-local state = wrap(1)
-
-local springed = spring(state, 1, 1)
-```
-
-<details><summary>Example of an animated counter</summary>
-
-```lua
-local count = wrap(1000)
-
-local function Counter(props)
-    local tweenedCount = spring(count, 0.5, 1)
-
-    return create("TextLabel") {
-        Text = "Count: " .. tweenedCount
-    }
-end
-```
-
-</details>
-
--------------------------------------------------------------------
+--------------------------------------------------------------------------------

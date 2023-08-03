@@ -3,18 +3,20 @@ if not game then script = (require :: any) "test/wrap-require" end
 --[[
 
 Supported datatypes:
-*number
-!bool
-*CFrame
-?Rect
-*Color3
-*UDim
-*UDim2
-*Vector2
-!Vector2int16
-*Vector3
-!Vector3int16
-!EnumItem
+- number
+- CFrame
+- Color3
+- UDim
+- UDim2
+- Vector2
+- Vector3
+
+Unsupported datatypes:
+- bool
+- Rect
+- Vector2int16
+- Vector3int16
+- EnumItem
 
 ]]
 

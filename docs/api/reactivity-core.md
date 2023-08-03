@@ -2,248 +2,167 @@
 
 <br/>
 
-## wrap()
+## source()
 
-Wraps and returns any given values with reactive state objects.
+Creates a new source state with the given value.
 
-### Type
+- ### Type
 
-```lua
-function wrap<T>(value: T): State<T>
-function wrap(value: ...unknown): ...State<any>
+    ```lua
+    function source<T>(value: T): (T?) -> T
+    ```
 
-type State<T> = {
-    Value: T,
-    value: T
-}
-```
+- ### Details
 
-### Details
+    Calling the returned state with no arguments will return its stored value,
+    calling with arguments will set a new value.
 
-The state object has a single mutable field `.Value`.
+    Reading from the state from within any reactive scope will cause changes
+    to that state to be tracked and anything depending on it to update.
 
-Read operations to `.Value` are tracked and write operations can trigger
-dependency updates and watchers.
+- ### Example
 
-### Example
+    ```lua
+    local count = source(0)
 
-```lua
-local count = wrap(0)
+    count() -- 0
 
-print(count.Value) -- 0
+    count(count() + 1) -- 1
+    ```
 
-count.Value += 1
-
-print(count.Value) -- 1
-```
-
--------------------------------------------------------------------
-
-<br/>
+--------------------------------------------------------------------------------
 
 ## derive()
 
-Derives a new reactive state object from an existing state object.
+Derives a new state from existing states.
 
-### Type
+- ### Type
 
-```lua
-function derive<T>(
-    (from) -> T,
-    cleanup: (value: T) -> ()?
-): State<T>
+    ```lua
+    function derive<T>(source: () -> T): () -> T
+    ```
 
-function from<T>(T | State<T>): T
-```
+- ### Details
 
-### Details
+    The derived state will have its value recalculated when any source state it
+    derives from is updated.
 
-The derived state will have its value recalculated when any state it derives from is updated.
+    Anytime its value is recalculated it is also cached, subsequent calls will
+    retun this cached value until it recalculates again.
 
-Takes a callback that is immediately run to determine what states are being referenced. Only states referenced in the immediate function scope can trigger updates.
+    Takes a callback that is immediately run to determine what states are being
+    referenced.
 
-The state object returned by this function is readonly.
+> ⚠️ Non-yielding.
 
-Has an optional cleanup parameter which takes a function that is called with the old value any
-time the derived state recalculates a value.
+- ### Example
 
-An optional utility function is passed as the first argument to the callback, if given a state, the value of the state will be returned (changes to this state still triggers updates unlike `unwrap`), if given a value the value is returned.
+    ```lua
+    local count = wrap(0)
+    local text = derive(function() return `count: {count()}` end)
 
-> ⚠️ The callback cannot yield.
+    text() -- "count: 0"
 
-### Example
+    count(1)
 
-```lua
-local count = wrap(0)
-local text = derive(function() return "Count: "..count.Value end)
+    text() -- "count: 1"
+    ```
 
-print(text.Value) -- "Count: 0"
+--------------------------------------------------------------------------------
 
-count.Value += 1
+## map()
 
-print(text.Value) -- "Count: 1"
-```
+Maps each value in a table state to a new table state.
 
-```lua
-local count = wrap(0)
-local text = derive(function(from)
-    return "Count: "..from(count)
-end)
-```
+- ### Type
 
-A shorthand method for deriving states also exists, following example is equivalent to the above:
+    ```lua
+    function map<KI, VI, VO>(
+        source: () -> Map<KI, VI>,
+        transform: (value: () -> VI, index: KI) -> VO
+    ): Map<KI, VO>
 
-```lua
-local count = wrap(0)
-local text = "Count: "..count -- all binary operators are supported
-```
+- ### Details
 
--------------------------------------------------------------------
+    The transform function is called only ever *once* for each index in the
+    source table. The first argument is a state containing the index's value and
+    the second argument is just the index.
 
-<br/>
+    Anytime a new index is added, the transform function will be called again for
+    that new index.
 
-## foreach()
+    Anytime an existing index changes, the transform function is not rerun,
+    instead the passed state for that index will update, causing anything
+    depending on it to update too.
 
-Derives a new state object from an existing state object.
-Designed to work specifically with table states.
+    Returns a state containing the mapped key-value pairs.
 
-Also works with non state tables.
+    > ⚠️ Non-yielding.
 
-### Type
+- ### Example
 
-```lua
-function foreach<KO, VO>( -- number as first arg
-    i: number,
-    transform: (key: number) -> (KO, VO),
-    cleanup: (KO, VO) -> ()?
-): Map<KO, VO>
+    ```lua
+    type Item = {
+        name: string,
+        icon: number
+    }
 
-function foreach<KI, KO, VI, VO>( -- table as first arg
-    table: Map<KI, VI>,
-    transform: (key: KI, value: VI) -> (KO, VO),
-    cleanup: (KO, VO) -> ()?
-): Map<KO, VO>
+    local items = source {} :: () -> Array<Item>
 
-function foreach<KI, KO, VI, VO>( -- state as first arg
-    state: State<Map<KI, VI>>,
-    transform: (key: KI, value: VI) -> (KO, VO),
-    cleanup: (KO, VO) -> ()?
-): State<Map<KO, VO>>
-```
+    local displays = map(numbers, function(item, i)
+        return ItemDisplay {
+            Name = function()
+                return item().name
+            end,
 
-### Details
+            Image = function()
+                return "rbxassetid://" .. item().icon
+            end,
 
-When the state being derived from is updated, the derived state will
-recompute by applying its transform function to each key-value pair.
+            LayoutOrder = i
+        }
+    end)
+    ```
 
-Will only be recomputed if the corresponding key differs between updates.
-
-Has an optional cleanup function to cleanup the old key and value.
-
-> ⚠️ The transform function cannot yield.
-
-### Example
-
-```lua
-local numbers = wrap { 1, 2, 3 }
-local plusOne = foreach(numbers, function(i, v)
-    return i, v + 1
-end)
-
-print(plusOne.Value) -- { [1]: 2, [2]: 3, [3]: 4 }
-
--- note that assignment must take place to trigger reactive updates.
--- modifying the value without assignment `numbers.Value[2] = 5` will not trigger updates.
-numbers.Value = { 1, 5, 3 }
-
-print(plusOne.Value) -- { [1]: 2, [2]: 6, [3]: 4 }
-```
-
--------------------------------------------------------------------
-
-<br/>
-
-## match()
-
-Derives a new state object from an existing state object.
-Similar to switch statements in other languages.
-
-### Type
-
-```lua
-function match<K, V>(value: K): (transform: Map<K, V>) -> V
-function Match<K, V>(state: State<K>): (transform: Map<K, V>) -> State<V>
-```
-
-### Details
-
-When the state being derived from is updated, the derived state will
-recompute by using the input value as a key to map to an output value.
-
-### Example
-
-```lua
-local state = wrap(true)
-local matched = match(state) {
-    [true] = 1,
-    [false] = 0
-}
-
-print(matched.Value) -- 1
-
-state.Value = false
-
-print(matched.Value) -- 0
-```
-
--------------------------------------------------------------------
-
-<br/>
+--------------------------------------------------------------------------------
 
 ## watch()
 
 Runs a callback on state change.
 
-### Type
+- ### Type
 
-```lua
-function watch(callback: () -> Cleanup?): Unwatch
+    ```lua
+    function watch(callback: () -> ()): Unwatch
 
-type Cleanup = () -> ()
-type Unwatch = () -> ()
-```
+    type Unwatch = () -> ()
+    ```
 
-### Details
+- ### Details
 
-The callback is ran immediately to determine what states to watch.
+    The callback is ran immediately to determine what states are referenced.
 
-Any time a state read in the watch callback is changed, the watcher callback will be deferred
-to the end of the resumption cycle and ran.
+    Any time a state referenced in the callback is changed, the callback will be
+    reran.
 
-Only states in the immediate function scope can trigger the watch callback.
+    Also returns a function that when called, stops the watcher immediately.
 
-Watchers are run *before* UI properties are updated.
+    > ⚠️ Non yielding.
 
-The callback can return an optional cleanup function that is run each time the watcher is rerun.
+- ### Example
 
-Also returns a function that when called, stops the watcher immediately (also runs cleanup if any was given).
+    ```lua
+    local state = wrap(1)
 
-> ⚠️ The callback cannot yield.
+    watch(function()
+        print(state.Value)
+    end)
 
-### Example
+    -- prints 1
 
-```lua
-local state = wrap(1)
+    state.Value += 1
 
-watch(function()
-    print(state.Value)
-end)
+    -- prints 2
+    ```
 
--- prints 1
-
-state.Value += 1
-
--- prints 2
-```
-
--------------------------------------------------------------------
+--------------------------------------------------------------------------------

@@ -36,10 +36,12 @@ type SpringData<T> = {
     duration: number,
     period: number,
     damping_ratio: number,
+
     velocity: number,
     initial_velocity: number,
     initial_position: T,
     target_position: T,
+
     target_updated: boolean,
     target: () -> T
 }
@@ -110,9 +112,10 @@ local function spring<T>(target: () -> T, period: number?, damping_ratio: number
         target = target
     }
 
-    local function input_changed()
+    local function input_changed(node)
         data.target_updated = true
         data.target_position = target()
+        springs[data] = node
     end
 
     for _, input in next, inputs do
@@ -124,11 +127,13 @@ local function spring<T>(target: () -> T, period: number?, damping_ratio: number
     return output_get
 end
 
+local remove_queue = {}
+
 local function update_springs(dt: number)
     for data, output in next, springs do
         if data.target_updated then
             data.target_updated = false
-            data.target = data.target()
+            data.target_position = data.target()
             data.initial_position = get(output)
             data.alpha = 0
             data.duration = 0
@@ -168,7 +173,17 @@ local function update_springs(dt: number)
         local value = lerp(initial_position, target_position, new_alpha)
 
         set(output, value)
+
+        if new_alpha > 0.9 then
+            table.insert(remove_queue, data)
+        end
     end
+
+    for _, data in next, remove_queue do
+        springs[data] = nil
+    end
+
+    table.clear(remove_queue)
 end
 
 return function() return spring, update_springs end

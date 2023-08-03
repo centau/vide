@@ -1016,6 +1016,7 @@ TEST("spring()", function()
     local create = vide.create
     local source = vide.source
     local spring = vide.spring
+    local watch = vide.watch
 
     do CASE "Update state (on next hearbeat resumption cycle)"
         local value = source(10)
@@ -1066,6 +1067,30 @@ TEST("spring()", function()
 
         gc()
         CHECK(wref[1]) -- `output` should not gc
+    end
+
+    do CASE "Spring finished"
+        local input = source(0)
+        local output = spring(input)
+
+        input(1)
+        vide.step(1e9) -- spring alpha at ~1
+
+        local count = -1
+        watch(function()
+            output()
+            count += 1
+        end)
+
+        vide.step(1) -- spring should be internally removed from spring queue
+        CHECK(count == 0)
+
+        --
+
+        gc() -- perform full gc
+        input(2) -- spring should be re-added to spring queue
+        vide.step(0) -- process spring queue
+        CHECK(count == 1) -- check spring was rescheduled correctly
     end
 end)
 

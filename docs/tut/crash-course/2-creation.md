@@ -44,7 +44,6 @@ To connect to an event, just set the event property name to a function.
 
 All event arguments are passed into the function.
 
-
 ```lua
 create "TextButton" {
     Activated = function()
@@ -52,8 +51,6 @@ create "TextButton" {
     end
 }
 ```
-
-## Summary
 
 In short:
 

@@ -3,6 +3,10 @@
 You can create new state from existing states. This is known as *deriving
 state*.
 
+A function that wraps a state effectively becomes a state. If a state used
+inside a function is updated, the whole function can be re-ran to recompute
+its value.
+
 ```lua
 local count = source(0)
 
@@ -15,12 +19,14 @@ create "TextLabel" {
 }
 ```
 
-Assigning a non-event property a function will bind that property to that
-function, anytime a state being read from inside that function is changed, the
-function will be re-ran and the property value updated.
-
 Sometimes when using expensive computations to derive state, you only want to
-recalculate it when a source state has changed.
+recalculate it once when a source state has changed
+
+If you wrap a source state with a regular function, its value will be recomputed
+every time you call that function.
+[`derive()`](../../api/reactivity-core.md#derive) accepts a functions whose
+return value will be cached, so that subsequent calls of this derived state
+will return the same cached value until one of its source states have changed.
 
 ```lua
 local derive = vide.derive
@@ -38,18 +44,17 @@ local factorial = derive(function()
 end)
 ```
 
-`derive()` will cache and return the same value until a source state has
-changed, where it will recompute and cache a new value.
+This can improve performance for expensive calculations.
 
 ```lua
 create "TextLabel" {
     Text = function()
-        return "factorial: " .. factorial()
+        return "factorial squared: " .. factorial() * factorial()
     end
 }
 
-count(3) -- displays "factorial: 6"
-count(4) -- displays "factorial: 24"
+count(3) -- displays "factorial squared: 36"
+count(4) -- displays "factorial squared: 576"
 ```
 
 --------------------------------------------------------------------------------

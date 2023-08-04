@@ -1,6 +1,9 @@
 # [State](./index.md)
 
-State in Vide are special objects that store data.
+State in Vide are the core of reactivity in Vide.
+
+State contain values that can change, and when they do change, automatically
+update anything that is using it.
 
 A state object in Vide can be created using
 [`source()`](../../api/reactivity-core.md#source).
@@ -10,14 +13,14 @@ local source = vide.source
 ```
 
 ```lua
--- create a new source
 local count = source(0)
+```
 
--- set source value
-count(10)
+The value of a state can be set by calling it with an argument, and can be read
+by calling it with no arguments.
 
--- get source value
-print(count()) -- "10"
+```lua
+count(count() + 1) -- increment count state by 1
 ```
 
 Below is an example of a counter component that has state.
@@ -27,11 +30,11 @@ local function Counter()
     local count = source(0)
 
     return create "TextButton" {
-        Text = count
+        Text = count,
 
         Activated = function()
             count(count() + 1)
-        end,
+        end
     }
 end
 ```

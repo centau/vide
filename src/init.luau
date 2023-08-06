@@ -10,7 +10,7 @@ local source = require(script.source)
 local watch = require(script.watch)
 local cleanup, clean_garbage = require(script.cleanup)()
 local derive = require(script.derive)
-local map = require(script.map)
+local indexes, values = require(script.maps)()
 local spring, update_springs = require(script.spring)()
 local action = require(script.action)()
 
@@ -23,7 +23,8 @@ local vide = {
     watch = watch,
     cleanup = cleanup,
     derive = derive,
-    map = map,
+    indexes = indexes,
+    values = values,
 
     -- animations
     spring = spring,

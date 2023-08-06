@@ -874,14 +874,16 @@ TEST("create()", function()
     end
 end)
 
-TEST("map()", function()
+-- todo: more comprehensive tests for maps
+
+TEST("indexes()", function()
     local source = vide.source
-    local map = vide.map
+    local indexes = vide.indexes
 
     do CASE "Use state"
         local input = source { 1, 2, 3 }
 
-        local output = map(input, function(v, k)
+        local output = indexes(input, function(v, k)
             return tostring(v())    
         end)
 
@@ -895,7 +897,7 @@ TEST("map()", function()
 
         local runcount = table.create(3, 0)
 
-        local output = map(input, function(v, i)
+        local output = indexes(input, function(v, i)
             runcount[i] += 1
             return v
         end)
@@ -914,7 +916,7 @@ TEST("map()", function()
     do CASE "Removal reflected"
         local input = source { 1, 2, 3 }
 
-        local output = map(input, function(v, i)
+        local output = indexes(input, function(v, i)
             return v 
         end)
 
@@ -1009,6 +1011,60 @@ TEST("map()", function()
             CHECK(not wref.derived)
         end
     end]]
+end)
+
+TEST("values()", function()
+    local source = vide.source
+    local values = vide.values
+
+    do CASE "Use state"
+        local input = source { 1, 2, 3 }
+
+        local output = values(input, function(v, k)
+            return tostring(v)    
+        end)
+
+        CHECK("" .. input()[1] == output()[1])
+        CHECK("" .. input()[2] == output()[2])
+        CHECK("" .. input()[3] == output()[3])
+    end
+
+    do CASE "Cache result"
+        local input = source { 1, 2, 3 }
+
+        local runcount = table.create(3, 0)
+
+        local output = values(input, function(v, i)
+            runcount[v] += 1
+            return i
+        end)
+
+        input { 1, 3, 2 }
+
+        CHECK(output()[1]() == 1)
+        CHECK(output()[2]() == 3)
+        CHECK(output()[3]() == 2)
+
+        CHECK(runcount[1] == 1)
+        CHECK(runcount[2] == 1)
+        CHECK(runcount[3] == 1)
+    end
+
+    do CASE "Removal reflected"
+        local input = source { 1, 2, 3 }
+
+        local output = values(input, function(v, i)
+            return v 
+        end)
+
+        input { 1, 2 }
+
+        local t = output()
+
+        CHECK(t[1] == 1)
+        CHECK(t[2] == 2)
+        CHECK(t[3] == nil)
+    end
 end)
 
 TEST("spring()", function()

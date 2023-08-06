@@ -9,7 +9,7 @@ local link = graph.link
 
 type Map<K, V> = { [K]: V }
 
--- todo: this could be optimized
+-- todo: optimize output array
 local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI, K) -> VO): () -> { VO }
     local input_cache = {} :: Map<K, VI>
     local output_cache = {} :: Map<K, VO>
@@ -32,9 +32,12 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
             input_nodes[k] = nil
         end
 
+        table.clear(remove_queue)
+
         -- process new or changed values
         for k, v in next, data do
             local cv = input_cache[k]
+
             if cv == nil then
                 local node, get_value = create(v)
                 input_nodes[k] = node
@@ -72,45 +75,45 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
     return output_get
 end
 
--- todo: this should be optimized
+-- todo: optimize output array
 local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> K) -> VO): () -> { VO }
-    local input_cache_up = {} :: Map<VI, K>
-    local input_cache_buffer_up = {} :: Map<VI, K>
+    local cur_input_cache_up = {} :: Map<VI, K>
+    local new_input_cache_up = {} :: Map<VI, K>
 
     local output_cache = {} :: Map<VI, VO>
     local input_nodes = {} :: Map<VI, Node<K>>
     local output_array = {} :: { VO }
 
     local function recompute(data: Map<K, VI>)
-        local input_cache, input_cache_buffer =
-            input_cache_up, input_cache_buffer_up
-
-        -- process new or changed values
+        local cur_input_cache, new_input_cache = cur_input_cache_up, new_input_cache_up
+    
+        -- process data
         for i, v in next, data do
-            local cv = input_cache[v]
+            new_input_cache[v] = i
 
+            local cv = cur_input_cache[v]
+            
             if cv == nil then
                 local node, get_value = create(i)
                 input_nodes[v] = node
                 output_cache[v] = transform(v, get_value)
-            elseif cv ~= i then
-                set(input_nodes[v], i)
+            else
+                if cv ~= i then
+                    set(input_nodes[v], i)
+                end
+                cur_input_cache[v] = nil
             end
-
-            input_cache_buffer[v] = i
         end
 
         -- remove old values
-        for v, k in next, input_cache do
-            if input_cache_buffer[v] == nil then
-                output_cache[v] = nil
-                input_nodes[v] = nil
-            end
+        for v in next, cur_input_cache do
+            output_cache[v] = nil
+            input_nodes[v] = nil
         end
 
         -- update buffer cache
-        table.clear(input_cache)
-        input_cache_up, input_cache_buffer_up = input_cache_buffer, input_cache
+        table.clear(cur_input_cache)
+        cur_input_cache_up, new_input_cache_up = new_input_cache, cur_input_cache
 
         -- output elements
         table.clear(output_array)

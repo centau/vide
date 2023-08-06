@@ -135,11 +135,14 @@ BENCH("indexes() no change", function()
         return {}
     end)
 
+    state(state()) -- fill double buffer
+
     START(N)
 
     state(data)
 end)
 
+-- todo: find out what is causing allocation
 BENCH("indexes() all change", function()
     local data = {}
 
@@ -153,9 +156,31 @@ BENCH("indexes() all change", function()
         return {}
     end)
 
+    state(state()) -- fill double buffer
+
     for i, v in data do
         data[i] = v + 1
     end
+
+    START(N)
+
+    state(data)
+end)
+
+BENCH("indexes() all remove", function()
+    local data = {}
+
+    for i = 1, N do
+        data[i] = i
+    end
+
+    local state = vide.source(data)
+
+    local _list = vide.values(state, function(v, i)
+        return {}
+    end)
+
+    table.clear(data)
 
     START(N)
 
@@ -175,6 +200,8 @@ BENCH("values() no change", function()
         return {}
     end)
 
+    state(state()) -- fill double buffer
+
     START(N)
 
     state(data)
@@ -193,10 +220,32 @@ BENCH("values() all change", function()
         return {}
     end)
 
+    state(state()) -- fill double buffer
+
     for i = 1, N do
         local r = math.random(1, #data)
         data[i], data[r] = data[r], data[i]
     end
+
+    START(N)
+
+    state(data)
+end)
+
+BENCH("values() all remove", function()
+    local data = {}
+
+    for i = 1, N do
+        data[i] = {}
+    end
+
+    local state = vide.source(data)
+
+    local _list = vide.values(state, function(v, i)
+        return {}
+    end)
+
+    table.clear(data)
 
     START(N)
 

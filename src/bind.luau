@@ -87,6 +87,7 @@ local function bind_parent(instance: Instance, fn: () -> Instance?)
     end)
 end
 
+-- todo: could optimize, see: maps.luau values()
 local function bind_children(parent: Instance, fn: () -> { Instance })
     local current_child_set: { [Instance]: true } = {} -- cache of all children parented before update
     local new_child_set: { [Instance]: true } = {} -- cache of all children parented after update

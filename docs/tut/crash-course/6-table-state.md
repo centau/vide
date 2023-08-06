@@ -13,7 +13,7 @@ type Item = {
 local items = source({} :: Array<Item>)
 
 List {
-    Children = map(items, function(item, i)
+    Children = indexes(items, function(item, i)
         return create "ImageLabel" {
             Image = function()
                 return "rbxassetid://" .. item().Icon

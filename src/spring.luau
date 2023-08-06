@@ -176,9 +176,9 @@ local function update_springs(dt: number)
 
         set(output, value)
 
-        if new_alpha > 0.9 then
-            table.insert(remove_queue, data)
-        end
+        -- if new_alpha > 0.9 then
+        --     table.insert(remove_queue, data)
+        -- end
     end
 
     for _, data in next, remove_queue do

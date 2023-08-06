@@ -88,32 +88,32 @@ local function bind_parent(instance: Instance, fn: () -> Instance?)
 end
 
 local function bind_children(parent: Instance, fn: () -> { Instance })
-    local currentChildrenSet: { [Instance]: true } = {} -- cache of all children parented before update
-    local newChildrenSet: { [Instance]: true } = {} -- cache of all children parented after update
+    local current_child_set: { [Instance]: true } = {} -- cache of all children parented before update
+    local new_child_set: { [Instance]: true } = {} -- cache of all children parented after update
 
     setup(parent, function(parent_weak)
-        local newChildren = fn() -- all (and only) children that should be parented after this update
-        if newChildren and type(newChildren) ~= "table" then
-            throw(`Cannot parent instance of type { type(newChildren) } `)
+        local new_childs = fn() -- all (and only) children that should be parented after this update
+        if new_childs and type(new_childs) ~= "table" then
+            throw(`Cannot parent instance of type { type(new_childs) } `)
         end
 
-        if newChildren then
-            for _, child in next, newChildren do
-                newChildrenSet[child] = true -- record child set from this update
-                if not currentChildrenSet[child] then
+        if new_childs then
+            for _, child in next, new_childs do
+                new_child_set[child] = true -- record child set from this update
+                if not current_child_set[child] then
                     child.Parent = parent_weak -- if child wasn't already parented then parent it
                 else 
-                    currentChildrenSet[child] = nil -- remove child from cache if it was already in cache
+                    current_child_set[child] = nil -- remove child from cache if it was already in cache
                 end
             end
         end
 
-        for child in next, currentChildrenSet do
+        for child in next, current_child_set do
             child.Parent = nil -- unparent all children that weren't in the new children set
         end
 
-        table.clear(currentChildrenSet) -- clear cache, preserve capacity
-        currentChildrenSet, newChildrenSet = newChildrenSet, currentChildrenSet
+        table.clear(current_child_set) -- clear cache, preserve capacity
+        current_child_set, new_child_set = new_child_set, current_child_set
     end)
 end
 

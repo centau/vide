@@ -9,13 +9,13 @@ local link = graph.link
 
 type Map<K, V> = { [K]: V }
 
--- todo: optimize, double buffering?
-
+-- todo: this could be optimized
 local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI, K) -> VO): () -> { VO }
     local input_cache = {} :: Map<K, VI>
     local output_cache = {} :: Map<K, VO>
     local input_nodes = {} :: Map<K, Node<VI>>
     local remove_queue = {} :: { K }
+    local output_array = {} :: { VO }
 
     local function recompute(data)
         -- queue removed values
@@ -34,23 +34,25 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
         -- process new or changed values
         for k, v in next, data do
-            if input_cache[k] == nil then
+            local cv = input_cache[k]
+            if cv == nil then
                 local node, get_value = create(v)
                 input_nodes[k] = node
                 output_cache[k] = transform(get_value, k)
-            elseif input_cache[k] ~= v then
+                input_cache[k] = v
+            elseif cv ~= v then
                 set(input_nodes[k], v)
+                input_cache[k] = v
             end
-            input_cache[k] = v
         end
 
-        local output = {}
-
+        -- output elements
+        table.clear(output_array)
         for _, v in next, output_cache do
-            table.insert(output, v)
+            table.insert(output_array, v)
         end
 
-        return output
+        return output_array
     end
 
     local function derive()
@@ -70,50 +72,54 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
     return output_get
 end
 
+-- todo: this should be optimized
 local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> K) -> VO): () -> { VO }
-    local input_cache = {} :: Map<VI, K>
+    local input_cache_up = {} :: Map<VI, K>
+    local input_cache_buffer_up = {} :: Map<VI, K>
+
     local output_cache = {} :: Map<VI, VO>
     local input_nodes = {} :: Map<VI, Node<K>>
-    local remove_queue = {} :: { VI }
+    local output_array = {} :: { VO }
 
     local function recompute(data: Map<K, VI>)
-        local inverted_data = {}
+        local input_cache, input_cache_buffer =
+            input_cache_up, input_cache_buffer_up
 
         -- process new or changed values
         for i, v in next, data do
-            if input_cache[v] == nil then
+            local cv = input_cache[v]
+
+            if cv == nil then
                 local node, get_value = create(i)
                 input_nodes[v] = node
-                input_cache[v] = i
                 output_cache[v] = transform(v, get_value)
-            elseif input_cache[v] ~= i then
+            elseif cv ~= i then
                 set(input_nodes[v], i)
             end
-            
-            inverted_data[v] = i
+
+            input_cache_buffer[v] = i
         end
 
-        -- queue removed values
+        -- remove old values
         for v, k in next, input_cache do
-            if inverted_data[v] == nil then
-                table.insert(remove_queue, v)
+            if input_cache_buffer[v] == nil then
+                output_cache[v] = nil
+                input_nodes[v] = nil
             end
         end
 
-        -- remove queued values
-        for _, k in next, remove_queue do
-            input_cache[k] = nil
-            output_cache[k] = nil
-            input_nodes[k] = nil
-        end
+        -- update buffer cache
+        table.clear(input_cache)
+        input_cache_up, input_cache_buffer_up = input_cache_buffer, input_cache
 
-        local output = {}
+        -- output elements
+        table.clear(output_array)
 
         for _, v in next, output_cache do
-            table.insert(output, v)
+            table.insert(output_array, v)
         end
 
-        return output
+        return output_array
     end
 
     local function derive()

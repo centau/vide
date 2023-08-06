@@ -1054,15 +1054,33 @@ TEST("values()", function()
         local input = source { 1, 2, 3 }
 
         local output = values(input, function(v, i)
-            return v 
+            return { v = v, i = i }
         end)
 
         input { 1, 2 }
 
         local t = output()
 
-        CHECK(t[1] == 1)
-        CHECK(t[2] == 2)
+        CHECK(t[1].v == 1)
+        CHECK(t[2].v == 2)
+        CHECK(t[3] == nil)
+    end
+
+    do CASE "Removal reflected 2"
+        local input = source { 1 }
+
+        local output = values(input, function(v, i)
+            return { v = v, i = i }
+        end)
+
+        input { 2, 1 }
+        input { 1 }
+
+        local t = output()
+
+        CHECK(t[1].v == 1)
+        CHECK(t[1].i() == 1)
+        CHECK(t[2] == nil)
         CHECK(t[3] == nil)
     end
 end)

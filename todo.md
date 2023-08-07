@@ -8,7 +8,7 @@
   - better error reporting
   - warn when `values()` returns primitive
   - warn when `values()` returns duplicate object
-- Implement from solid
+- implement from solid
   - [x] onCleanup > `cleanup()`
   - [x] Index > `indexes()`
   - [x] For > `values()`

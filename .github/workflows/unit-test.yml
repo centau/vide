@@ -1,13 +1,8 @@
 name: unit-test
 on:
   push:
-    paths:
-      - src/**
-      - test/**
   pull_request:
-    paths:
-      - src/**
-      - test/**
+
 jobs:
   unit-test:
     runs-on: ubuntu-latest

@@ -167,18 +167,22 @@ local function update_springs(dt: number)
 
         local new_time = data.duration + dt
         local new_alpha = solve(data.period, data.damping_ratio, data.initial_velocity, new_time)
+        local new_velocity = -(new_alpha - data.alpha)/dt
 
-        data.velocity = -(new_alpha - data.alpha)/dt
+        local acceleration = (new_velocity - data.velocity)/dt
+
+        data.velocity = new_velocity
         data.alpha = new_alpha
         data.duration = new_time
 
         local value = lerp(initial_position, target_position, new_alpha)
 
-        set(output, value)
-
-        -- if new_alpha > 0.9 then
-        --     table.insert(remove_queue, data)
-        -- end
+        if math.abs(acceleration) < 0.01 then
+            table.insert(remove_queue, data)
+            set(output, target_position)
+        else
+            set(output, value)
+        end
     end
 
     for _, data in next, remove_queue do

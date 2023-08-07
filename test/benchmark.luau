@@ -131,11 +131,11 @@ BENCH("indexes() no change", function()
 
     local state = vide.source(data)
 
-    local _list = vide.values(state, function(v, i)
+    local _list = vide.indexes(state, function(v, i)
         return {}
     end)
 
-    state(state()) -- fill double buffer
+    --state(state()) -- fill double buffer
 
     START(N)
 
@@ -152,11 +152,11 @@ BENCH("indexes() all change", function()
 
     local state = vide.source(data)
 
-    local _list = vide.values(state, function(v, i)
+    local _list = vide.indexes(state, function(v, i)
         return {}
     end)
 
-    state(state()) -- fill double buffer
+    --state(state()) -- fill double buffer
 
     for i, v in data do
         data[i] = v + 1
@@ -176,7 +176,7 @@ BENCH("indexes() all remove", function()
 
     local state = vide.source(data)
 
-    local _list = vide.values(state, function(v, i)
+    local _list = vide.indexes(state, function(v, i)
         return {}
     end)
 

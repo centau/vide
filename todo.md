@@ -1,13 +1,16 @@
 # todo
 
+- cleanup codebase
+- setup site, improve docs
+- cleanup within `values()` and `indexes()`
 - strict mode
-  - warn when map returns primitive
-
+  - better error reporting
+  - warn when `values()` returns primitive
 - Implement from solid
-  - onCleanup
-  - Index
-  - For
-  - untrack
-  - batch
-  - async/loading/suspense
-  - define order with nested properties
+  - [x] onCleanup > `cleanup()`
+  - [x] Index > `indexes()`
+  - [x] For > `values()`
+  - [ ] untrack
+  - [ ] batch
+  - [ ] async/loading/suspense
+- define order with nested properties

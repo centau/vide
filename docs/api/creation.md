@@ -9,10 +9,11 @@ Creates a new UI element, applying any given properties.
 - ### Type
 
     ```lua
-    function create(class: string): (Properties) -> Instance
-    function create(instance: Instace): (Properties) -> Instance
+    type Properties = Map<string | number, any>
 
-    type Properties = Map<string|number, any>
+    function create(class: string): (Properties) -> Instance
+    function create(instance: Instance): (Properties) -> Instance
+
     ```
 
 - ### Details

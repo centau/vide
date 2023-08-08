@@ -4,7 +4,8 @@
 
 - [source()](../api/reactivity-core.md#source)
 - [derive()](../api/reactivity-core.md#derive)
-- [map()](../api/reactivity-core.md#map)
+- [indexes()](../api/reactivity-core.md#indexes)
+- [values()](../api/reactivity-core.md#values)
 - [watch()](../api/reactivity-core.md#watch)
 
 ### [Reactivity: Utility](../api/reactivity-utility.md)

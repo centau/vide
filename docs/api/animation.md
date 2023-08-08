@@ -7,13 +7,13 @@ Returns a new state with a dynamically animated value of the source.
 - ### Type
 
     ```lua
+    type Animatable = number | CFrame | Color3 | UDim | UDim2 | Vector2 | Vector3
+    
     function spring<T>(
         source: () -> T & Animatable,
         period: number = 1,
         damping_ratio: number = 1
     ): () -> T
-
-    type Animatable = number | CFrame | Color3 | UDim | UDim2 | Vector2 | Vector3
     ```
 
 - ### Details

@@ -39,9 +39,9 @@ Runs a callback on state change.
 - ### Type
 
     ```lua
-    function watch(callback: () -> ()): Unwatch
-
     type Unwatch = () -> ()
+
+    function watch(callback: () -> ()): Unwatch
     ```
 
 - ### Details
@@ -58,15 +58,15 @@ Runs a callback on state change.
 - ### Example
 
     ```lua
-    local state = wrap(1)
+    local state = source(1)
 
     watch(function()
-        print(state.Value)
+        print(state())
     end)
 
     -- prints 1
 
-    state.Value += 1
+    state(state() + 1)
 
     -- prints 2
     ```
@@ -99,7 +99,7 @@ Derives a new state from existing states.
 - ### Example
 
     ```lua
-    local count = wrap(0)
+    local count = source(0)
     local text = derive(function() return `count: {count()}` end)
 
     text() -- "count: 0"

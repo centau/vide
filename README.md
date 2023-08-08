@@ -1,3 +1,11 @@
+<br>
+
+<div align="center">
+    <img style="float: right;margin-top:50px" src="docs/vide.svg" width="110" />
+</div>
+
+<br>
+
 ### ⚠️ This library is in early stages of development with breaking changes being made often.
 
 Vide is a reactive and declarative UI library.

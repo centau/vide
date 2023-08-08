@@ -1,0 +1,6 @@
+{
+    "languageMode": "strict",
+    "lint": { "BuiltinGlobalWrite": false, "UnknownGlobal": false },
+    "globals": [ "Instance" ]
+}
+

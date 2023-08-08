@@ -19,7 +19,7 @@ local function Button(props: {
 
         Position = props.Position,
         Text = props.Text,
-        Callback = props.Callback
+        Activated = props.Callback
     }
 end
 

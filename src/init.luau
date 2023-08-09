@@ -3,7 +3,7 @@
 -- v0.1.0
 --------------------------------------------------------------------------------
 
-if not game then script = (require :: any) "test/wrap-require" end
+if not game then script = require "test/wrap-require" end
 
 local create = require(script.create)
 local source = require(script.source)

@@ -1,13 +1,12 @@
-local warn = warn -- todo
+local warn = warn
 
 if not game then
-    script = (require :: any) "test/wrap-require"
+    script = require "test/wrap-require"
     warn = print
 end
 
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
-local get = graph.get
 local set_effect = graph.set_effect
 local capture = graph.capture
 

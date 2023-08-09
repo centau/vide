@@ -1,12 +1,9 @@
 local testkit = require("test/testkit")
 local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
 
-local Signal = require "test/goodsignal"
 local mock = require "test/mock"
 
-
-local Instance, Vector3, Color3, Vector2, UDim2 =
-    mock.Instance, mock.Vector3, mock.Color3, mock.Vector2, mock.UDim2
+local Instance, Signal = mock.Instance, mock.Signal
 
 local vide = require "src/init"
 
@@ -1194,7 +1191,7 @@ TEST("Events", function()
         -- testkit.print2(getmetatable(val))
 
         CHECK(not connected)
-        val.Value = 1; val.Signal:Fire(val.Value)
+        val.Value = 1; Signal.fire(val.Signal, val.Value)
         CHECK(connected)
     end
 end)

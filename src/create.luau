@@ -1,5 +1,8 @@
+local Instance = Instance
+local typeof = typeof
+
 if not game then
-    script = (require :: any) "test/wrap-require"
+    script = require "test/wrap-require"
     Instance = require("test/mock").Instance
     typeof = require("test/mock").typeof
 end

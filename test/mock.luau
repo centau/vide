@@ -1,21 +1,57 @@
-local Instance = {} do
-    local Signal = require "test/goodsignal"
-    type Signal = Signal.Type
+--[[
 
-    type userdata = { __USERDATA: true }
+contains mock Roblox API interfaces for unit testing
 
+]]
+
+local Signal = {} :: any do
+    Signal.__index = Signal
+    Signal.__type = "RBXScriptSignal"
+
+    local function new_connection(signal, fn)
+        return {
+            signal = signal,
+            fn = fn,
+
+            Disconnect = function(self)
+                local i = table.find(signal.connections, self)
+                if not i then return end
+                table.remove(signal.connections, i)
+            end
+        }
+    end
+
+    function Signal.new()
+        return setmetatable({
+            connections = {}
+        }, Signal)
+    end
+
+    function Signal.Connect(self, fn)
+        local con = new_connection(self, fn)
+        table.insert(self.connections, con)
+        return con
+    end
+
+    function Signal.fire(self, ...)
+        for i = #self.connections,  1, -1 do
+            self.connections[i].fn(...)
+        end
+    end
+end
+
+local Instance = {} :: any do
     --[[
 
-    attempt to mimic roblox engine's method of userdata proxy to actual instance data
+    attempt to mimic roblox engine's method of userdata reflection
     proxy can gc independantly of actual instance data
     proxy prevents gc of actual instance data
-    luau code never has direct access to actual instance data, only to proxy
-
-    proxy knows data
-    data does not know proxy
-    separate weak map kept data -> proxy
+    user code never has direct access to actual instance data, only to proxy
+    internal weak map kept data -> proxy
     
     ]]
+
+    type userdata = { __USERDATA: true }
 
     type ProxyMT = {
         proxy: userdata,
@@ -28,9 +64,9 @@ local Instance = {} do
         name: string,
         parent: Data?,
         children: { Data },
-        changed: { [string]: Signal },
+        changed: { [string]: RBXScriptSignal },
         properties: { [string]: unknown },
-        destroying: Signal,
+        destroying: RBXScriptSignal,
         class: string,
         type: "Instance"
     }
@@ -46,8 +82,6 @@ local Instance = {} do
 
         return t :: T & {}
     end
-
-    
 
     local proxies = {} :: { [Data]: userdata? }
     setmetatable(proxies :: any, { __mode = "v" })
@@ -96,7 +130,7 @@ local Instance = {} do
         end
 
         if data.changed[property] then
-            data.changed[property]:Fire()
+            Signal.fire(data.changed[property])
         end
     end
 
@@ -175,17 +209,17 @@ local Instance = {} do
 
     function methods.Destroy(userdata: userdata)
         local data = get_data(userdata);
-        data.destroying:Fire()
+        Signal.fire(data.destroying)
         data.parent = nil
         if data.changed["Parent"] then
-            data.changed["Parent"]:Fire()
+            Signal.fire(data.changed["Parent"])
         end
     end
 end
 
-local Color3 = {} do
-    function Color3.new(r, g, b): Color3
-        return setmetatable({ r = r, g = g, b = b}, Color3) :: any
+local Color3 = {} :: any do
+    function Color3.new(r, g, b)
+        return setmetatable({ r = r, g = g, b = b}, Color3)
     end
 
     function Color3.__eq(a, b)
@@ -193,9 +227,9 @@ local Color3 = {} do
     end
 end
 
-local Vector3 = {} do
-    function Vector3.new(x, y, z): Vector3
-        return setmetatable({ x = x, y = y, z = z}, Vector3) :: any
+local Vector3 = {} :: any do
+    function Vector3.new(x, y, z)
+        return setmetatable({ x = x, y = y, z = z}, Vector3)
     end
 
     function Vector3.__eq(a, b)
@@ -203,9 +237,9 @@ local Vector3 = {} do
     end
 end
 
-local Vector2 = {} do
-    function Vector2.new(x, y): Vector2
-        return setmetatable({ x = x, y = y }, Vector2) :: any
+local Vector2 = {} :: any do
+    function Vector2.new(x, y)
+        return setmetatable({ x = x, y = y }, Vector2)
     end
 
     function Vector2.__eq(a, b)
@@ -213,9 +247,9 @@ local Vector2 = {} do
     end
 end
 
-local UDim2 = {} do
-    function UDim2.fromScale(x, y): UDim2
-        return setmetatable({ x = { scale = x, offset = 0 }, y = { scale = y, offset = 0 } }, UDim2) :: any
+local UDim2 = {} :: any do
+    function UDim2.fromScale(x, y)
+        return setmetatable({ x = { scale = x, offset = 0 }, y = { scale = y, offset = 0 } }, UDim2)
     end
 
     function UDim2.__eq(a, b)
@@ -237,18 +271,19 @@ local Enum = {} :: any do
     end})
 end
 
-local function typeof(v): string
+local typeof = function(v)
     return if Instance.is_instance(v) then "Instance"
         elseif getmetatable(v) and getmetatable(v).__type then getmetatable(v).__type
         else type(v)
-end
+end :: any
 
 return {
-    Instance = Instance,
-    Color3 = Color3,
-    Vector3 = Vector3,
-    Vector2 = Vector2,
-    UDim2 = UDim2,
-    Enum = Enum,
-    typeof = typeof
+    Signal = Signal,
+    Instance = Instance :: typeof(Instance),
+    Color3 = Color3 :: typeof(Color3),
+    Vector3 = Vector3 :: typeof(Vector3),
+    Vector2 = Vector2 :: typeof(Vector2),
+    UDim2 = UDim2 :: typeof(UDim2),
+    Enum = Enum :: typeof(Enum),
+    typeof = typeof :: typeof(typeof)
 }

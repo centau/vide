@@ -1,12 +1,13 @@
+local typeof = typeof
+
 if not game then
-    script = (require :: any) "test/wrap-require"
-    typeof = require "test/mock".typeof
+    script = require "test/wrap-require"
+    typeof = require "test/mock".typeof :: any
 end
 
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
 
-local throw = require(script.Parent.throw)
 local bind = require(script.Parent.bind)
 local _, is_action = require(script.Parent.action)()
 

@@ -5,7 +5,7 @@ export default defineConfig({
     title: "Vide",
     description: "A declarative and reactive library for Luau.",
     base: "/vide/",
-    head: [["link", { rel: "icon", href: "/logo.svg" }]],
+    head: [["link", { rel: "icon", href: "/vide/logo.svg" }]],
 
     themeConfig: {
         logo: "/logo.svg",

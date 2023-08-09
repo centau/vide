@@ -16,10 +16,24 @@ Runs a callback anytime a reactive scope is re-ran.
     local data = source(1)
 
     watch(function()
-        local label = create "TextLabel" { Text = data }
+        local label = create "TextLabel" { Text = data() }
 
         cleanup(function()
             label:Destroy()
         end)
+    end)
+    ```
+
+    ```lua
+    local data = source(1)
+
+    derive(function()
+        local label = create "TextLabel" { Text = data() }
+
+        cleanup(function()
+            label:Destroy()
+        end)
+
+        return label
     end)
     ```

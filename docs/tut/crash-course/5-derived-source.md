@@ -1,10 +1,10 @@
-# Derived State
+# Derived Source
 
-You can create new state from existing states. This is known as *deriving
-state*.
+You can create new sources from existing sources. This is known as *deriving
+sources*.
 
-A function that wraps a state effectively becomes a state. If a state used
-inside a function is updated, the whole function can be re-ran to recompute
+A function that wraps a source effectively becomes a new source. If a source
+used inside a function is updated, the whole function can be re-ran to recompute
 its value.
 
 ```lua
@@ -22,11 +22,11 @@ create "TextLabel" {
 Sometimes when using expensive computations to derive state, you only want to
 recalculate it once when a source state has changed
 
-If you wrap a source state with a regular function, its value will be recomputed
+If you wrap a source with a regular function, its value will be recomputed
 every time you call that function.
 [`derive()`](../../api/reactivity-core.md#derive) accepts a functions whose
-return value will be cached, so that subsequent calls of this derived state
-will return the same cached value until one of its source states have changed.
+return value will be cached, so that subsequent calls of this derived source
+will return the same cached value until one of its input sources have changed.
 
 ```lua
 local derive = vide.derive
@@ -44,7 +44,8 @@ local factorial = derive(function()
 end)
 ```
 
-This can improve performance for expensive calculations.
+This can improve performance in cases where a source is read from multiple times
+between recalculations, like in the example below:
 
 ```lua
 create "TextLabel" {

@@ -10,7 +10,7 @@ Creates a new UI element, applying any given properties.
 
     ```lua
     function create(class: string): (Properties) -> Instance
-    function create(instance: Instace): (Properties) -> Instance
+    function create(instance: Instance): (Properties) -> Instance
 
     type Properties = Map<string|number, any>
     ```
@@ -71,7 +71,7 @@ Creates a new UI element, applying any given properties.
         Color: Color3
     })
         return create "Frame" {
-            BackgroundColor3 = Color,
+            BackgroundColor3 = props.Color,
             props.Layout,
             props.Children
         }

@@ -2,16 +2,14 @@
 
 Components are custom-made reusable pieces of UI made from other pieces of UI.
 
-Using components you make your application more modular and better organized.
-
-Components leverage functions to create self-contained UI that can even have
-its own state and behavior.
+By using components you can make your application more modular and better
+organized.
 
 ```lua
 local function Button(props: {
     Position: UDim2,
     Text: string,
-    Callback: () -> ()
+    Activated: () -> ()
 })
     return create "TextButton" {
         BackgroundColor3 = Color3.fromRGB(50, 50, 50),
@@ -19,7 +17,7 @@ local function Button(props: {
 
         Position = props.Position,
         Text = props.Text,
-        Callback = props.Callback
+        Activated = props.Activated
     }
 end
 
@@ -27,7 +25,7 @@ local button = Button {
     Position = UDim2.new(),
     Text = "Click me!",
 
-    Callback = function()
+    Activated = function()
         print "clicked"
     end
 }

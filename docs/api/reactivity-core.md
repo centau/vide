@@ -4,7 +4,7 @@
 
 ## source()
 
-Creates a new source state with the given value.
+Creates a new source with the given value.
 
 - **Type**
 
@@ -14,11 +14,11 @@ Creates a new source state with the given value.
 
 - **Details**
 
-    Calling the returned state with no arguments will return its stored value,
+    Calling the returned source with no arguments will return its stored value,
     calling with arguments will set a new value.
 
-    Reading from the state from within any reactive scope will cause changes
-    to that state to be tracked and anything depending on it to update.
+    Reading from the source from within any reactive scope will cause changes
+    to that source to be tracked and anything depending on it to update.
 
 - **Example**
 
@@ -32,48 +32,49 @@ Creates a new source state with the given value.
 
 ## watch()
 
-Runs a callback on state change.
+Runs a callback on source update.
 
 - **Type**
 
     ```lua
-    function watch(callback: () -> ()): Unwatch
+    function watch(source: () -> ()): Unwatch
 
     type Unwatch = () -> ()
     ```
 
 - **Details**
 
-    The callback is ran immediately to determine what states are referenced.
+    The source callback is ran immediately to determine what states are
+    referenced.
 
-    Any time a state referenced in the callback is changed, the callback will be
-    reran.
+    Any time a source referenced in the callback is changed, the callback will
+    be reran.
 
     Also returns a function that when called, stops the watcher immediately.
 
     ::: warning
-    `callback()` cannot yield.
+    `source()` cannot yield.
     :::
 
 - **Example**
 
     ```lua
-    local state = wrap(1)
+    local state = source(1)
 
     watch(function()
-        print(state.Value)
+        print(state())
     end)
 
     -- prints 1
 
-    state.Value += 1
+    state(state() + 1)
 
     -- prints 2
     ```
 
 ## derive()
 
-Derives a new state from existing states.
+Derives a new source from existing sources.
 
 - **Type**
 
@@ -83,13 +84,13 @@ Derives a new state from existing states.
 
 - **Details**
 
-    The derived state will have its value recalculated when any source state it
-    derives from is updated.
+    The derived source will have its value recalculated when any source source
+    it derives from is updated.
 
     Anytime its value is recalculated it is also cached, subsequent calls will
     retun this cached value until it recalculates again.
 
-    Takes a callback that is immediately run to determine what states are being
+    Takes a callback that is immediately run to determine what sources are being
     referenced.
 
     ::: warning
@@ -99,7 +100,7 @@ Derives a new state from existing states.
 - **Example**
 
     ```lua
-    local count = wrap(0)
+    local count = source(0)
     local text = derive(function() return `count: {count()}` end)
 
     text() -- "count: 0"
@@ -111,7 +112,7 @@ Derives a new state from existing states.
 
 ## indexes()
 
-Maps each index in a table to an object.
+Maps each index in a table source to an object.
 
 - **Type**
 
@@ -124,17 +125,18 @@ Maps each index in a table to an object.
 - **Details**
 
     The transform function is called only ever *once* for each index in the
-    source table. The first argument is a state containing the index's value and
-    the second argument is just the index.
+    source table. The first argument is a source containing the index's value
+    and the second argument is just the index.
 
-    Anytime a new index is added, the transform function will be called again for
-    that new index.
+    Anytime a new index is added, the transform function will be called again
+    for that new index.
 
     Anytime an existing index value changes, the transform function is not rerun,
-    instead the passed state for that index will update, causing anything
+    instead the source value for that index will update, causing anything
     depending on it to update too.
 
-    Returns a state containing an array of all objects returned by the transform.
+    Returns a state containing an array of all objects returned by the
+    transform.
 
     ::: warning
     `transform()` cannot yield.
@@ -170,7 +172,7 @@ Maps each index in a table to an object.
 
 ## values()
 
-Maps each value in a table to an object.
+Maps each value in a table source to an object.
 
 - **Type**
 
@@ -184,19 +186,26 @@ Maps each value in a table to an object.
 
     The transform function is called only ever *once* for each value in the
     source table. The first argument is the index's value and
-    the second argument is a state containing the index.
+    the second argument is a source containing the index.
 
     Anytime a new value is added, the transform function will be called again
     for that new value.
 
     Anytime an existing value's index changes, the transform function is not
-    rerun, instead the passed state for that value will update, causing anything
+    rerun, instead the source index for that value will update, causing anything
     depending on it to update too.
 
-    Returns a state containing an array of all objects returned by the transform.
+    Returns a state containing an array of all objects returned by the
+    transform.
 
     ::: warning
     `transform()` cannot yield.
+    :::
+
+    ::: warning
+    Having primitive values in the source table can cause unexpected behavior,
+    as duplicate primitives can result in multiple index sources being bound
+    to the same UI element.
     :::
 
 - **Example**

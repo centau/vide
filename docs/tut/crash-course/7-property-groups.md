@@ -3,6 +3,8 @@
 Often when creating components from existing components, you can find yourself
 repetitively passing through properties such as size or position.
 
+Example below:
+
 ```lua
 function Background(props: {
     Color: Color3,
@@ -33,7 +35,7 @@ function Menu(props: {
 end
 ```
 
-One way this can be avoided is by using *property nesting*. In Vide, passign a
+One way this can be avoided is by using *property nesting*. In Vide, passing a
 table value inside `props` has special semantics. Any key with a table value is
 not assigned like a property, instead the table is iterated and processed just
 like the outer table is. Any properties in the nested table will be assigned
@@ -70,7 +72,8 @@ Here we created a nested group with the key `Layout` that can accept
 layout-related properties. Any name could be chosen for the key.
 This allows us to write much more concise syntax that is also typecheckable.
 
-The same can be done for properties such as children to pass table of instances.
+In another example we use a key named `Children` to pass arrays of instances to
+be parented.
 
 ```lua
 type Children = {

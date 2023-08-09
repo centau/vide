@@ -18,8 +18,7 @@ Returns a new state with a dynamically animated value of the source.
 
 - **Details**
 
-    The output state value is updated every frame based on the source state
-    value.
+    The output state value is updated every frame based on the source value.
 
     The change is physically simulated according to a
     [spring](https://en.wikipedia.org/wiki/Simple_harmonic_motion).

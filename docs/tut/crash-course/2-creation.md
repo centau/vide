@@ -7,8 +7,11 @@ local vide = require(path_to_vide)
 local create = vide.create
 ```
 
-`create()` returns a constructor for a given class which then takes a table of
+`create()` returns a constructor for a class which then takes a table of
 properties to assign when creating a new instance for that class.
+
+Luau allows us to omit parentheses `()` when calling functions with string or
+table literals for brevity.
 
 ```lua
 local frame = create "Frame" {
@@ -17,7 +20,7 @@ local frame = create "Frame" {
 }
 ```
 
-String keys are assigned as properties and integer keys are assigned as child
+String keys are treated as properties and integer keys are treated as child
 instances.
 
 ```lua
@@ -40,7 +43,7 @@ create "ScreenGui" {
 }
 ```
 
-To connect to an event, just set the event property name to a function.
+To connect to an event, just assign the event property a function.
 
 All event arguments are passed into the function.
 
@@ -51,10 +54,3 @@ create "TextButton" {
     end
 }
 ```
-
-In short:
-
-- String keys = properties
-  - Function values = events
-  - Non-function values = property values
-- Numeric keys = children

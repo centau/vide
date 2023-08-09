@@ -97,6 +97,10 @@ local springs: { [SpringData<any>]: Node<any> } = {}
 setmetatable(springs, { __mode = "vs" })
 
 local function spring<T>(target: () -> T, period: number?, damping_ratio: number?): () -> T
+    if damping_ratio and damping_ratio > 1 then
+        throw "damping ratio cannot be greater than 1"
+    end
+
     local inputs, initial_position = capture(target)
 
     local output, output_get = create(initial_position)

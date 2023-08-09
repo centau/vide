@@ -39,9 +39,9 @@ export default defineConfig({
                         { text: "Introduction", link: "/tut/crash-course/1-introduction" },
                         { text: "Element Creation", link: "/tut/crash-course/2-creation" },
                         { text: "Components", link: "/tut/crash-course/3-components" },
-                        { text: "State", link: "/tut/crash-course/4-state" },
-                        { text: "Derived State", link: "/tut/crash-course/5-derived-state" },
-                        { text: "Table State", link: "/tut/crash-course/6-table-state" },
+                        { text: "Source", link: "/tut/crash-course/4-source" },
+                        { text: "Derived Source", link: "/tut/crash-course/5-derived-source" },
+                        { text: "Table Source", link: "/tut/crash-course/6-table-source" },
                         { text: "Property Groups", link: "/tut/crash-course/7-property-groups" },
                     ]
                 },

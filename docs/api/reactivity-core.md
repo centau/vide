@@ -221,7 +221,7 @@ Maps each value in a table source to an object.
 
     local items = source {} :: () -> Array<Item>
 
-    local displays = values(numbers, function(item, i)
+    local displays = values(items, function(item, i)
         return ItemDisplay {
             Name = item.Name
 

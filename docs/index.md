@@ -5,7 +5,7 @@ layout: home
 hero:
   name: Vide
   text: ""
-  tagline: A declarative and reactive library for Luau.
+  tagline: A reactive UI library for Luau.
   image:
     src: /logo.svg
     alt: Vide
@@ -19,6 +19,6 @@ hero:
 
 features:
   - title: In Development
-    details: Do not use for production
+    details: Not recommended for production.
 ---
 

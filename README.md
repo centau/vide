@@ -1,7 +1,7 @@
 <br>
 
 <div align="center">
-    <img style="float: right;margin-top:50px" src="docs/vide.svg" width="110" />
+    <img style="float: right;margin-top:50px" src="docs/logo.svg" width="110" />
 </div>
 
 <br>

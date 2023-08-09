@@ -7,7 +7,7 @@ hero:
   text: ""
   tagline: A declarative and reactive library for Luau.
   image:
-    src: /vide.svg
+    src: /logo.svg
     alt: Vide
   actions:
     - theme: brand

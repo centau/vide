@@ -5,10 +5,10 @@ export default defineConfig({
     title: "Vide",
     description: "A declarative and reactive library for Luau.",
     base: "/vide/",
-    head: [["link", { rel: "icon", href: "/vide.svg" }]],
+    head: [["link", { rel: "icon", href: "/logo.svg" }]],
 
     themeConfig: {
-        logo: "/vide.svg",
+        logo: "/logo.svg",
 
         // https://vitepress.dev/reference/default-theme-config
         nav: [

@@ -155,7 +155,7 @@ Maps each index in a table source to an object.
 
     local items = source {} :: () -> Array<Item>
 
-    local displays = indexes(numbers, function(item, i)
+    local displays = indexes(items, function(item, i)
         return ItemDisplay {
             Name = function()
                 return item().name

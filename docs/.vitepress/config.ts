@@ -3,7 +3,8 @@ import { defineConfig } from "vitepress"
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
     title: "Vide",
-    description: "A declarative and reactive library for Luau.",
+    titleTemplate: ":title - A reactive UI library for Luau",
+    description: "A reactive UI library for Luau.",
     base: "/vide/",
     head: [["link", { rel: "icon", href: "/vide/logo.svg" }]],
 

@@ -5,7 +5,11 @@ export default defineConfig({
     title: "Vide",
     description: "A declarative and reactive library for Luau.",
     base: "/vide/",
+    head: [["link", { rel: "icon", href: "/vide.svg" }]],
+
     themeConfig: {
+        logo: "/vide.svg",
+
         // https://vitepress.dev/reference/default-theme-config
         nav: [
             { text: "Home", link: "/" },

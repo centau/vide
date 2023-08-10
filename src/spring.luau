@@ -1,4 +1,4 @@
-if not game then script = require "test/wrap-require" end
+if not game then script = require "test/relative-string" end
 
 --[[
 

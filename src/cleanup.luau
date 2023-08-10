@@ -1,4 +1,4 @@
-if not game then script = require "test/wrap-require" end
+if not game then script = require "test/relative-string" end
 
 -- todo: verify correct behavior in non-standard usage
 local cleanup_callbacks = {} :: { [string]: () -> () }

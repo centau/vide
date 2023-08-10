@@ -1,7 +1,7 @@
 local warn = warn
 
 if not game then
-    script = require "test/wrap-require"
+    script = require "test/relative-string"
     warn = print
 end
 

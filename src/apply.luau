@@ -1,8 +1,8 @@
 local typeof = typeof
 
 if not game then
-    script = require "test/wrap-require"
-    typeof = require "test/mock".typeof :: any
+    script = require "test/relative-string"
+    typeof = require "test/mock".typeof
 end
 
 local graph = require(script.Parent.graph)

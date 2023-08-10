@@ -1,25 +1,31 @@
 # Strict Mode
 
-Vide has a special mode called "strict mode" which is used for debugging.
-
-The purpose of strict mode is to help ensure stateful code is *pure*
-(deterministic and free from side effects) or if there are side-effects, that
-they are cleaned up correctly.
-
-Vide is set to strict by doing:
+Strict mode is library-wide and can get set by doing:
 
 ```lua
-local vide = require(path_to_vide)
 vide.strict = true
 ```
 
-What strict mode will do:
+Strict mode is designed to help the development process by adding safety checks
+and identifying improper usage.
+
+Currently, strict mode will:
 
 1. Run derived sources twice a source updates.
 2. Run watchers twice when a source updates.
 3. Throw an error if yields occur where they are not allowed.
 4. Checks for `indexes()` and `values()` returning primitive values.
 5. Better error reporting and stack traces.
+
+By rerunning sources and watchers, any side-effects are made more apparent.
+This also helps ensure that cleanups are being handled correctly.
+
+Accidental yielding within reactive scopes can break Vide's reactive graph,
+which strict mode can catch.
+
+As well as additional safety checks, Vide will dedicate extra resources to
+recording and better emitting stack traces where errors occur, particularly
+when binding properties to sources.
 
 It is recommend to develop UI with strict mode and to disable it when pushing to
 production.

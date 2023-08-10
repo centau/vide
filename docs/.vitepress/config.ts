@@ -44,6 +44,7 @@ export default defineConfig({
                         { text: "Derived Source", link: "/tut/crash-course/5-derived-source" },
                         { text: "Table Source", link: "/tut/crash-course/6-table-source" },
                         { text: "Property Groups", link: "/tut/crash-course/7-property-groups" },
+                        { text: "Actions", link: "/tut/crash-course/8-actions" },
                     ]
                 },
                 {

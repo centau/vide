@@ -5,10 +5,8 @@
 - cleanup within `values()` and `indexes()`
 - behavior when a table source value is set to the same table
 - address behavior of binding property to multiples states
-- strict mode
-  - better error reporting and stack traces
-  - warn when `values()` returns primitive
-  - warn when `values()` returns duplicate object
+- better error reporting and stack traces in strict mode
+- auto-enable of strict mode depending on compiler optimizaton level
 - implement from solid
   - [x] onCleanup > `cleanup()`
   - [x] Index > `indexes()`

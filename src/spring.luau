@@ -157,7 +157,7 @@ local function update_springs(dt: number)
                 typeof(initial_position),
                 target_type
             ))
-            throw(`Cannot tween type { typeof(initial_position) } and { target_type }`)
+            throw(`cannot tween type { typeof(initial_position) } and { target_type }`)
             continue
         end
 
@@ -165,14 +165,13 @@ local function update_springs(dt: number)
 
         if lerp == nil then 
             springs[data] = nil
-            throw(`Cannot animate type { target_type }`)
+            throw(`cannot animate type { target_type }`)
             continue
         end
 
         local new_time = data.duration + dt
         local new_alpha = solve(data.period, data.damping_ratio, data.initial_velocity, new_time)
         local new_velocity = -(new_alpha - data.alpha)/dt
-
         local acceleration = (new_velocity - data.velocity)/dt
 
         data.velocity = new_velocity
@@ -181,7 +180,8 @@ local function update_springs(dt: number)
 
         local value = lerp(initial_position, target_position, new_alpha)
 
-        if math.abs(acceleration) < 0.01 then
+        if math.abs(acceleration) < (0.01 / data.period) then
+            -- close enough to target, remove and set value to target
             table.insert(remove_queue, data)
             set(output, target_position)
         else

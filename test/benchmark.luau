@@ -1,14 +1,10 @@
-------------------------------------------------------------------------------------------
--- benchmark.lua
-------------------------------------------------------------------------------------------
-
 local BENCH, START = require("test/testkit").benchmark()
 
 local vide = require "src/init"
 
 local N = 2^18 -- 262144
 
-BENCH("Create state", function()
+BENCH("create state", function()
     local cache = table.create(N)
     local source = vide.source
 
@@ -17,7 +13,7 @@ BENCH("Create state", function()
     end
 end)
 
-BENCH("Get value", function()
+BENCH("get value", function()
     local state = vide.source(1)
 
     for i = 1, START(N) do
@@ -25,7 +21,7 @@ BENCH("Get value", function()
     end
 end)
 
-BENCH("Set value", function()
+BENCH("set value", function()
     local state = vide.source(1)
 
     for i = 1, START(N) do
@@ -33,7 +29,7 @@ BENCH("Set value", function()
     end
 end)
 
-BENCH("Derive 1 state", function()
+BENCH("derive 1 state", function()
     local cache = table.create(N)
     local state = vide.source(1)
     local derive = vide.derive
@@ -45,7 +41,7 @@ BENCH("Derive 1 state", function()
     end
 end)
 
-BENCH("Derive 4 states", function()
+BENCH("derive 4 states", function()
     local cache = table.create(N)
     local state = vide.source(1)
     local state2 = vide.source(2)
@@ -60,7 +56,7 @@ BENCH("Derive 4 states", function()
     end
 end)
 
-BENCH("Set derived value", function()
+BENCH("set derived value", function()
     local state = vide.source(1)
     local _derived = vide.derive(state)
 
@@ -69,7 +65,7 @@ BENCH("Set derived value", function()
     end
 end)
 
-BENCH("Apply 0 properties", function()
+BENCH("apply 0 properties", function()
     local apply = require "src/apply"
     local instance = vide.create("Frame") {}
 
@@ -78,7 +74,7 @@ BENCH("Apply 0 properties", function()
     end
 end)
 
-BENCH("Apply 8 properties", function()
+BENCH("apply 8 properties", function()
     local apply = require "src/apply"
     local instance = vide.create("Frame") {}
 
@@ -96,7 +92,7 @@ BENCH("Apply 8 properties", function()
     end
 end)
 
-BENCH("Bind state", function()
+BENCH("bind source", function()
     local apply = require "src/apply"
     local instance = vide.create("Frame") {}
     local state = vide.source(1)
@@ -108,7 +104,7 @@ BENCH("Bind state", function()
     end
 end)
 
-BENCH("Update binding", function()
+BENCH("update binding", function()
     local apply = require "src/apply"
     local instance = vide.create("Frame") {}
     local state = vide.source(1)

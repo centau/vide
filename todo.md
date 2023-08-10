@@ -3,9 +3,10 @@
 - cleanup codebase
 - setup site, improve docs
 - cleanup within `values()` and `indexes()`
+- behavior when a table source value is set to the same table
 - address behavior of binding property to multiples states
 - strict mode
-  - better error reporting
+  - better error reporting and stack traces
   - warn when `values()` returns primitive
   - warn when `values()` returns duplicate object
 - implement from solid

@@ -43,7 +43,7 @@ function setup(instance: Instance, setter: (Instance) -> ())
         local trace = traceback()
         setter = function(instance)
             local ok, err: string? = pcall(fn, instance)
-            if not ok then warn(`error occured updating state binding:\n{err}\nset from:{trace}`) end
+            if not ok then warn(`error occured updating property:\n{err}\nset from:{trace}`) end
         end
     end
 
@@ -68,8 +68,6 @@ function setup(instance: Instance, setter: (Instance) -> ())
     instance:GetPropertyChangedSignal("Parent"):Connect(ref)
 end
 
--- todo: move `fn` as arg?
-
 local function bind_property(instance: Instance, property: string, fn: () -> unknown)
     setup(instance, function(instance_weak: any)
         instance_weak[property] = fn()
@@ -80,13 +78,13 @@ local function bind_parent(instance: Instance, fn: () -> Instance?)
     instance.Destroying:Connect(function()
         instance= nil :: any -- allow gc when destroyed
     end)
+
     setup(instance, function(instance)
         local _ = instance -- state will strongly reference instance when parent is bound
         instance.Parent = fn()    
     end)
 end
 
--- todo: could optimize, see: maps.luau values()
 local function bind_children(parent: Instance, fn: () -> { Instance })
     local current_child_set: { [Instance]: true } = {} -- cache of all children parented before update
     local new_child_set: { [Instance]: true } = {} -- cache of all children parented after update

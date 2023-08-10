@@ -15,10 +15,10 @@ vide.strict = true
 
 What strict mode will do:
 
-1. Run derived callbacks twice when re-evaluating.
-2. Run watcher callbacks twice when a state changes.
+1. Run derived sources twice a source updates.
+2. Run watchers twice when a source updates.
 3. Throw an error if yields occur where they are not allowed.
-4. Checks for `map()` returning primitive values.
+4. Checks for `indexes()` and `values()` returning primitive values.
 5. Better error reporting and stack traces.
 
 It is recommend to develop UI with strict mode and to disable it when pushing to

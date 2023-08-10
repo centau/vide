@@ -14,6 +14,7 @@ local indexes, values = require(script.maps)()
 local spring, update_springs = require(script.spring)()
 local action = require(script.action)()
 
+local throw = require(script.throw)
 local flags = require(script.flags)
 
 local vide = {
@@ -49,15 +50,20 @@ local vide = {
 }
 
 setmetatable(vide :: any, {
-    __index = function(_, index: unknown)
-        error(string.format("\"%s\" is not a valid member of vide", tostring(index)), 2)
+    __index = function(_, index: unknown): ()
+        if index == "strict" then
+            return flags.strict
+        else
+            throw(`{tostring(index)} is not a valid member of vide`)
+        end
     end,
 
     __newindex = function(_, index: unknown, value: unknown)
         if index == "strict" then
-            flags.strict = if type(value) == "boolean" then value else error("strict must be a boolean", 2)
+            if value ~= true then throw "strict mode can only be set to true" end
+            flags.strict = true
         else
-            error(string.format("\"%s\" is not a valid member of vide", tostring(index)), 2)
+            throw(`{tostring(index)} is not a valid member of vide`)
         end
     end
 })

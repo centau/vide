@@ -12,7 +12,7 @@ local defaults = require(script.Parent.defaults)
 local apply = require(script.Parent.apply)
 local memoize = require(script.Parent.memoize)
 
-local function createInstance(className: string)
+local function create_instance(className: string)
     local success, instance: Instance = pcall(Instance.new, className :: any)
     if success == false then throw(`invalid class name, could not create instance of class { className }`) end
 
@@ -26,9 +26,9 @@ local function createInstance(className: string)
     return function(properties: { [any]: unknown }): Instance
         return apply(instance:Clone(), properties)    
     end  
-end; createInstance = memoize(createInstance)
+end; create_instance = memoize(create_instance)
 
-local function cloneInstance(instance: Instance)
+local function clone_instance(instance: Instance)
     return function(properties: { [any]: unknown }): Instance
         local clone = instance:Clone()
         if not clone then error("Attempt to clone a non-archivable instance", 3) end
@@ -38,9 +38,9 @@ end
 
 local function create(classNameOrInstance: string|Instance)
     if type(classNameOrInstance) == "string" then
-        return createInstance(classNameOrInstance)
+        return create_instance(classNameOrInstance)
     elseif typeof(classNameOrInstance) == "Instance" then
-        return cloneInstance(classNameOrInstance)
+        return clone_instance(classNameOrInstance)
     else
         error("Bad argument #1, expected string or instance, got "..typeof(classNameOrInstance), 2)
     end

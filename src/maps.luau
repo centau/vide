@@ -1,5 +1,7 @@
 if not game then script = require "test/wrap-require" end
 
+local throw = require(script.Parent.throw)
+local flags = require(script.Parent.flags)
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
 local create = graph.create
@@ -8,6 +10,15 @@ local capture = graph.capture
 local link = graph.link
 
 type Map<K, V> = { [K]: V }
+
+local function check_primitives(t: {})
+    if not flags.strict then return end
+
+    for _, v in next, t do
+        if type(v) == "table" or type(v) == "userdata" then continue end
+        throw("table source map cannot return primitives")
+    end
+end
 
 -- todo: optimize output array
 local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI, K) -> VO): () -> { VO }
@@ -54,7 +65,8 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
         for _, v in next, output_cache do
             table.insert(output_array, v)
         end
-
+        check_primitives(output_array)
+        
         return output_array
     end
 
@@ -86,6 +98,16 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
 
     local function recompute(data: Map<K, VI>)
         local cur_input_cache, new_input_cache = cur_input_cache_up, new_input_cache_up
+
+        if flags.strict then
+            local cache = {}
+            for _, v in next, data do
+                if cache[v] ~= nil then
+                    throw "duplicate table value detected"
+                end
+                cache[v] = true
+            end
+        end
     
         -- process data
         for i, v in next, data do
@@ -136,6 +158,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
     for _, node in next, nodes do
         link(node, output, derive)
     end
+    check_primitives(output_array)
 
     output.cache = recompute(value)
 

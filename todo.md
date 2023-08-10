@@ -15,3 +15,4 @@
   - [ ] batch
   - [ ] async/resource/loading/suspense
 - define order with nested properties
+  - review alternative to nested properties, merge function

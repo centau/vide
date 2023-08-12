@@ -23,22 +23,23 @@ Unsupported datatypes:
 local throw = require(script.Parent.throw)
 
 local graph = require(script.Parent.graph)
+type Node<T> = graph.Node<T>
 local create = graph.create
 local get = graph.get
 local set = graph.set
 local set_effect = graph.set_effect
 local capture = graph.capture
 
-type Node<T> = graph.Node<T>
+local TOLERANCE = 0.0001
 
 type Animatable = number | CFrame | Color3 | UDim | UDim2 | Vector2 | Vector3
 
 type SpringData<T> = {
-    alpha: number,
-    duration: number,
+    time: number,
     period: number,
     damping_ratio: number,
 
+    alpha: number,
     velocity: number,
     initial_velocity: number,
     initial_position: T,
@@ -106,14 +107,16 @@ local function spring<T>(target: () -> T, period: number?, damping_ratio: number
     local output, output_get = create(initial_position)
 
     local data: SpringData<T> = {
-        alpha = 0,
-        duration = 0,
+        time = 0,
         period = period or 1,
         damping_ratio = damping_ratio or 1,
+
+        alpha = 0,
         velocity = 0,
         initial_velocity = 0,
         initial_position = initial_position,
         target_position = initial_position,
+
         target_updated = false,
         target = target
     }
@@ -139,11 +142,11 @@ local function update_springs(dt: number)
     for data, output in next, springs do
         if data.target_updated then
             data.target_updated = false
-            data.target_position = data.target()
-            data.initial_position = get(output)
+            data.time = 0
             data.alpha = 0
-            data.duration = 0
             data.initial_velocity = data.velocity
+            data.initial_position = get(output)
+            data.target_position = data.target()
         end
 
         local initial_position = data.initial_position
@@ -169,18 +172,17 @@ local function update_springs(dt: number)
             continue
         end
 
-        local new_time = data.duration + dt
+        local new_time = data.time + dt
         local new_alpha = solve(data.period, data.damping_ratio, data.initial_velocity, new_time)
         local new_velocity = -(new_alpha - data.alpha)/dt
-        local acceleration = (new_velocity - data.velocity)/dt
 
+        data.time = new_time
         data.velocity = new_velocity
         data.alpha = new_alpha
-        data.duration = new_time
 
         local value = lerp(initial_position, target_position, new_alpha)
 
-        if math.abs(acceleration) < (0.01 / data.period) then
+        if math.abs(1 - new_alpha) < TOLERANCE and math.abs(new_velocity) < TOLERANCE then
             -- close enough to target, remove and set value to target
             table.insert(remove_queue, data)
             set(output, target_position)

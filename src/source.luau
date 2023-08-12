@@ -15,7 +15,7 @@ local function source<T>(value: T): Source<T>
         if select("#", ...) == 0 then return get_value() end
 
         local v = ... :: T
-        if node.cache == v and type(v) ~= "table" then return v end
+        if node.cache == v and (type(v) ~= "table" or table.isfrozen(v)) then return v end
 
         set(node, v)
         return v

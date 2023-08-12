@@ -192,6 +192,27 @@ TEST("source()", function()
         state(state())
         CHECK(updates == 1)
     end
+
+    do CASE "does not update if same value is frozen table"
+        local a = table.freeze {}
+        local b = table.freeze {}
+
+        local state = source(a)
+
+        local updates = -1
+        watch(function()
+            state()
+            updates += 1
+        end)
+
+        CHECK(updates == 0)
+        state(a)
+        CHECK(updates == 0)
+        state(b)
+        CHECK(updates == 1)
+        state(b)
+        CHECK(updates == 1)
+    end
 end)
 
 TEST("derive()", function()

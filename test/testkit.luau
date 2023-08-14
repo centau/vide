@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 -- testkit.luau
--- v0.7.0
+-- v0.7.1
 --------------------------------------------------------------------------------
 
 local color = {
@@ -39,23 +39,27 @@ local color = {
 
 local function convert_units(unit: string, value: number): (number, string)
     local prefix_colors = {
+        [4] = color.red,
         [3] = color.red,
         [2] = color.yellow,
         [1] = color.yellow,
         [0] = color.green,
         [-1] = color.red,
         [-2] = color.yellow,
-        [-3] = color.green
+        [-3] = color.green,
+        [-4] = color.red
     }
 
     local prefixes = {
+        [4] = "T",
         [3] ="G",
         [2] ="M",
         [1] = "k",
         [0] = " ",
         [-1] = "m",
         [-2] = "u",
-        [-3] = "n"
+        [-3] = "n",
+        [-4] = "p"
     }
 
     local order = 0

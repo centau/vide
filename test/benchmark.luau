@@ -247,4 +247,37 @@ BENCH("values() all remove", function()
     state(data)
 end)
 
+BENCH("register cleanup", function()
+    local cleanup = vide.cleanup
+
+    local function foo(i)
+        cleanup(function() -- todo: why is this not causing allocations?
+            return i
+        end)
+    end
+
+    for i = 1, START(N) do
+        foo(i)
+    end
+end)
+
+BENCH("cleanup step", function()
+    local cleanup = vide.cleanup
+
+    local ref = table.create(N)
+
+    for i = 1, N do
+        ref[i] = function()
+            cleanup(function() end)
+            return i
+        end
+
+        ref[i]()
+    end
+
+    START(N)
+
+    vide.step(0)
+end)
+
 return nil

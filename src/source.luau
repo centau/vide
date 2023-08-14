@@ -6,7 +6,7 @@ local create = graph.create
 local set = graph.set
 
 
-type Source<T> = (() -> T) & ((T) -> T)
+export type Source<T> = (() -> T) & ((T) -> T)
 
 local function source<T>(value: T): Source<T>
     local node, get_value = create(value :: T)

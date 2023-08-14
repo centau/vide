@@ -13,9 +13,10 @@ local derive = require(script.derive)
 local indexes, values = require(script.maps)()
 local spring, update_springs = require(script.spring)()
 local action = require(script.action)()
-
 local throw = require(script.throw)
 local flags = require(script.flags)
+
+export type Source<T> = source.Source<T>
 
 local vide = {
     -- core

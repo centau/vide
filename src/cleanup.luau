@@ -1,8 +1,11 @@
 if not game then script = require "test/relative-string" end
 
 -- todo: verify correct behavior in non-standard usage
-local cleanup_callbacks = {} :: { [string]: () -> () }
-local cleanup_callers = {} :: { [string]: () -> () }
+local free_ids = {} :: { number }
+local id_to_ref = {} :: { [number]: string }
+local ref_to_id = {} :: { [string]: number }
+local cleanup_callbacks = {} :: { [number]: () -> () }
+local cleanup_callers = {} :: { [number]: () -> () }
 
 setmetatable(cleanup_callers :: any, { __mode = "vs" })
 
@@ -13,30 +16,37 @@ local function cleanup(callback: () -> ())
     local line = debug.info(2, "l") :: number
     local ref = tostring(caller) .. "\0" .. line
 
-    local fn = cleanup_callbacks[ref]
-    if fn then
-        fn()
+    local id = ref_to_id[ref]
+
+    if id then
+        cleanup_callbacks[id]()
     else
-        cleanup_callers[ref] = caller
+        id = table.remove(free_ids) or #cleanup_callbacks + 1
+        id_to_ref[id :: any] = ref -- todo
+        ref_to_id[ref] = id
+        cleanup_callers[id :: any] = caller -- todo
     end
-    cleanup_callbacks[ref] = callback
+
+    cleanup_callbacks[id] = callback
 end
 
-local buffer = {}
+-- todo: investigate behavior if cleanup called within cleanup
+-- todo: verify no memory leakage
 
 local function clean_garbage()
-    for ref, callback in next, cleanup_callbacks do
-        if cleanup_callers[ref] == nil then -- caller was garbage collected
-            callback()
-            table.insert(buffer, ref)
+    for id = 1, #cleanup_callbacks do
+        if cleanup_callers[id] == nil then -- caller was garbage collected
+            local callback = cleanup_callbacks[id]
+
+            cleanup_callbacks[id] = nil
+            table.insert(free_ids, id)
+            ref_to_id[id_to_ref[id]] = nil
+            id_to_ref[id] = nil
+
+            local ok, err: string? = pcall(callback)
+            if not ok then warn(`error occured during cleanup: {err}`) end
         end
     end
-
-    for _, ref in next, buffer do
-        cleanup_callbacks[ref] = nil
-    end
-
-    table.clear(buffer)
 end
 
 return function() return cleanup, clean_garbage end

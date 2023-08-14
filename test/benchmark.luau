@@ -250,6 +250,23 @@ end)
 BENCH("register cleanup", function()
     local cleanup = vide.cleanup
 
+    local callers = {}
+
+    for i = 1, N do
+        callers[i] = function(fn, v)
+            fn(v)
+            return i
+        end
+    end
+
+    for i = 1, START(N) do
+        callers[i](cleanup, function() end)
+    end
+end)
+
+BENCH("repeat cleanup", function()
+    local cleanup = vide.cleanup
+
     local function foo(i)
         cleanup(function() -- todo: why is this not causing allocations?
             return i
@@ -260,6 +277,8 @@ BENCH("register cleanup", function()
         foo(i)
     end
 end)
+
+-- todo: this is sometimes never terminates
 
 BENCH("cleanup step", function()
     local cleanup = vide.cleanup

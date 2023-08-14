@@ -17,33 +17,37 @@ local hold: { Instance? } = {}
 local weak: { Instance? } = setmetatable({}, { __mode = "v" }) :: any 
 local bindcount = 0
 
-local srcs do
-    local src1 = debug.info(1, "s")
-    local srctrunc = string.sub(src1, 1, #src1-4)
-
-    srcs = {
-        src1,
-        srctrunc .. "apply",
-        srctrunc .. "create",
-    }
+local root do
+    local src = debug.info(1, "s")
+    root = string.sub(src, 1, #src - 5)
 end
 
-local function traceback() -- ensures trace begins outside of any vide library file
+local function traceback(skips: number) -- ensures trace begins outside of any vide library file
     local s = 1
+
     repeat
         s += 1
-        local src = debug.info(s, "s")
-    until not table.find(srcs, src)
-    return debug.traceback("", s)
+        local path = debug.info(s, "s")
+
+        local found = not string.find(path, root)
+
+        if found then
+            skips -= 1
+        end
+    until found and skips < 0
+
+    return debug.traceback(nil, s)
 end
 
-function setup(instance: Instance, setter: (Instance) -> ())
+function setup(instance: Instance, debug_msg: string, setter: (Instance) -> ())
     if flags.strict then
         local fn = setter
-        local trace = traceback()
+        local bind_trace = traceback(0)
         setter = function(instance)
-            local ok, err: string? = pcall(fn, instance)
-            if not ok then warn(`error occured updating property:\n{err}\nset from:{trace}`) end
+            local ok, err: string? = xpcall(fn, function(err: string)
+                return err .. "\nsource updated at: " .. traceback(2)
+            end, instance)
+            if not ok then warn(`error occured updating {debug_msg}: {err}bound at: {bind_trace}`) end
         end
     end
 
@@ -69,17 +73,17 @@ function setup(instance: Instance, setter: (Instance) -> ())
 end
 
 local function bind_property(instance: Instance, property: string, fn: () -> unknown)
-    setup(instance, function(instance_weak: any)
+    setup(instance, property, function(instance_weak: any)
         instance_weak[property] = fn()
     end)
 end
 
 local function bind_parent(instance: Instance, fn: () -> Instance?)
     instance.Destroying:Connect(function()
-        instance= nil :: any -- allow gc when destroyed
+        instance = nil :: any -- allow gc when destroyed
     end)
 
-    setup(instance, function(instance)
+    setup(instance, "Parent", function(instance)
         local _ = instance -- state will strongly reference instance when parent is bound
         instance.Parent = fn()    
     end)
@@ -89,7 +93,7 @@ local function bind_children(parent: Instance, fn: () -> { Instance })
     local current_child_set: { [Instance]: true } = {} -- cache of all children parented before update
     local new_child_set: { [Instance]: true } = {} -- cache of all children parented after update
 
-    setup(parent, function(parent_weak)
+    setup(parent, "Children", function(parent_weak)
         local new_childs = fn() -- all (and only) children that should be parented after this update
         if new_childs and type(new_childs) ~= "table" then
             throw(`Cannot parent instance of type { type(new_childs) } `)

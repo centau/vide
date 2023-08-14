@@ -1,13 +1,11 @@
 # todo
 
 - cleanup codebase
-- setup site, improve docs
-- cleanup within `values()` and `indexes()`
-- behavior when a table source value is set to the same table
-- address behavior of binding property to multiples states
+- way to optionally cleanup `values()` and `indexes()` when they gc
 - better error reporting and stack traces in strict mode
 - auto-enable of strict mode depending on compiler optimizaton level
 - check smoothness of spring at high frequency updates
+- review alternative to nested properties, merge function
 - implement from solid
   - [x] onCleanup > `cleanup()`
   - [x] Index > `indexes()`
@@ -16,5 +14,4 @@
   - [ ] batch
   - [ ] async/resource/loading/suspense
   - [ ] stores
-- define order with nested properties
-  - review alternative to nested properties, merge function
+    - solid stores seem impossible to implement in Luau, seek alternative

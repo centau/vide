@@ -15,7 +15,8 @@ Currently, strict mode will:
 2. Run watchers twice when a source updates.
 3. Throw an error if yields occur where they are not allowed.
 4. Checks for `indexes()` and `values()` returning primitive values.
-5. Better error reporting and stack traces.
+5. Checks for duplicate nested properties at same depth.
+6. Better error reporting and stack traces.
 
 By rerunning sources and watchers, any side-effects are made more apparent.
 This also helps ensure that cleanups are being handled correctly.

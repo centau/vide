@@ -596,6 +596,20 @@ TEST("create()", function()
         CHECK(text.Text == "test")
     end
 
+    do CASE "nested precedence"
+        local text = create "TextLabel" {
+            Group = {
+                Text = "1",
+
+                {
+                    Text = "2"
+                }
+            }
+        }
+
+        CHECK(text.Text == "2")
+    end
+
     do CASE "independent"
         local frame = create "Frame"
         CHECK(frame {} ~= frame {})
@@ -1153,6 +1167,7 @@ end)
 TEST("strict", function()
     vide.strict = true
 
+    local create = vide.create
     local source = vide.source
     local derive = vide.derive
     local watch = vide.watch
@@ -1230,6 +1245,34 @@ TEST("strict", function()
         end)
 
         CHECK(not ok)
+    end
+
+    do CASE "duplicate properties"
+        local ok = pcall(function()
+            create "TextLabel" {
+                {
+                    Name = "foo"
+                },
+                {
+                    Name = "bar"
+                }
+            }
+        end)
+
+        CHECK(not ok)
+
+        ok = pcall(function()
+            create "TextLabel" {
+                {
+                    Name = "foo",
+                    {
+                        Name = "bar"
+                    }
+                }
+            }
+        end)
+
+        CHECK(ok)
     end
 end)
 

@@ -1,4 +1,4 @@
-# Property Groups
+# Nested Properties
 
 Often when creating components from existing components, you can find yourself
 repetitively passing through properties such as size or position.
@@ -98,4 +98,23 @@ List {
         create "TextLabel" { Text = "2" }
     }
 }
+```
+
+Deeper nested properties are guaranteed to be set after shallower nested
+properties, this can be used to create overridable default properties.
+
+```lua
+local function CenteredList(props: Children & Layout)
+    return List {
+        Layout = {
+            props.Layout,
+
+            -- can be overriden by `props.Layout`
+            AnchorPoint = Vector2.new(0.5, 0),
+            Position = UDim2.fromScale(0.5, 0)
+        },
+
+        Children = props.Children
+    }
+end
 ```

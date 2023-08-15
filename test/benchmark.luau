@@ -1,8 +1,18 @@
 local BENCH, START = require("test/testkit").benchmark()
 
+-- try prevent inlining by wrapping in a closure referencing an upvalue that
+-- cannot be determined at compile-time
+local function NO_INLINE(fn)
+    local r = math.random()
+    return function(x)
+        local _ = r
+        fn(x)
+    end
+end
+
 local vide = require "src/init"
 
-local N = 2^18 -- 262144
+local N = 2^18 -- 262144[
 
 BENCH("create state", function()
     local cache = table.create(N)
@@ -247,56 +257,72 @@ BENCH("values() all remove", function()
     state(data)
 end)
 
-BENCH("register cleanup", function()
+BENCH("register new cleanup", function()
     local cleanup = vide.cleanup
+
+    local cleaner = function() end
 
     local callers = {}
 
     for i = 1, N do
         callers[i] = function(fn, v)
             fn(v)
-            return i
+            return i -- return unique upvalue to ensure unique closure
         end
     end
 
     for i = 1, START(N) do
-        callers[i](cleanup, function() end)
+        callers[i](cleanup, cleaner)
     end
 end)
+
+-- cleanup cleanups from previous benchmark
+;(collectgarbage :: any)("collect")
+vide.step(0) 
 
 BENCH("repeat cleanup", function()
     local cleanup = vide.cleanup
 
-    local function foo(i)
-        cleanup(function() -- todo: why is this not causing allocations?
-            return i
+    local foo = NO_INLINE(function(i)
+        cleanup(function()
+            -- return i -- uncomment to include overhead of closure creation
         end)
-    end
+    end)
 
     for i = 1, START(N) do
         foo(i)
     end
 end)
 
--- todo: this is sometimes never terminates
+-- cleanup cleanups from previous benchmark
+;(collectgarbage :: any)("collect")
+vide.step(0) 
 
-BENCH("cleanup step", function()
+BENCH("cleanup gc check", function()
     local cleanup = vide.cleanup
 
-    local ref = table.create(N)
+    local cleaner = function() end
+
+    local callers = table.create(N)
 
     for i = 1, N do
-        ref[i] = function()
-            cleanup(function() end)
+        callers[i] = function()
+            cleanup(cleaner)
             return i
         end
 
-        ref[i]()
+        callers[i]()
     end
 
     START(N)
 
     vide.step(0)
+end)
+
+BENCH("cleanup gc removal", function()
+    START(N)
+
+    vide.step(0) -- cleanup from previous benchmark
 end)
 
 return nil

@@ -529,6 +529,14 @@ TEST("cleanup()", function()
 
         do
             stateA = nil :: any
+            gc()
+            vide.step(0)
+        end
+
+        CHECK(objA.cleaned == 2)
+        CHECK(objB.cleaned == 1)
+
+        do
             stateB = nil :: any
             gc()
             vide.step(0)

@@ -1,8 +1,11 @@
 if not game then script = require "test/relative-string" end
 
+-- todo: more testing needed regarding `cleanup()` usage
+
 local throw = require(script.Parent.throw)
 local flags = require(script.Parent.flags)
 local graph = require(script.Parent.graph)
+local _, _, manual_cleanup_mode, cleanup_ref = require(script.Parent.cleanup)()
 type Node<T> = graph.Node<T>
 local create = graph.create
 local set = graph.set
@@ -28,35 +31,48 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
     local remove_queue = {} :: { K }
     local output_array = {} :: { VO }
 
+    local cleanups = {} :: Map<K, { () -> () }>
+
     local function recompute(data)
         -- queue removed values
-        for k in next, input_cache do
-            if data[k] == nil then
-                table.insert(remove_queue, k)
+        for i in next, input_cache do
+            if data[i] == nil then
+                table.insert(remove_queue, i)
             end
         end
 
         -- remove queued values
-        for _, k in next, remove_queue do
-            input_cache[k] = nil
-            output_cache[k] = nil
-            input_nodes[k] = nil
+        for _, i in next, remove_queue do
+            for _, callback in next, cleanups[i] do
+                callback() -- todo: pcall
+            end
+
+            input_cache[i] = nil
+            output_cache[i] = nil
+            input_nodes[i] = nil
+            cleanups[i] = nil
         end
 
         table.clear(remove_queue)
 
         -- process new or changed values
-        for k, v in next, data do
-            local cv = input_cache[k]
+        for i, v in next, data do
+            local cv = input_cache[i]
 
-            if cv == nil then
-                local node, get_value = create(v)
-                input_nodes[k] = node
-                output_cache[k] = transform(get_value, k)
-                input_cache[k] = v
-            elseif cv ~= v then
-                set(input_nodes[k], v)
-                input_cache[k] = v
+            if cv ~= v then
+                if cv == nil then
+                    manual_cleanup_mode(transform)
+
+                    local node, get_value = create(v)
+                    input_nodes[i] = node
+                    output_cache[i] = transform(get_value, i)
+                    input_cache[i] = v
+
+                    cleanups[i] = manual_cleanup_mode(nil)
+                else
+                    set(input_nodes[i], v)
+                    input_cache[i] = v
+                end
             end
         end
 
@@ -70,11 +86,11 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
         return output_array
     end
 
+    local output, output_get = create(nil :: any)
+
     local function derive()
         return recompute(input())
     end
-
-    local output, output_get = create(nil :: any)
 
     local nodes, value = capture(input)
 
@@ -83,6 +99,14 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
     end
 
     output.cache = recompute(value)
+
+    cleanup_ref(tostring(output), output, function()
+        for _, callbacks in next, cleanups do
+            for _, callback in next, callbacks do
+                callback() -- todo: pcall
+            end
+        end
+    end)
 
     return output_get
 end
@@ -95,6 +119,8 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
     local output_cache = {} :: Map<VI, VO>
     local input_nodes = {} :: Map<VI, Node<K>>
     local output_array = {} :: { VO }
+
+    local cleanups = {} :: Map<VI, { () -> () }>
 
     local function recompute(data: Map<K, VI>)
         local cur_input_cache, new_input_cache = cur_input_cache_up, new_input_cache_up
@@ -116,9 +142,13 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
             local cv = cur_input_cache[v]
             
             if cv == nil then
+                manual_cleanup_mode(transform)
+
                 local node, get_value = create(i)
                 input_nodes[v] = node
                 output_cache[v] = transform(v, get_value)
+
+                cleanups[v] = manual_cleanup_mode(nil)
             else
                 if cv ~= i then
                     set(input_nodes[v], i)
@@ -129,8 +159,13 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
 
         -- remove old values
         for v in next, cur_input_cache do
+            for _, callback in next, cleanups[v] do
+                callback() -- todo: pcall
+            end
+
             output_cache[v] = nil
             input_nodes[v] = nil
+            cleanups[v] = nil
         end
 
         -- update buffer cache
@@ -147,11 +182,11 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
         return output_array
     end
 
+    local output, output_get = create(nil :: any)
+
     local function derive()
         return recompute(input())
     end
-
-    local output, output_get = create(nil :: any)
 
     local nodes, value = capture(input)
 
@@ -161,6 +196,14 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
     check_primitives(output_array)
 
     output.cache = recompute(value)
+
+    cleanup_ref(tostring(output), output, function()
+        for _, callbacks in next, cleanups do
+            for _, callback in next, callbacks do
+                callback() -- todo: pcall
+            end
+        end
+    end)
 
     return output_get
 end

@@ -2,6 +2,7 @@
 
 - cleanup codebase
 - way to optionally cleanup `values()` and `indexes()` when they gc
+- limit `cleanup()` call to once per function scope?
 - better error reporting and stack traces in strict mode
 - auto-enable of strict mode depending on compiler optimizaton level
 - check smoothness of spring at high frequency updates

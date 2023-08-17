@@ -869,9 +869,13 @@ TEST("create()", function()
     end
 end)
 
+-- todo: gc and cleanup call check for removed element
+
 TEST("indexes()", function()
+    local create = vide.create
     local source = vide.source
     local indexes = vide.indexes
+    local cleanup = vide.cleanup
 
     do CASE "use source"
         local input = source { 1, 2, 3 }
@@ -909,24 +913,35 @@ TEST("indexes()", function()
     do CASE "removal reflected"
         local input = source { 1, 2, 3 }
 
+        local destroyed = false
+
         local output = indexes(input, function(v, i)
-            return v 
+            local text = create "TextLabel" {
+                Text = function() return tostring(v()) end
+            }
+
+            cleanup(function()
+                destroyed = true
+            end)
+
+            return text
         end)
 
         input { 1, 2 }
 
         local t = output()
 
-        CHECK(t[1]() == 1)
-        CHECK(t[2]() == 2)
-        CHECK(t[3] == nil)
+        CHECK(t[1].Text == "1")
+        CHECK(t[2].Text == "2")
+        CHECK(t[3] == nil :: any)
+        CHECK(destroyed == true)
     end
 
     do CASE "garbage collection"
         do -- check that `output` does not allow gc of `input`
             local input = source {}
 
-            local _derived = indexes(input, function(i, v)
+            local _derived = indexes(input, function(v, i)
                 return v
             end)
 
@@ -941,8 +956,8 @@ TEST("indexes()", function()
         do -- check that `input` allows gc of `output`
             local input = source {}
 
-            local output = indexes(input, function(i, v)
-                return i, v
+            local output = indexes(input, function(v, i)
+                return v, i
             end)
 
             local wref = weak { output }
@@ -953,11 +968,54 @@ TEST("indexes()", function()
             CHECK(not wref[1])
         end
     end
+
+    do CASE "cleanup"
+        local input = source { 1, 2, 3 }
+
+        local count = table.create(3, 0)
+        local unrelated_count = 0
+
+        local function unrelated()
+            cleanup(function()
+                unrelated_count += 1
+            end)
+        end
+        
+        local output = indexes(input, function(v, i)
+            -- check that overriden cleanup scopes don't affect cleanup calls
+            -- in other function scopes
+            unrelated()
+
+            cleanup(function()
+                count[i] += 1
+            end)
+
+            return {}
+        end)
+
+        output()
+
+        CHECK(count[1] == 0)
+        CHECK(count[2] == 0)
+        CHECK(count[3] == 0)
+        CHECK(unrelated_count == 2)
+
+        output = nil :: any
+        gc()
+        vide.step(0)
+
+        CHECK(count[1] == 1)
+        CHECK(count[2] == 1)
+        CHECK(count[3] == 1)
+        CHECK(unrelated_count == 2)
+    end
 end)
 
 TEST("values()", function()
+    local create = vide.create
     local source = vide.source
     local values = vide.values
+    local cleanup = vide.cleanup
 
     do CASE "use source"
         local input = source { 1, 2, 3 }
@@ -995,17 +1053,28 @@ TEST("values()", function()
     do CASE "removal reflected"
         local input = source { 1, 2, 3 }
 
+        local destroyed = false
+
         local output = values(input, function(v, i)
-            return { v = v, i = i }
+            local text = create "TextLabel" {
+                Text = tostring(v)
+            }
+
+            cleanup(function()
+                destroyed = true
+            end)
+
+            return text
         end)
 
         input { 1, 2 }
 
         local t = output()
 
-        CHECK(t[1].v == 1)
-        CHECK(t[2].v == 2)
-        CHECK(t[3] == nil)
+        CHECK(t[1].Text == "1")
+        CHECK(t[2].Text == "2")
+        CHECK(t[3] == nil :: any)
+        CHECK(destroyed == true)
     end
 
     do CASE "removal reflected 2"
@@ -1024,6 +1093,47 @@ TEST("values()", function()
         CHECK(t[1].i() == 1)
         CHECK(t[2] == nil)
         CHECK(t[3] == nil)
+    end
+
+    do CASE "cleanup"
+        local input = source { 1, 2, 3 }
+
+        local count = table.create(3, 0)
+        local unrelated_count = 0
+
+        local function unrelated()
+            cleanup(function()
+                unrelated_count += 1
+            end)
+        end
+        
+        local output = values(input, function(v, i)
+            -- check that overriden cleanup scopes don't affect cleanup calls
+            -- in other function scopes
+            unrelated()
+
+            cleanup(function()
+                count[i()] += 1
+            end)
+
+            return {}
+        end)
+
+        output()
+
+        CHECK(count[1] == 0)
+        CHECK(count[2] == 0)
+        CHECK(count[3] == 0)
+        CHECK(unrelated_count == 2)
+
+        output = nil :: any
+        gc()
+        vide.step(0)
+
+        CHECK(count[1] == 1)
+        CHECK(count[2] == 1)
+        CHECK(count[3] == 1)
+        CHECK(unrelated_count == 2)
     end
 end)
 

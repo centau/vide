@@ -1,7 +1,6 @@
 # todo
 
 - cleanup codebase
-- way to optionally cleanup `values()` and `indexes()` when they gc
 - limit `cleanup()` call to once per function scope?
 - better error reporting and stack traces in strict mode
 - auto-enable of strict mode depending on compiler optimizaton level
@@ -15,4 +14,3 @@
   - [ ] batch
   - [ ] async/resource/loading/suspense
   - [ ] stores
-    - solid stores seem impossible to implement in Luau, seek alternative

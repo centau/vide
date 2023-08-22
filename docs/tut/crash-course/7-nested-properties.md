@@ -82,8 +82,8 @@ type Children = {
 
 local function List(props: Children & Layout)
     return create "Frame" {
-        props.Layout,
         props.Children,
+        props.Layout,
         create "UIListLayout" {}
     }
 end
@@ -104,17 +104,16 @@ Deeper nested properties are guaranteed to be set after shallower nested
 properties, this can be used to create overridable default properties.
 
 ```lua
-local function CenteredList(props: Children & Layout)
-    return List {
-        Layout = {
-            props.Layout,
+local function List(props: Children & Layout)
+    return create "Frame" {
+        props.Children,
 
-            -- can be overriden by `props.Layout`
-            AnchorPoint = Vector2.new(0.5, 0),
-            Position = UDim2.fromScale(0.5, 0)
-        },
+        props.Layout,
+        -- can be overriden by `props.Layout`
+        AnchorPoint = Vector2.new(0.5, 0),
+        Position = UDim2.fromScale(0.5, 0),
 
-        Children = props.Children
+        create "UIListLayout" {}
     }
 end
 ```

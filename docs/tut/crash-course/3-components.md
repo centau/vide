@@ -13,14 +13,22 @@ local function Button(props: {
 })
     return create "TextButton" {
         BackgroundColor3 = Color3.fromRGB(50, 50, 50),
-        Size = UDim2.fromOffset(400, 250),
+        Size = UDim2.fromOffset(200, 150),
 
         Position = props.Position,
         Text = props.Text,
         Activated = props.Activated
     }
 end
+```
 
+Above is a simple example of a button component with its background color set to
+a dark grey and with a fixed size.
+
+A single parameter `props` is used to pass properties to the component.
+Creating instances of this button component is as simple as doing the below:
+
+```lua
 local button = Button {
     Position = UDim2.new(),
     Text = "Click me!",
@@ -30,11 +38,6 @@ local button = Button {
     end
 }
 ```
-
-Above is a simple example of a button component with its background color set to
-a dark grey and with a fixed size.
-
-A single parameter `props` is used to pass properties to the component.
 
 Components allow you to *encapsulate* behavior. You can only modify the
 component in ways that you allow in the component.

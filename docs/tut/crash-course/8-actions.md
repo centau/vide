@@ -20,9 +20,6 @@ create "TextLabel" {
 -- will print "test"
 ```
 
-Actions take precedence over property and child assignment, just like property
-nesting.
-
 Actions can be wrapped with functions to re-use specific behaviors. Below is
 an example of an action used to listen for property changes:
 

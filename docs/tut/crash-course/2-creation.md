@@ -61,10 +61,10 @@ of explicitly typing out the class name and constructor.
 ```lua
 create "Frame" {
     AnchorPoint = { 0.5, 1 },
-    UDim2 = { 0.5, 0, 0.5, 0}
+    UDim2 = { 0.5, 0, 0.5, 0 }
 }
 ```
 
 When a property is assigned a table, Vide will inspect the type of the property
 being assigned to, and call that type's default `new()` constructor with the
-values from the unpacked table.
+unpacked values from the assigned table.

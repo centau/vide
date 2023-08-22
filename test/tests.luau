@@ -3,6 +3,7 @@ local TEST, CASE, CHECK, FINISH = testkit.test()
 
 local mock = require "test/mock"
 local Instance, Signal = mock.Instance, mock.Signal
+local Vector2, UDim2 = mock.Vector2, mock.UDim2
 
 local vide = require "src/init"
 
@@ -598,15 +599,32 @@ TEST("create()", function()
     do CASE "set nested properties"
         local text = create "TextLabel" {
             { Name = "Label" },
-            Group = { Text = "test" }
+            { Text = "test" }
         }
         CHECK(text.Name == "Label")
         CHECK(text.Text == "test")
     end
 
+    do CASE "aggregate construction"
+        local template = create "TextLabel" {
+            AnchorPoint = Vector2.new(),
+            Position = UDim2.new()
+        }
+
+        print("template", template.AnchorPoint)
+
+        local text = create(template) {
+            AnchorPoint = { 1, 2 },
+            Position = { 3, 4 }
+        }
+
+        CHECK(text.AnchorPoint == Vector2.new(1, 2))
+        CHECK(text.Position == UDim2.new(3, 4))
+    end
+
     do CASE "nested precedence"
         local text = create "TextLabel" {
-            Group = {
+            {
                 Text = "1",
 
                 {
@@ -634,7 +652,7 @@ TEST("create()", function()
                     create "TextLabel" { Name = "E" }
                 }
             },
-            Children = {
+            {
                 create "TextLabel" { Name = "F" } :: any,
                 { create "TextLabel" { Name = "G" } }
             }

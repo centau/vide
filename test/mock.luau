@@ -217,9 +217,28 @@ local Instance = {} :: any do
     end
 end
 
-local Color3 = {} :: any do
+local function table_to_proxy(t: any)
+    local proxy = newproxy(true)
+    local mt = getmetatable(proxy)
+
+    for i, v in getmetatable(t) do
+        mt[i] = v
+    end
+
+    function mt:__index(i)
+        return t[i]
+    end
+
+    function mt:__newindex(i, v)
+        t[i] = v
+    end
+
+    return proxy
+end
+
+local Color3 = { __type = "Color3" } :: any do
     function Color3.new(r, g, b)
-        return setmetatable({ r = r, g = g, b = b}, Color3)
+        return table_to_proxy(setmetatable({ r = r, g = g, b = b }, Color3))
     end
 
     function Color3.__eq(a, b)
@@ -227,19 +246,9 @@ local Color3 = {} :: any do
     end
 end
 
-local Vector3 = {} :: any do
-    function Vector3.new(x, y, z)
-        return setmetatable({ x = x, y = y, z = z}, Vector3)
-    end
-
-    function Vector3.__eq(a, b)
-        return a.x == b.x and a.y == b.y and a.z == b.z
-    end
-end
-
-local Vector2 = {} :: any do
+local Vector2 = { __type = "Vector2" } :: any do
     function Vector2.new(x, y)
-        return setmetatable({ x = x, y = y }, Vector2)
+        return table_to_proxy(setmetatable({ x = x, y = y }, Vector2))
     end
 
     function Vector2.__eq(a, b)
@@ -247,9 +256,13 @@ local Vector2 = {} :: any do
     end
 end
 
-local UDim2 = {} :: any do
+local UDim2 = { __type = "UDim2" } :: any do
+    function UDim2.new(sx, ox, sy, oy)
+        return table_to_proxy(setmetatable({ x = { scale = sx, offset = ox }, y = { scale = sy, offset = oy } }, UDim2))
+    end
+
     function UDim2.fromScale(x, y)
-        return setmetatable({ x = { scale = x, offset = 0 }, y = { scale = y, offset = 0 } }, UDim2)
+        return table_to_proxy(setmetatable({ x = { scale = x, offset = 0 }, y = { scale = y, offset = 0 } }, UDim2))
     end
 
     function UDim2.__eq(a, b)

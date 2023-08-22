@@ -28,15 +28,17 @@ Creates a new UI element, applying any given properties.
 
 - **Property setting rules**
 
-    - If a table value is another table, that nested table is processed so that
-      any properties inside that table are also applied to the instance just
-      like the outer table.
+
     - If a table index is a string:
+      - If its value is a table then it will attempt to perform aggregate
+        initialization.
       - If its value is a function then it will either bind that property to
         the function or connect it if the property type is a `RBXScriptSignal`.
       - If the value is not a function then the property will be set to that
         value.
     - If a table index is a number:
+      - If its value is a table then that table will be recursively 
+      - processed just like the outer table.
       - If its value is a function then it will parent and bind any instances
         returned by that function as children.
       - If its value is an instance then it will be parented to the instance.

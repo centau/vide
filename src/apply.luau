@@ -1,8 +1,12 @@
 local typeof = typeof
+local Vector2 = Vector2
+local UDim2 = UDim2
 
 if not game then
     script = require "test/relative-string"
     typeof = require "test/mock".typeof
+    Vector2 = require "test/mock".Vector2
+    UDim2 = require "test/mock".UDim2
 end
 
 local flags = require(script.Parent.flags)
@@ -33,6 +37,19 @@ setmetatable(nested_debug_cache :: any, {
 
 local nested_stack = {} :: { {} | number }
 
+-- todo
+local classes = {
+    Vector2 = Vector2,
+    UDim2 = UDim2,
+    UDim = UDim2,
+    Rect = Rect,
+    Color3 = Color3
+}
+
+local function get_class(v: unknown): { new: (...any) -> () }
+    return classes[typeof(v)]
+end
+
 local function process(instance: Instance, properties: { [unknown]: unknown })
     local strict = flags.strict
 
@@ -43,14 +60,7 @@ local function process(instance: Instance, properties: { [unknown]: unknown })
 
     repeat
         for property, value in properties do
-            if type(value) == "table" then
-                if is_action(value) then
-                    table.insert(action_buffers[(value :: any).priority], (value :: any).callback :: () -> ())
-                else
-                    table.insert(nested_stack, depth + 1)
-                    table.insert(nested_stack, value :: {})
-                end
-            elseif type(property) == "string" then
+            if type(property) == "string" then
                 if strict then
                     if nested_debug_cache[depth][property] then
                         throw(`duplicate property {property} at depth {depth}`)
@@ -58,7 +68,13 @@ local function process(instance: Instance, properties: { [unknown]: unknown })
                     nested_debug_cache[depth][property] = true
                 end
 
-                if type(value) == "function" then
+                if type(value) == "table" then
+                    local class = get_class((instance :: any)[property])
+                    if class == nil then
+                        throw(`cannot aggregate construct type {typeof(value)} for property {property}`)
+                    end
+                    (instance :: any)[property] = class.new(unpack(value :: {}))
+                elseif type(value) == "function" then
                     if typeof((instance :: any)[property]) == "RBXScriptSignal" then
                         event_buffer[property] = value  :: () -> ()
                     else
@@ -70,6 +86,13 @@ local function process(instance: Instance, properties: { [unknown]: unknown })
             elseif type(property) == "number" then
                 if type(value) == "function" then
                     bind.children(instance, value :: () -> { Instance })
+                elseif type(value) == "table" then
+                    if is_action(value) then
+                        table.insert(action_buffers[(value :: any).priority], (value :: any).callback :: () -> ())
+                    else
+                        table.insert(nested_stack, depth + 1)
+                        table.insert(nested_stack, value :: {})
+                    end
                 else
                     (value :: Instance).Parent = instance
                 end

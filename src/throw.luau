@@ -1,7 +1,6 @@
 local function get_path(s)
     if string.sub(s, #s - 4, #s) == ".luau" then
         s = string.sub(s, 1, #s - 5)
-        print("test, ", s)
     end
 
     return string.split(s, string.match(s, "%w+/") and "/" or ".")

@@ -1,18 +1,16 @@
 local Enum = Enum
 local Color3 = Color3
-local Vector3 = Vector3
 
 if not game then
     local mock = require "test/mock"
     Enum = mock.Enum
     Color3 = mock.Color3
-    Vector3 = mock.Vector3
 end
 
 return {
     Part = {
         Material = Enum.Material.SmoothPlastic,
-        Size = Vector3.new(1, 1, 1),
+        --Size = Vector3.new(1, 1, 1),
         Anchored = true
     },
 

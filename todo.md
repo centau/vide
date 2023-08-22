@@ -5,7 +5,6 @@
 - better error reporting and stack traces in strict mode
 - auto-enable of strict mode depending on compiler optimizaton level
 - check smoothness of spring at high frequency updates
-- aggregate initialization of properties
 - implement from solid
   - [x] onCleanup > `cleanup()`
   - [x] Index > `indexes()`

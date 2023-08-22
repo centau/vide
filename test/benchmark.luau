@@ -325,4 +325,41 @@ BENCH("cleanup gc removal", function()
     vide.step(0) -- cleanup from previous benchmark
 end)
 
+
+do
+    -- the purpose of the two following benchmarks is to measure the overhead of
+    -- aggregate construction
+    BENCH("set explicit mock vector2", function()
+        local create = vide.create
+        local apply = require "src/apply"
+        local Vector2 = require "test/mock".Vector2
+
+        local label = create "TextLabel" {
+            AnchorPoint = Vector2.new(1, 1)
+        }
+
+        for i = 1, START(N) do
+            apply(label, {
+                AnchorPoint = Vector2.new(i, i)
+            })
+        end
+    end)
+
+    BENCH("set aggregate mock vector2", function()
+        local create = vide.create
+        local apply = require "src/apply"
+        local Vector2 = require "test/mock".Vector2
+
+        local label = create "TextLabel" {
+            AnchorPoint = Vector2.new(1, 1)
+        }
+
+        for i = 1, START(N) do
+            apply(label, {
+                AnchorPoint = { i, i }
+            })
+        end
+    end)
+end
+
 return nil

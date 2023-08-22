@@ -86,7 +86,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
         return output_array
     end
 
-    local output, output_get = create(nil :: any)
+    local output, read_output_value = create(nil :: any)
 
     local function derive()
         return recompute(input())
@@ -108,7 +108,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
         end
     end)
 
-    return output_get
+    return read_output_value
 end
 
 -- todo: optimize output array
@@ -182,7 +182,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
         return output_array
     end
 
-    local output, output_get = create(nil :: any)
+    local output, read_output_value = create(nil :: any)
 
     local function derive()
         return recompute(input())
@@ -205,7 +205,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
         end
     end)
 
-    return output_get
+    return read_output_value
 end
 
 return function() return indexes, values end

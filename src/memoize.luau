@@ -1,8 +1,8 @@
-local function memoize<X, Y>(f: (X) -> Y): ((X) -> Y, { [X]: Y })
-    local cache: { [X]: Y } = {}
+local function memoize<X, Y>(f: (X) -> Y): (X) -> Y
+    local cache: { [X]: Y? } = {}
 
     return function(x: X): Y
-        local y: Y? = cache[x]
+        local y = cache[x]
 
         if not y then
             y = f(x)
@@ -10,7 +10,7 @@ local function memoize<X, Y>(f: (X) -> Y): ((X) -> Y, { [X]: Y })
         end
 
         return y :: Y
-    end, cache
+    end
 end
 
 return memoize

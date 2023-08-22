@@ -10,7 +10,9 @@ export type Node<T> = {
     children: { Node<T> } | false -- weak values
 }
 
+-- flag used to detect when node reference capturing is active
 local reff = false
+-- array of all nodes referenced since above flag was set
 local refs = {} :: { Node<unknown> }
 
 local WEAK_VALUES_RESIZABLE = { __mode = "vs" }
@@ -18,6 +20,7 @@ local EVALUATION_ERR = "error while evaluating source:\n\n"
 
 setmetatable(refs :: any, WEAK_VALUES_RESIZABLE)
 
+-- runs a given callback in a context that Luau does not allow yielding in
 local check_for_yield: <T...>(fn: (T...) -> unknown, T...) -> () do
     local t = { __mode = "kv" }
     setmetatable(t, t)
@@ -43,12 +46,23 @@ local check_for_yield: <T...>(fn: (T...) -> unknown, T...) -> () do
     end
 end
 
+--[[
+
+Each node side-effect is registered with a corresponding weak key.
+This makes the lifetime of the side-effect tied to the key's.
+The main usecase of this is to tie a side-effect to an instance, while allowing
+the instance to be garbage collected even when the node still exists.
+
+The weak key is passed as an argument to its side-effect callback.
+
+]]
+
 local function set_effect<T>(node: Node<unknown>, fn: (T) -> (), key: T)
     node.effects[fn :: () -> ()] = key
 end
 
 local function run_effects(node: Node<unknown>)
-    if flags.strict then
+    if flags.strict then -- run effects twice if strict
         for effect, key in next, node.effects do
             effect(key)
             effect(key)
@@ -61,12 +75,13 @@ local function run_effects(node: Node<unknown>)
 end
 
 -- retrieves a node's cached value
--- recalculates value if an ancestor was updated
+-- add self to refs if ref capture flag is enabled
 local function get<T>(node: Node<T>): T
     if reff then table.insert(refs, node) end
     return node.cache
 end
 
+-- links two nodes as parent-child
 local function set_child(parent: Node<unknown>, child: Node<unknown>)
     if parent.children then
         table.insert(parent.children, child)    
@@ -144,11 +159,11 @@ local function create<T>(value: T): (Node<T>, () -> T)
         children = false :: false
     }
 
-    local function get_value()
+    local function read_node_value()
         return get(node)
     end
 
-    return node, get_value
+    return node, read_node_value
 end
 
 return table.freeze {

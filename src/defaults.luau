@@ -1,11 +1,5 @@
-local Enum = Enum
-local Color3 = Color3
-
-if not game then
-    local mock = require "test/mock"
-    Enum = mock.Enum
-    Color3 = mock.Color3
-end
+local Enum = game and Enum or require "test/mock".Enum :: never
+local Color3 = game and Color3 or require "test/mock".Color3 :: never
 
 return {
     Part = {

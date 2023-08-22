@@ -52,35 +52,50 @@ local vide = {
 
     -- runtime
     step = function(dt: number)
-        -- debug.profilebegin("VIDE STEP")
-        -- debug.profilebegin("VIDE SPRING")
+        if game then
+            debug.profilebegin("VIDE STEP")
+            debug.profilebegin("VIDE SPRING")
+        end
+
         update_springs(dt)
-        -- debug.profileend()
-        -- debug.profilebegin("VIDE GARBAGE CLEANUP")
+
+        if game then
+            debug.profileend()
+            debug.profilebegin("VIDE GARBAGE CLEANUP")
+        end
+
         clean_garbage()
-        -- debug.profileend()
-        -- debug.profileend()
+
+        if game then
+            debug.profileend()
+            debug.profileend()
+        end
     end
 }
 
-setmetatable(vide :: any, {
-    __index = function(_, index: unknown): ()
-        if index == "strict" then
-            return flags.strict
-        else
-            throw(`{tostring(index)} is not a valid member of vide`)
-        end
-    end,
+do
+    local set = false
 
-    __newindex = function(_, index: unknown, value: unknown)
-        if index == "strict" then
-            if value ~= true then throw "strict mode can only be set to true" end
-            flags.strict = true
-        else
-            throw(`{tostring(index)} is not a valid member of vide`)
+    setmetatable(vide :: any, {
+        __index = function(_, index: unknown): ()
+            if index == "strict" then
+                return flags.strict
+            else
+                throw(`{tostring(index)} is not a valid member of vide`)
+            end
+        end,
+
+        __newindex = function(_, index: unknown, value: unknown)
+            if index == "strict" then
+                if set then throw "strict mode has already been set" end
+                set = true
+                flags.strict = value :: boolean
+            else
+                throw(`{tostring(index)} is not a valid member of vide`)
+            end
         end
-    end
-})
+    })
+end
 
 if game then
     game:GetService("RunService").Heartbeat:Connect(function(dt: number)

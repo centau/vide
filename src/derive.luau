@@ -5,11 +5,11 @@ local create = graph.create
 local capture_and_link = graph.capture_and_link
 
 local function derive<T>(fn: () -> T): () -> T
-    local node, node_get = create((nil :: any) :: T)
+    local node, read_node_value = create((false :: any) :: T)
 
     node.cache = capture_and_link(node, fn)
 
-    return node_get
+    return read_node_value
 end
 
 return derive

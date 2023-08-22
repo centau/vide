@@ -21,7 +21,6 @@ Unsupported datatypes:
 ]]
 
 local throw = require(script.Parent.throw)
-
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
 local create = graph.create
@@ -51,6 +50,7 @@ type SpringData<T> = {
 
 type Lerp<T> = (initial: T, target: T, alpha: number) -> T
 
+-- period, damping ratio, initial velocity, total time
 local function solve(T: number, z: number, u: number, t: number): number -- alpha
     local wn = 2*math.pi / T
     local wd = wn * math.sqrt(1 - z^2)
@@ -94,6 +94,8 @@ local lerpable: { [string]: Lerp<any> } = {
     end :: Lerp<Vector3>,
 }
 
+-- maps spring data to its corresponding output node
+-- lifetime of spring data is tied to output node's
 local springs: { [SpringData<any>]: Node<any> } = {}
 setmetatable(springs, { __mode = "vs" })
 
@@ -103,7 +105,6 @@ local function spring<T>(target: () -> T, period: number?, damping_ratio: number
     end
 
     local inputs, initial_position = capture(target)
-
     local output, output_get = create(initial_position)
 
     local data: SpringData<T> = {
@@ -121,14 +122,16 @@ local function spring<T>(target: () -> T, period: number?, damping_ratio: number
         target = target
     }
 
-    local function input_changed(node)
+    -- reschedule spring for simulation on input update
+    local function input_updated(node)
         data.target_updated = true
         data.target_position = target()
         springs[data] = node
     end
 
+    -- register above function as side-effect for all inputs
     for _, input in next, inputs do
-        set_effect(input, input_changed, output)
+        set_effect(input, input_updated, output)
     end
 
     springs[data] = output
@@ -136,6 +139,8 @@ local function spring<T>(target: () -> T, period: number?, damping_ratio: number
     return output_get
 end
 
+-- `springs` is a hashmap, use array to queue indexes-to-remove to avoid
+-- iterator invalidation of `springs`
 local remove_queue = {}
 
 local function update_springs(dt: number)
@@ -183,7 +188,7 @@ local function update_springs(dt: number)
         local value = lerp(initial_position, target_position, new_alpha)
 
         if math.abs(1 - new_alpha) < TOLERANCE and math.abs(new_velocity) < TOLERANCE then
-            -- close enough to target, remove and set value to target
+            -- close enough to target, unshedule spring and set value to target
             table.insert(remove_queue, data)
             set(output, target_position)
         else

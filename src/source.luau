@@ -5,14 +5,13 @@ type Node<T> = graph.Node<T>
 local create = graph.create
 local set = graph.set
 
-
 export type Source<T> = (() -> T) & ((T) -> T)
 
 local function source<T>(value: T): Source<T>
-    local node, get_value = create(value :: T)
+    local node, read_node_value = create(value :: T)
 
     return function(...): T
-        if select("#", ...) == 0 then return get_value() end
+        if select("#", ...) == 0 then return read_node_value() end -- check if any args were given
 
         local v = ... :: T
         if node.cache == v and (type(v) ~= "table" or table.isfrozen(v)) then return v end

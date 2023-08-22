@@ -6,10 +6,14 @@ local refs = graph.refs
 
 local function untrack<T>(source: () -> T): T
     local initial = #refs
+
     local value = source()
+
+    -- remove any references made since `untrack()` was called
     for i = initial, #refs do
         refs[i] = nil
     end
+
     return value
 end
 

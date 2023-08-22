@@ -39,15 +39,15 @@ local nested_stack = {} :: { {} | number }
 
 -- todo: solution without manual updating of this table
 -- map of datatype names to class default constructor for aggregate initialization
-local aggregates = {
+local aggregates = {}
+
+for i, v in next, {
     Vector2 = Vector2,
     UDim2 = UDim2,
     UDim = UDim2,
     Rect = Rect,
     Color3 = Color3
-}
-
-for i, v in next, aggregates do
+} do
     aggregates[i] = v.new
 end
 

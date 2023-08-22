@@ -10,10 +10,10 @@
 
 Vide is a reactive UI library.
 
-- Uses Luau typechecking
+- Fully Luau typecheckable
 - Declarative and concise syntax.
 - Minimal imports.
-- Reactive state driven.
+- Reactively driven.
 
 ## Getting started
 

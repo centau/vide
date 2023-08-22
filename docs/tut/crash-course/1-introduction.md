@@ -16,8 +16,10 @@ worrying about manually updating UI instances.
 Some of the main focuses behind Vide's design choices:
 
 - Concise syntax to reduce verbosity as much as possible.
-- Reducing the amount of imports needed for usage by using Luau's syntax and
-  semantics.
+- Reducing the amount of imports needed for usage by leveraging Luau's syntax
+  and semantics.
 - Being completely typecheckable.
 - Flexibility, particularly with integrating other libraries and allowing users
   to use their own patterns.
+- A powerful reactive system that does not interfere with the lifetime of
+  instances.

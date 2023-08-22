@@ -159,4 +159,5 @@ return table.freeze {
     capture = capture,
     capture_and_link = capture_and_link,
     create = create :: (<T>(value: T) -> (Node<T>, () -> T)) & (<T>() -> (Node<T>, () -> T)),
+    refs = refs
 }

@@ -1260,6 +1260,58 @@ TEST("spring()", function()
     end
 end)
 
+TEST("untrack()", function()
+    local source = vide.source
+    local watch = vide.watch
+    local untrack = vide.untrack
+
+    do CASE "does not register dependency"
+        local a = source(0)
+        local b = source(0)
+
+        local count = -1
+
+        watch(function()
+            count += 1
+            untrack(a)
+            b()
+        end)
+
+        b(1)
+        CHECK(count == 1)
+
+        a(1)
+        CHECK(count == 1)
+
+        CHECK(a() == untrack(a))
+    end
+
+    do CASE "derived state"
+        local a = source(0)
+        local b = source(0)
+        local c = source(0)
+
+        local d = function()
+            return a() + b()
+        end
+
+        local count = -1
+
+        watch(function()
+            count += 1
+            untrack(d)
+            c()
+        end)
+
+        c(1)
+        CHECK(count == 1)
+
+        a(1)
+        b(1)
+        CHECK(count == 1)
+    end
+end)
+
 TEST("events", function()
     local create = vide.create
 

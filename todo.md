@@ -8,7 +8,7 @@
   - [x] onCleanup > `cleanup()`
   - [x] Index > `indexes()`
   - [x] For > `values()`
-  - [ ] untrack
+  - [x] untrack
   - [ ] batch
   - [ ] async/resource/loading/suspense
   - [ ] stores

@@ -547,6 +547,26 @@ TEST("cleanup()", function()
         CHECK(objB.cleaned == 2)
     end
 
+    -- this is not allowed, test to verify behavior anyways
+    do CASE "multiple cleanup"
+        local state = source(1)
+
+        local queue = {}
+    
+        watch(function()
+            state()
+            cleanup(function() table.insert(queue, 1) end)
+            cleanup(function() table.insert(queue, 2) end)
+        end)
+
+        CHECK(testkit.seq(queue, { 1 }))
+        state(2)
+        CHECK(testkit.seq(queue, { 1, 2, 1 }))
+        state(3)
+        CHECK(testkit.seq(queue, { 1, 2, 1, 2, 1 }))
+    end
+
+    --[[
     do CASE "multiple cleanup"
         local state = source(1)
 
@@ -574,6 +594,7 @@ TEST("cleanup()", function()
         --testkit.print2(queue)
         --CHECK(testkit.seq(queue, { 1, 2, 1, 2, 1, 2 }))
     end
+    ]]
 end)
 
 TEST("create()", function()
@@ -1308,6 +1329,7 @@ TEST("strict", function()
     local derive = vide.derive
     local watch = vide.watch
     local indexes, values = vide.indexes, vide.values
+    local cleanup = vide.cleanup
 
     do CASE "error on derived callback yield"
         local state = source(1)
@@ -1409,6 +1431,15 @@ TEST("strict", function()
         end)
 
         CHECK(ok)
+    end
+
+    do CASE "multiple cleanup per scope"
+        local ok = pcall(function()
+            cleanup(function() end)
+            cleanup(function() end)
+        end)
+
+        CHECK(not ok)
     end
 end)
 

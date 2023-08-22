@@ -17,6 +17,7 @@ Currently, strict mode will:
 4. Checks for `indexes()` and `values()` returning primitive values.
 5. Checks for duplicate nested properties at same depth.
 6. Better error reporting and stack traces.
+7. Checks for multiple `cleanup()` calls in the same function scope.
 
 By rerunning sources and watchers, any side-effects are made more apparent.
 This also helps ensure that cleanups are being handled correctly.

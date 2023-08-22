@@ -2,13 +2,26 @@
 
 ## cleanup()
 
-Runs a callback anytime a reactive scope is re-ran.
+Runs a callback anytime a function scope is re-ran.
 
 - **Type**
 
     ```lua
     function cleanup(callback: () -> ())
     ```
+
+- **Details**
+
+    The primary purpose of this function is to provide a means of cleaning up
+    side effects caused by source updates and `watch()` updates.
+
+    The stack is inspected to find the function that calls `cleanup()`. The
+    callback passed is called anytime the caller is re-ran, and when the caller
+    finally garbage collects.
+
+    ::: warning
+    Only one `cleanup()` call is allowed per function scope.
+    :::
 
 - **Example**
 

@@ -1,17 +1,23 @@
 if not game then script = require "test/relative-string" end
 
+local flags = require(script.Parent.flags)
+local throw = require(script.Parent.throw)
+
 local ref_to_id = {} :: { [string]: number }
 local id_to_ref = {} :: { [number]: string }
 local cleanup_callbacks = {} :: { [number]: () -> () } -- always dense
 local cleanup_lifetime = {} :: { [number]: unknown } -- can be sparse
 setmetatable(cleanup_lifetime :: any, { __mode = "v" })
 
+local debug_caller_to_line = {} :: { [() -> ()]: number }
+setmetatable(debug_caller_to_line, { __mode = "k" })
+
 local manual_mode = {
     caller = false :: false | () -> (),
     callbacks = {} :: { () -> () }
 }
 
--- todo: rare case where mem address is reused by another function on same line
+-- todo: rare case where mem address is reused by another function
 -- does this case handle itself?
 
 local function cleanup_ref(ref: string, lifetime: unknown, callback: () -> ())
@@ -32,12 +38,20 @@ end
 
 local function cleanup(callback: () -> ())
     local lifetime = debug.info(2, "f") -- `caller of cleanup() is lifetime of cleanup`
-    local line = debug.info(2, "l")
+
+    if flags.strict then
+        local line = debug.info(2, "l")
+        local cur_line = debug_caller_to_line[lifetime]
+        if cur_line and cur_line ~= line then
+            throw "only one cleanup call is allowed per function scope"
+        end
+        debug_caller_to_line[lifetime] = line
+    end
 
     if manual_mode.caller == lifetime then
         table.insert(manual_mode.callbacks, callback)
     else
-        local ref = tostring(lifetime) .. line
+        local ref = tostring(lifetime)
         cleanup_ref(ref, lifetime, callback)
     end
 end

@@ -6,6 +6,7 @@
 if not game then script = require "test/relative-string" end
 
 local create = require(script.create)
+local apply = require(script.apply)
 local source = require(script.source)
 local watch = require(script.watch)
 local cleanup, clean_garbage = require(script.cleanup)()
@@ -40,6 +41,14 @@ local vide = {
 
     -- flags
     strict = (nil :: any) :: boolean,
+
+    -- temporary
+    apply = function(instance: Instance)
+        return function(props: { [any]: any })
+            apply(instance, props)
+            return instance
+        end
+    end,
 
     -- runtime
     step = function(dt: number)

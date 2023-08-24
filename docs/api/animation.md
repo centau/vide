@@ -29,7 +29,7 @@ Returns a new source with a dynamically animated value of the input source.
 
     `damping_ratio` is the amount of resistance applied to the spring.
 
-    - \>1 = Overdamped (not currently supported).
+    - \>1 = Overdamped - slowly reaches target without any overshoot.
     - 1 = Critically damped - reaches target without any overshoot.
     - <1 = Underdamped - reaches target with some overshoot.
     - 0 = Undamped - never stabilizes, oscillates forever.

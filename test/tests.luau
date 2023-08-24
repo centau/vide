@@ -1240,7 +1240,7 @@ TEST("spring()", function()
         input(1)
         vide.step(0.05)
         CHECK(output() ~= input()) -- check spring is moving
-        vide.step(6) -- spring finished, should be internally removed from queue
+        vide.step(10) -- spring finished, should be internally removed from queue
         CHECK(output() == input()) -- check spring is at target
 
         local count = -1
@@ -1250,13 +1250,13 @@ TEST("spring()", function()
         end)
 
         vide.step(1) -- attempt to cause another spring update
-        CHECK(count == 1) -- check no update occurs as spring is finished
+        CHECK(count == 0) -- check no update occurs as spring is finished
         --
 
         gc() -- perform full gc
         input(2) -- spring should be re-added to spring queue
         vide.step(0) -- process spring queue
-        CHECK(count == 2) -- check spring was rescheduled correctly
+        CHECK(count == 1) -- check spring was rescheduled correctly
     end
 end)
 

@@ -15,10 +15,10 @@ local reff = false
 -- array of all nodes referenced since above flag was set
 local refs = {} :: { Node<unknown> }
 
-local WEAK_VALUES_RESIZABLE = { __mode = "vs" }
+local WEAK_VALUES = { __mode = "v" }
 local EVALUATION_ERR = "error while evaluating source:\n\n"
 
-setmetatable(refs :: any, WEAK_VALUES_RESIZABLE)
+setmetatable(refs :: any, WEAK_VALUES)
 
 -- runs a given callback in a context that Luau does not allow yielding in
 local check_for_yield: <T...>(fn: (T...) -> unknown, T...) -> () do
@@ -87,7 +87,7 @@ local function set_child(parent: Node<unknown>, child: Node<unknown>)
         table.insert(parent.children, child)    
     else
         parent.children = { child }
-        setmetatable(parent.children :: any, WEAK_VALUES_RESIZABLE)
+        setmetatable(parent.children :: any, WEAK_VALUES)
     end
 end
 
@@ -155,7 +155,7 @@ local function create<T>(value: T): (Node<T>, () -> T)
     local node = {
         cache = value,
         derive  = function() return nil :: any end,
-        effects = setmetatable({}, WEAK_VALUES_RESIZABLE) :: any,
+        effects = setmetatable({}, WEAK_VALUES) :: any,
         children = false :: false
     }
 

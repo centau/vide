@@ -21,6 +21,7 @@ Unsupported datatypes:
 
 ]]
 
+local throw = require(script.Parent.throw)
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
 local create = graph.create
@@ -29,7 +30,7 @@ local set_effect = graph.set_effect
 local capture = graph.capture
 
 local UPDATE_RATE = 120
-local TOLERANCE = 0.00001
+local TOLERANCE = 0.0001
 
 type Vec3 = Vector3
 
@@ -129,19 +130,27 @@ local vec6_to_type = {
     end :: Vec6ToType<Rect>
 }
 
+local invalid_type = {
+    __index = function(_, t: string)
+        throw(`cannot spring type {t}`)
+    end
+}
+
+setmetatable(type_to_vec6, invalid_type)
+setmetatable(vec6_to_type, invalid_type)
+
 -- maps spring data to its corresponding output node
 -- lifetime of spring data is tied to output node's
 local springs: { [SpringData<any>]: Node<any> } = {}
-setmetatable(springs, { __mode = "vs" })
+setmetatable(springs, { __mode = "v" })
 
 local function spring<T>(source: () -> T, period: number?, damping_ratio: number?): () -> T
-    local inputs, initial_position = capture(source)
-    local output, output_get = create(initial_position)
+    local inputs, initial_value = capture(source)
+    local output, output_get = create(initial_value)
 
-    local source_value = source()
-    local vtype = typeof(source_value)
+    local vtype = typeof(initial_value)
     
-    local x1_123, x1_456 = type_to_vec6[vtype](source_value)
+    local x1_123, x1_456 = type_to_vec6[vtype](initial_value)
 
     -- https://en.wikipedia.org/wiki/Damping
     -- todo: calculate damped freq at 10tau instead of natural freq
@@ -153,7 +162,7 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
     local c_c = 2*w_n
     local c = z * c_c
 
-    local data: SpringData<T> = {
+    local data: SpringData<T> = { -- todo: confirm gc of data
         k = k,
         c = c,
 
@@ -165,24 +174,23 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
         x1_456 = x1_456,
         v_456 = Vec3(),
 
-        source_value = source_value,
-        _ = source -- prevent gc of source while data exists
+        source_value = initial_value,
     }
 
     -- reschedule spring for simulation on input update
-    local function input_updated(node)
+    local function input_updated()
         local v = source()
-        data.x1_123, data.x1_456 = type_to_vec6[type(v)](v)
+        data.x1_123, data.x1_456 = type_to_vec6[typeof(v)](v)
         data.source_value = v
-        springs[data] = node
+        springs[data] = output -- todo: investigate why insertion is not O(1) at ~20k springs
     end
+
+    output.derive = input_updated :: any -- have output reference inputs
 
     -- register above function as side-effect for all inputs
     for _, input in next, inputs do
         set_effect(input, input_updated, output)
     end
-
-    springs[data] = output
 
     return output_get
 end

@@ -42,7 +42,7 @@ type Animatable = number | CFrame | Color3 | UDim | UDim2 | Vector2 | Vector3
 
 type SpringData<T> = {
     k: number, -- spring constant
-    c: number, -- damping coeff (from k)
+    c: number, -- damping coeff
 
     -- dimensions 1-3
     x0_123: Vec3,
@@ -54,7 +54,7 @@ type SpringData<T> = {
     x1_456: Vec3,
     v_456: Vec3,
 
-    source_value: T
+    source_value: T -- current value of spring input source
 }
 
 type TypeToVec6<T> = (T) -> (Vec3, Vec3)
@@ -140,7 +140,7 @@ setmetatable(type_to_vec6, invalid_type)
 setmetatable(vec6_to_type, invalid_type)
 
 -- maps spring data to its corresponding output node
--- lifetime of spring data is tied to output node's
+-- lifetime of spring data is tied to output node
 local springs: { [SpringData<any>]: Node<any> } = {}
 setmetatable(springs, { __mode = "v" })
 
@@ -162,7 +162,7 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
     local c_c = 2*w_n
     local c = z * c_c
 
-    local data: SpringData<T> = { -- todo: confirm gc of data
+    local data: SpringData<T> = {
         k = k,
         c = c,
 
@@ -178,26 +178,32 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
     }
 
     -- reschedule spring for simulation on input update
-    local function input_updated()
+    local function input_updated(node)
         local v = source()
         data.x1_123, data.x1_456 = type_to_vec6[typeof(v)](v)
         data.source_value = v
-        springs[data] = output -- todo: investigate why insertion is not O(1) at ~20k springs
+        springs[data] = node -- todo: investigate why insertion is not O(1) at ~20k springs
     end
 
-    output.derive = input_updated :: any -- have output reference inputs
+    -- unused field, use so output prevents gc of inputs
+    output.derive = source :: any
 
     -- register above function as side-effect for all inputs
     for _, input in next, inputs do
         set_effect(input, input_updated, output)
     end
 
-    return output_get
+    return output_get, data
 end
 
 local function step_springs(dt: number)
-    for data, output in next, springs do
-        local k, c, x0_123, x1_123, u_123, x0_456, x1_456, u_456 = data.k, data.c, data.x0_123, data.x1_123, data.v_123, data.x0_456, data.x1_456, data.v_456
+    for data in next, springs do
+        local k, c,
+        x0_123, x1_123, u_123,
+        x0_456, x1_456, u_456 =
+            data.k, data.c,
+            data.x0_123, data.x1_123, data.v_123,
+            data.x0_456, data.x1_456, data.v_456
 
         -- calculate displacement from target
         local dx_123 = x0_123 - x1_123
@@ -232,9 +238,14 @@ local remove_queue = {}
 
 local function update_spring_sources()
     for data, output in next, springs do
-        local x0_123, x1_123, v_123, x0_456, x1_456, v_456 =  data.x0_123, data.x1_123, data.v_123, data.x0_456, data.x1_456, data.v_456
+        local x0_123, x1_123, v_123,
+        x0_456, x1_456, v_456 =
+            data.x0_123, data.x1_123, data.v_123,
+            data.x0_456, data.x1_456, data.v_456
     
-        local dx_123, dx_456 = x0_123 - x1_123, x0_456 - x1_456
+        local dx_123, dx_456 =
+            x0_123 - x1_123,
+            x0_456 - x1_456
 
         -- todo: can this false positive?
         if (v_123 + v_456 + dx_123 + dx_456).Magnitude < TOLERANCE then

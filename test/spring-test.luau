@@ -13,10 +13,6 @@ local function step(): number
 end
 
 local function main()
-    local source = vide.source
-    local spring = vide.spring
-    local watch = vide.watch
-
     local TERMINAL_HEIGHT = 73 --* REDUCE IF BAR DOES NOT FIT IN TERMINAL
     local MIN_ALPHA = 0.3
     local MAX_ALPHA = 0.7
@@ -38,6 +34,10 @@ local function main()
             elseif x > 1/8 then "▂"
             else "▁"
     end
+
+    local source = vide.source
+    local spring = vide.spring
+    local watch = vide.watch
 
     local value = source(MAX)
     local sprung = spring(value, 1, 0.3)

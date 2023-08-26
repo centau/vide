@@ -214,6 +214,19 @@ TEST("source()", function()
         state(b)
         CHECK(updates == 1)
     end
+
+    do CASE "garbage collection of node"
+        local capture = require "src/graph".capture
+        local src = source(0)
+
+        local wref do
+            local node = unpack(capture(src))
+            wref = weak { node }
+        end
+
+        gc()
+        CHECK(not wref[1])
+    end
 end)
 
 TEST("derive()", function()
@@ -331,6 +344,20 @@ TEST("derive()", function()
             a(2)
             CHECK(c() == 2)
         end
+    end
+
+    do CASE "garbage collection of node"
+        local capture = require "src/graph".capture
+        local input = source(1)
+
+        local wref do
+            local output = derive(input)
+            local output_node = unpack(capture(output))
+            wref = weak { output_node }
+        end
+
+        gc()
+        CHECK(not wref[1])
     end
 end)
 
@@ -631,8 +658,6 @@ TEST("create()", function()
             AnchorPoint = Vector2.new(),
             Position = UDim2.new()
         }
-
-        print("template", template.AnchorPoint)
 
         local text = create(template) {
             AnchorPoint = { 1, 2 },
@@ -1215,8 +1240,24 @@ TEST("spring()", function()
             gc()
             CHECK(not wref[1])
         end
-    end
 
+        do -- spring data gc
+            local capture = require "src/graph".capture
+
+            local input = source(10)
+
+            local wref do
+                local output, data = (spring :: any)(input)
+                input(input() + 1) -- schedule spring calculation
+                local output_node = unpack(capture(output))
+                wref = weak { output_node, data }
+            end
+    
+            gc()
+            CHECK(not wref[1])
+            CHECK(not wref[2])
+        end
+    end
 
     do CASE "garbage collection (binded)"
         local input = source(10)

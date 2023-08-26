@@ -20,6 +20,31 @@ local flags = require(script.flags)
 
 export type Source<T> = source.Source<T>
 
+local function step(dt: number)
+    if game then
+        debug.profilebegin("VIDE STEP")
+        debug.profilebegin("VIDE SPRING")
+    end
+
+    update_springs(dt)
+
+    if game then
+        debug.profileend()
+        debug.profilebegin("VIDE GARBAGE CLEANUP")
+    end
+
+    clean_garbage()
+
+    if game then
+        debug.profileend()
+        debug.profileend()
+    end
+end
+
+local stepped = game and game:GetService("RunService").Heartbeat:Connect(function(dt: number)
+    task.defer(step, dt)
+end)
+
 local vide = {
     -- core
     create = create,
@@ -52,24 +77,11 @@ local vide = {
 
     -- runtime
     step = function(dt: number)
-        if game then
-            debug.profilebegin("VIDE STEP")
-            debug.profilebegin("VIDE SPRING")
+        if stepped then
+            stepped:Disconnect()
+            stepped = nil
         end
-
-        update_springs(dt)
-
-        if game then
-            debug.profileend()
-            debug.profilebegin("VIDE GARBAGE CLEANUP")
-        end
-
-        clean_garbage()
-
-        if game then
-            debug.profileend()
-            debug.profileend()
-        end
+        step(dt)
     end
 }
 
@@ -95,12 +107,6 @@ do
             end
         end
     })
-end
-
-if game then
-    game:GetService("RunService").Heartbeat:Connect(function(dt: number)
-        task.defer(vide.step, dt)
-    end)
 end
 
 return vide

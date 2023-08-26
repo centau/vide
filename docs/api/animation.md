@@ -2,7 +2,7 @@
 
 ## spring()
 
-Returns a new source with a dynamically animated value of the input source.
+Returns a new source with a value always moving torwards the input source value.
 
 - **Type**
 
@@ -13,19 +13,19 @@ Returns a new source with a dynamically animated value of the input source.
         damping_ratio: number = 1
     ): () -> T
 
-    type Animatable = number | CFrame | Color3 | UDim | UDim2 | Vector2 | Vector3
+    type Animatable = number | CFrame | Color3 | UDim | UDim2 | Vector2 | Vector3 | Rect
     ```
 
 - **Details**
 
-    The output source value is updated every frame based on the input source
+    The output source value is updated every step based on the input source
     value.
 
-    The output is physically simulated according to a
+    The movement is physically simulated according to a
     [spring](https://en.wikipedia.org/wiki/Simple_harmonic_motion).
 
     `period` is the amount of time in seconds it takes for the spring to
-    complete one full oscillation.
+    complete one full cycle if undamped.
 
     `damping_ratio` is the amount of resistance applied to the spring.
 
@@ -34,4 +34,8 @@ Returns a new source with a dynamically animated value of the input source.
     - <1 = Underdamped - reaches target with some overshoot.
     - 0 = Undamped - never stabilizes, oscillates forever.
 
-    Velocity is conserved between source updates for smooth animation.
+    By default, the spring solver is ran at 120 Hz in
+    [`Heartbeat`](https://create.roblox.com/docs/reference/engine/classes/RunService#Heartbeat).
+    You can change when the solver runs by calling `vide.step(dt)`, which will
+    advance the simulation time by `dt` seconds and automatically stop the
+    solver running in heartbeat.

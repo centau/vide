@@ -41,7 +41,7 @@ type Item = {
 
 local items = source({} :: Array<Item>)
 
-local elements = indexes(items, function(item, i)
+local elements = values(items, function(item, i)
     return create "ImageLabel" {
         Image = "rbxassetid://" .. item.Icon,
         LayoutOrder = i

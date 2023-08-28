@@ -1388,13 +1388,16 @@ TEST("actions", function()
     do CASE "run action"
         local ran = false
 
-        create "Frame" {
+        local frame_ref
+        local frame = create "Frame" {
             action(function(self)
+                frame_ref = self
                 ran = true
             end, 1)
         }
 
         CHECK(ran)
+        CHECK(frame_ref == frame)
     end
 
     do CASE "priorities"

@@ -44,7 +44,7 @@ local aggregates = {}
 for i, v in next, {
     Vector2 = Vector2,
     UDim2 = UDim2,
-    UDim = UDim2,
+    UDim = UDim,
     Rect = Rect,
     Color3 = Color3
 } do

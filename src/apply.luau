@@ -14,7 +14,7 @@ type Node<T> = graph.Node<T>
 local event_buffer: { [string]: () -> () } = {}
 
 -- buffer of priority -> callback to run after events are connected
-local action_buffers = {} :: { { () -> () } }
+local action_buffers = {} :: { { (Instance) -> () } }
 setmetatable(action_buffers :: any, {
     __index = function(_, i: number)
         action_buffers[i] = {}
@@ -131,7 +131,7 @@ local function apply<T>(instance: T & Instance, properties: { [unknown]: unknown
     -- run buffered actions respecting their priorities
     for _, buffer in next, action_buffers do
         for _, callback in next, buffer do
-            callback()
+            callback(instance)
         end
     end
 

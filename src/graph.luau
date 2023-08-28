@@ -119,6 +119,8 @@ end
 
 -- detect what nodes were referenced in the given callback and returns them in an array
 local function capture<T, U>(fn: (U?) -> T, arg: U?): ({ Node<unknown> }, T)
+    if reff then throw("recursive capture detected") end
+
     if flags.strict then check_for_yield(fn, arg) end
 
     table.clear(refs)

@@ -83,7 +83,21 @@ return {
         TextColor3 = Color3.new(0, 0, 0)
     },
     
-    -- UIComponent instances
+    UIListLayout = {
+        SortOrder = Enum.SortOrder.LayoutOrder
+    },
+   
+    UIGridLayout = {
+        SortOrder = Enum.SortOrder.LayoutOrder
+    },
+
+    UITableLayout = {
+        SortOrder = Enum.SortOrder.LayoutOrder
+    },
+
+    UIPageLayout = {
+        SortOrder = Enum.SortOrder.LayoutOrder
+    },
     
     VideoFrame = {
         BackgroundColor3 = Color3.new(1, 1, 1),

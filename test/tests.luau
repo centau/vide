@@ -1039,11 +1039,13 @@ TEST("indexes()", function()
         local count = table.create(3, 0)
         local unrelated_count = 0
 
-        local function unrelated()
-            cleanup(function()
-                unrelated_count += 1
-            end)
-        end
+        local unrelated = (function()
+            return function()
+                cleanup(function()
+                    unrelated_count += 1
+                end)
+            end
+        end)()
         
         local output = indexes(input, function(v, i)
             -- check that overriden cleanup scopes don't affect cleanup calls
@@ -1165,11 +1167,13 @@ TEST("values()", function()
         local count = table.create(3, 0)
         local unrelated_count = 0
 
-        local function unrelated()
-            cleanup(function()
-                unrelated_count += 1
-            end)
-        end
+        local unrelated = (function()
+            return function()
+                cleanup(function()
+                    unrelated_count += 1
+                end)
+            end
+        end)()
         
         local output = values(input, function(v, i)
             -- check that overriden cleanup scopes don't affect cleanup calls

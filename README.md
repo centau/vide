@@ -25,6 +25,7 @@ for a quick introduction to the library.
 
 ```lua
 local vide = require(path_to_vide)
+local create = vide.create
 local source = vide.source
 
 local function Counter()

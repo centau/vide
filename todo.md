@@ -12,6 +12,7 @@
     needed?
   - expand behavior of `vide.cleanup()` to detect garbage collection of
     arbitrary values, not needing manual destruction
+    - look into SolidJS's reactive contexts
 - solution to nested reactivity, see: SolidJS stores
 - SolidJS control flow components
   - Show
@@ -19,3 +20,4 @@
   - Dynamic
   - Portal
 - batch source updates
+- optimize `indexes()` double-diffing

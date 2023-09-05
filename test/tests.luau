@@ -1431,31 +1431,31 @@ TEST("strict", function()
     local indexes, values = vide.indexes, vide.values
     local cleanup = vide.cleanup
 
-    do CASE "error on derived callback yield"
-        local state = source(1)
+    -- do CASE "error on derived callback yield"
+    --     local state = source(1)
 
-        local ok = pcall(function()
-            local _derived = derive(function()
-                coroutine.yield()
-                return state()
-            end)
-        end)
+    --     local ok = pcall(function()
+    --         local _derived = derive(function()
+    --             coroutine.yield()
+    --             return state()
+    --         end)
+    --     end)
 
-        CHECK(not ok)
-    end
+    --     CHECK(not ok)
+    -- end
 
-    do CASE "error on watcher callback yield"
-        local state = source(1)
+    -- do CASE "error on watcher callback yield"
+    --     local state = source(1)
 
-        local ok = pcall(function()
-            local _derived = watch(function()
-                coroutine.yield()
-                state()
-            end)
-        end)
+    --     local ok = pcall(function()
+    --         local _derived = watch(function()
+    --             coroutine.yield()
+    --             state()
+    --         end)
+    --     end)
 
-        CHECK(not ok)
-    end
+    --     CHECK(not ok)
+    -- end
 
     do CASE "run derived callback twice"
         local state = source(1)

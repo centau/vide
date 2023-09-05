@@ -2,6 +2,17 @@ if not game then script = require "test/relative-string" end
 
 local flags = require(script.Parent.flags)
 local throw = require(script.Parent.throw)
+local graph = require(script.Parent.graph)
+local get_scope = graph.get_scope
+local add_cleanup = graph.add_cleanup
+
+local function cleanup(fn: () -> ())
+    local node = get_scope()
+    if node == nil then throw("cannot call cleanup() in a non-reactive scope") end
+    add_cleanup(node, fn)
+end
+
+return cleanup
 
 --[[
 
@@ -22,6 +33,7 @@ todo: remove need for ref to id maps?
 
 ]]
 
+--[[
 -- maps a ref to cleanup id
 local ref_to_id = {} :: { [string]: number }
 -- maps a cleanup id to a ref
@@ -127,3 +139,4 @@ local manual_cleanup_mode = function(caller: () -> ()?)
 end :: ( (caller: (...any) -> ()) -> () ) & ( (nil) -> { () -> () } )
 
 return function() return cleanup, clean_garbage, manual_cleanup_mode, cleanup_ref end
+]]

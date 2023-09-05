@@ -5,7 +5,10 @@ local throw = require(script.Parent.throw)
 local flags = require(script.Parent.flags)
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
-local set_effect = graph.set_effect
+local create = graph.create
+local create_and_open_scope = graph.create_and_open_scope
+local close_scope = graph.close_scope
+local set_child = graph.set_child
 local capture = graph.capture
 
 --[[
@@ -71,23 +74,37 @@ function bind(instance: Instance, property: string, setter: (Instance) -> ())
         end
     end
 
+    local node = create(false)
+
+    create_and_open_scope(node)
+
     -- run setter to capture any nodes being depended on
     local nodes = (capture(setter :: () -> unknown, instance))
 
-    -- register the setter as a side-effect of each node
-    for _, node in next, nodes do
-        set_effect(node, setter, instance)
-    end
+    close_scope()
 
     -- get binding id
     bind_count += 1
     local bind_id = bind_count
+
+    node.effect = function()
+        local instance = weak[bind_id]
+        if instance == nil then return end
+        setter(weak[bind_id] :: Instance)
+    end
+
+    -- register the setter as a side-effect of each node
+    for _, n in next, nodes do
+        set_child(n, node)
+    end
+
+    
     
     -- store reference of instance proxy without preventing gc
     weak[bind_id] = instance
 
     local function ref()
-        local _ = setter -- prevent gc of nodes being depended on
+        local _ = node -- prevent gc of node being depended on
         local instance = weak[bind_id] :: Instance
 
         -- keep proxy in memory if instance is still parented

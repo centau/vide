@@ -26,7 +26,7 @@ local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
 local create = graph.create
 local set = graph.set
-local set_effect = graph.set_effect
+local set_child = graph.set_child
 local capture = graph.capture
 
 local UPDATE_RATE = 120
@@ -178,19 +178,19 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
     }
 
     -- reschedule spring for simulation on input update
-    local function input_updated(node)
+    local function input_updated()
         local v = source()
         data.x1_123, data.x1_456 = type_to_vec6[typeof(v)](v)
         data.source_value = v
-        springs[data] = node -- todo: investigate why insertion is not O(1) at ~20k springs
+        springs[data] = output -- todo: investigate why insertion is not O(1) at ~20k springs
     end
 
     -- unused field, use so output prevents gc of inputs
-    output.derive = source :: any
+    output.effect = input_updated
 
     -- register above function as side-effect for all inputs
     for _, input in next, inputs do
-        set_effect(input, input_updated, output)
+        set_child(input, output)
     end
 
     return output_get, data

@@ -5,11 +5,16 @@ if not game then script = require "test/relative-string" end
 local throw = require(script.Parent.throw)
 local flags = require(script.Parent.flags)
 local graph = require(script.Parent.graph)
-local _, _, manual_cleanup_mode, cleanup_ref = require(script.Parent.cleanup)()
 type Node<T> = graph.Node<T>
 local create = graph.create
 local set = graph.set
 local capture = graph.capture
+local run_cleanups = graph.run_cleanups
+local set_child = graph.set_child
+local create_and_open_scope = graph.create_and_open_scope
+local get_scope = graph.get_scope
+local open_scope = graph.open_scope
+local close_scope = graph.close_scope
 local link = graph.link
 
 type Map<K, V> = { [K]: V }
@@ -31,7 +36,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
     local remove_queue = {} :: { K }
     local output_array = {} :: { VO }
 
-    local cleanups = {} :: Map<K, { () -> () }>
+    local scopes = {} :: Map<K, Node<unknown>>
 
     local function recompute(data)
         -- queue removed values
@@ -43,14 +48,13 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
         -- remove queued values
         for _, i in next, remove_queue do
-            for _, callback in next, cleanups[i] do
-                callback() -- todo: pcall
-            end
+            run_cleanups(scopes[i])
+
 
             input_cache[i] = nil
             output_cache[i] = nil
             input_nodes[i] = nil
-            cleanups[i] = nil
+            scopes[i] = nil
         end
 
         table.clear(remove_queue)
@@ -61,14 +65,16 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
             if cv ~= v then
                 if cv == nil then
-                    manual_cleanup_mode(transform)
+                    local scope = create(false)
+
+                    create_and_open_scope(scope)
 
                     local node, get_value = create(v)
                     input_nodes[i] = node
                     output_cache[i] = transform(get_value, i)
                     input_cache[i] = v
 
-                    cleanups[i] = manual_cleanup_mode(nil)
+                    close_scope()
                 else
                     set(input_nodes[i], v)
                     input_cache[i] = v

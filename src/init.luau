@@ -9,13 +9,14 @@ local create = require(script.create)
 local apply = require(script.apply)
 local source = require(script.source)
 local watch = require(script.watch)
-local cleanup, clean_garbage = require(script.cleanup)()
+local cleanup = require(script.cleanup)
 local untrack = require(script.untrack)
 local derive = require(script.derive)
 local indexes, values = require(script.maps)()
 local spring, update_springs = require(script.spring)()
 local action = require(script.action)()
 local throw = require(script.throw)
+local _, sweep = require(script.on_gc)()
 local flags = require(script.flags)
 
 export type Source<T> = source.Source<T>
@@ -33,7 +34,7 @@ local function step(dt: number)
         debug.profilebegin("VIDE GARBAGE CLEANUP")
     end
 
-    clean_garbage()
+    sweep()
 
     if game then
         debug.profileend()

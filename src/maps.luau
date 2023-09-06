@@ -11,11 +11,12 @@ local set = graph.set
 local capture = graph.capture
 local run_cleanups = graph.run_cleanups
 local set_child = graph.set_child
-local create_and_open_scope = graph.create_and_open_scope
+local open_new_scope = graph.open_new_scope
 local get_scope = graph.get_scope
 local open_scope = graph.open_scope
 local close_scope = graph.close_scope
 local link = graph.link
+local destroy_tree = graph.destroy_tree
 
 type Map<K, V> = { [K]: V }
 
@@ -48,7 +49,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
         -- remove queued values
         for _, i in next, remove_queue do
-            run_cleanups(scopes[i])
+            destroy_tree(scopes[i])
 
 
             input_cache[i] = nil
@@ -67,7 +68,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
                 if cv == nil then
                     local scope = create(false)
 
-                    create_and_open_scope(scope)
+                    open_new_scope(scope)
 
                     local node, get_value = create(v)
                     input_nodes[i] = node
@@ -94,7 +95,10 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
     local output, read_output_value = create(nil :: any)
 
+    local scope = create(false)
+    
     local function derive()
+        local _ = scope
         return recompute(input())
     end
 
@@ -106,13 +110,11 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
     output.cache = recompute(value)
 
-    cleanup_ref(tostring(output), output, function()
-        for _, callbacks in next, cleanups do
-            for _, callback in next, callbacks do
-                callback() -- todo: pcall
-            end
-        end
-    end)
+
+
+    local scope_parent = get_scope()
+
+    set_child(scope_parent, scope)
 
     return read_output_value
 end

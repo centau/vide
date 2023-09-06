@@ -15,6 +15,7 @@
     - look into SolidJS's reactive contexts
 - solution to nested reactivity, see: SolidJS stores
 - SolidJS control flow components
+- equality checking of derived sources
   - Show
   - Switch
   - Dynamic

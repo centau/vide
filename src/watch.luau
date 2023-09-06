@@ -2,17 +2,17 @@ if not game then script = require "test/relative-string" end
 
 local graph = require(script.Parent.graph)
 local create = graph.create
-local set_child = graph.set_child
+local add_parent = graph.add_parent
+local add_child = graph.add_child
 local capture = graph.capture
-local create_and_open_scope = graph.create_and_open_scope
+local init_scope = graph.init_scope
 local close_scope = graph.close_scope
-
-local ref = {}
+local destroy = graph.destroy
 
 local function watch(effect: () -> ()): () -> ()
-    local node = create(nil)
+    local node = create(false)
 
-    create_and_open_scope(node)
+    init_scope(node)
 
     local nodes = capture(effect :: () -> nil)
 
@@ -20,17 +20,14 @@ local function watch(effect: () -> ()): () -> ()
 
     node.effect = effect
 
-    -- register effect with permanent lifetime
     for _, parent in next, nodes do
-        set_child(parent, node)  
+        add_parent(node, parent)
+        add_child(parent, node)
     end
 
-    ref[node] = true -- prevent gc of node
 
     local function unwatch()
-        -- unregister effect from all nodes
-        node.effect = function() end
-        ref[node] = nil
+        destroy(node)
     end
 
     return unwatch

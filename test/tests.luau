@@ -21,131 +21,49 @@ end
 TEST("graph", function()
     local graph = require "src/graph"
     local create = graph.create
-    local get = graph.get
-    local set = graph.set
+    local track = graph.track
     local capture = graph.capture
-    local capture_and_link = graph.capture_and_link
-    local link = graph.link
-    local set_effect = graph.set_effect
+    local update = graph.update
+    local add_child = graph.add_child
 
     do CASE "node creation"
         local node = create(1)
-        CHECK(get(node) == 1)
-    end
-
-    do CASE "node value"
-        local node = create(0)
-        set(node, 1)
-        CHECK(get(node) == 1)
-        set(node, 2)
-        CHECK(get(node) == 2)
+        CHECK(node.cache == 1)
     end
 
     do CASE "capture nodes"
         local node1 = create(nil)
         local node2 = create(nil)
-        local nodes = capture(function()
-            return get(node1), get(node2)
+        local captured = capture(function()
+            track(node1)
+            track(node2)
+            return nil
         end)
-        CHECK(nodes[1] == node1)
-        CHECK(nodes[2] == node2)
+        CHECK(captured[1] == node1)
+        CHECK(captured[2] == node2)
     end
 
     do CASE "linking nodes"
         local parent = create(1)
         local child = create(0)
 
-        link(parent, child, function() 
-            return get(parent)
-        end)
+        add_child(parent, child)
 
-        set(parent, get(parent) + 1)
-        CHECK(get(child) == 2) -- child should automatically update
+        local ran = false
+        child.effect = function()
+            ran = true
+        end
+
+        update(parent)
+        CHECK(ran)
     end
 
-    do CASE "capture and link nodes"
-        local parent = create(1)
-        local child = create()
-
-        child.cache = capture_and_link(child, function()
-            return tostring(get(parent))
-        end)
-
-        set(parent, 2)
-        CHECK(get(child) == "2")
-    end
+    -- todo: further tests
 
     do CASE "nodes garbage collection"
         local wref = weak { create(1) }
         gc()
         CHECK(not wref[1])
-    end
-
-    do CASE "node effect garbage collection"
-        do
-            local wref
-
-            do
-                local function factory(p) -- factory function to prevent closure caching
-                    return function()
-                        return get(p)
-                    end
-                end
-
-                local node = create(1)
-                
-                do
-                    local effect1 = factory(node)
-                    local effect2 = factory(node)
-
-                    wref = weak { e1 = effect1, e2 = effect2, n = node}
-
-                    set_effect(node, effect1, {})
-                    set_effect(node, effect2, true)
-                end
-
-                gc()
-                CHECK(not wref.e1) -- effect1 should gc since nothing is referencing table `t`
-                CHECK(wref.e2) -- effect2 should not gc as `true` is not garbage collectable
-            end
-
-            gc()
-            CHECK(not wref.n and not wref.e2) -- node should now gc along with effect2
-        end
-
-        do
-            local wref
-
-            do -- same test but for multiple nodes referenced by watcher
-                local function factory(a, b)
-                    return (function(c, d)
-                        return function()
-                            return get(c), get(d)
-                        end
-                    end)(a, b)
-                end
-
-                local node1 = create(1)
-                local node2 = create(1)
-
-                do 
-                    local effect = factory(node1, node2)
-
-                    wref = weak { n1 = node1, n2 = node2, e = effect }
-
-                    local t1 = {}
-                    set_effect(node1, effect, t1)
-                    set_effect(node2, effect, t1)
-                end
-
-                gc()
-                CHECK(not wref.e)
-            end
-
-            gc()
-            CHECK(not wref.n1)
-            CHECK(not wref.n2)
-        end
     end
 end)
 
@@ -154,78 +72,65 @@ TEST("source()", function()
     local watch = vide.watch
 
     do CASE "create source"
-        local state = source(1)
-        CHECK(state() == 1)
+        local src = source(1)
+        CHECK(src() == 1)
     end
 
     do CASE "set and get source value"
-        local state = source(1)
-        state(2)
-        CHECK(state() == 2)
+        local src = source(1)
+        src(2)
+        CHECK(src() == 2)
     end
 
     do CASE "does not update if same value"
-        local state = source(1)
+        local src = source(1)
 
-        local updates = -1
+        local count = -1
         watch(function()
-            state()
-            updates += 1
+            src()
+            count += 1
         end)
 
-        CHECK(updates == 0)
-        state(1)
-        CHECK(updates == 0)
-        state(2)
-        CHECK(updates == 1)
+        CHECK(count == 0)
+        src(1)
+        CHECK(count == 0)
+        src(2)
+        CHECK(count == 1)
     end
 
-    do CASE "does update if same value is table"
-        local state = source {}
+    do CASE "does update if same value is mutable table"
+        local src = source {}
 
-        local updates = -1
+        local count = -1
         watch(function()
-            state()
-            updates += 1
+            src()
+            count += 1
         end)
 
-        CHECK(updates == 0)
-        state(state())
-        CHECK(updates == 1)
+        CHECK(count == 0)
+        src(src())
+        CHECK(count == 1)
     end
 
     do CASE "does not update if same value is frozen table"
         local a = table.freeze {}
         local b = table.freeze {}
 
-        local state = source(a)
+        local src = source(a)
 
-        local updates = -1
+        local count = -1
         watch(function()
-            state()
-            updates += 1
+            src()
+            count += 1
         end)
 
-        CHECK(updates == 0)
-        state(a)
-        CHECK(updates == 0)
-        state(b)
-        CHECK(updates == 1)
-        state(b)
-        CHECK(updates == 1)
-    end
-
-    do CASE "garbage collection of node"
-        local capture = require "src/graph".capture
-        local src = source(0)
-
-        local wref do
-            local node = unpack(capture(src))
-            wref = weak { node }
-        end
-
-        gc()
-        CHECK(not wref[1])
+        CHECK(count == 0)
+        src(a)
+        CHECK(count == 0)
+        src(b)
+        CHECK(count == 1)
+        src(b)
+        CHECK(count == 1)
     end
 end)
 
@@ -234,130 +139,48 @@ TEST("derive()", function()
     local derive = vide.derive
 
     do CASE "derive new value on source change"
-        local inputA = source(1)
-        local inputB = source(2)
+        local a = source(1)
+        local b = source(2)
 
-        local output = derive(function()
-            return tostring(inputA() + inputB())
+        local c = derive(function()
+            return tostring(a() + b())
         end)
 
-        CHECK(output() == "3")
-        inputA(2)
-        CHECK(output() == "4")
+        CHECK(c() == "3")
+        a(2)
+        CHECK(c() == "4")
     end
 
     do CASE "derive wrapped source"
-        local input = source(1)
+        local a = source(1)
 
-        local transform = function()
-            return tostring(input())
+        local b = function()
+            return tostring(a())
         end
 
-        local output = derive(function()
-            return tonumber(transform())
+        local c = derive(function()
+            return tonumber(b())
         end)
 
-        CHECK(output() == 1)
-        input(2)
-        CHECK(output() == 2)
+        CHECK(c() == 1)
+        a(2)
+        CHECK(c() == 2)
     end
 
     do CASE "garbage collection"
-        do -- check that `b` does not allow gc of `a`
-            local wref, b
-            
-            do
-                local a = source(1)
-    
-                b = derive(function()
-                    return a()
-                end)
+        -- check that `b` does not allow gc of `a`        
+        local a = source(1)
 
-                wref = weak { a }
-            end
+        local b = derive(function()
+            return a()
+        end)
 
-            gc()
-            CHECK(wref[1])
-            b()
-        end
+        b = nil :: any
 
-        do -- check that `a` allows gc of `b`
-            local a = source(1)
-
-            local wref
-
-            do
-                local b = derive(function()
-                    return a()
-                end)
-
-                wref = weak { b }
-            end
-
-            gc()
-            CHECK(not wref[1])
-        end
-    end
-
-    do CASE "garbage collection 2"
-        -- creats a chain `a -> b -> c` where `a` is the source
-        local function setup()
-            local a = source(0)
-
-            local b = derive(function()
-                return a()
-            end)
-
-            local c = derive(function()
-               return b()
-            end)
-
-            return weak { a, b, c }, a, b, c
-        end
-
-        do -- check that `b` and `c` can gc if `a` is referenced
-            local wref, _a = setup()
-
-            gc()
-            CHECK(not wref[2])
-            CHECK(not wref[3])
-        end
-
-        do -- check that `a` and `b` wont gc if `c` is referenced
-            local weak, _a, _b, _c = setup()
-
-            _a, _b = nil :: any, nil :: any
-
-            gc()
-            CHECK(weak[1])
-            CHECK(weak[2])
-        end
-
-        do -- check that `b` wont gc if `a` and `c` are referenced
-            local weak, a, _b, c = setup()
-
-            _b = nil :: any
-
-            gc()
-            CHECK(weak[2])
-
-            a(2)
-            CHECK(c() == 2)
-        end
-    end
-
-    do CASE "garbage collection of node"
-        local capture = require "src/graph".capture
-        local input = source(1)
-
-        local wref do
-            local output = derive(input)
-            local output_node = unpack(capture(output))
-            wref = weak { output_node }
-        end
+        local wref = weak { a }
 
         gc()
-        CHECK(not wref[1])
+        CHECK(wref[1])
     end
 end)
 
@@ -366,63 +189,63 @@ TEST("watch()", function()
     local watch = vide.watch
     local cleanup = vide.cleanup
 
-    do CASE "capture sourcess"
+    do CASE "capture sources"
         local a = source(1)
         local b = source(1)
 
-        local runcount = -1
+        local count = 0
         watch(function()
             a()
             b()
-            runcount += 1
+            count += 1
         end)
 
-        CHECK(runcount == 0)
+        CHECK(count == 1)
         a(2)
-        CHECK(runcount == 1)
+        CHECK(count == 2)
         b(2)
-        CHECK(runcount == 2)
+        CHECK(count == 3)
     end
 
     do CASE "stop watch"
         local a = source(1)
 
-        local runcount = -1
+        local count = 0
         local unwatch = watch(function()
             a()
-            runcount += 1
+            count += 1
         end)
         
         unwatch()
         a(2)
-        CHECK(runcount == 0)
+        CHECK(count == 1)
     end
 
     do CASE "side-effect cleanup"
         local state = source(1)
 
-        local effect_runcount = 0
-        local cleanup_runcount = 0
+        local effect_count = 0
+        local cleanup_count = 0
 
         local unwatch = watch(function()
             state()
-            effect_runcount += 1
-            cleanup(function() cleanup_runcount += 1 end)
+            effect_count += 1
+            cleanup(function() cleanup_count += 1 end)
         end)
 
-        CHECK(effect_runcount == 1)
-        CHECK(cleanup_runcount == 0)
+        CHECK(effect_count == 1)
+        CHECK(cleanup_count == 0)
         state(2)
-        CHECK(effect_runcount == 2)
-        CHECK(cleanup_runcount == 1)
+        CHECK(effect_count == 2)
+        CHECK(cleanup_count == 1)
 
         unwatch()
         unwatch = nil :: any
         gc()
         vide.step(0)
 
-        CHECK(effect_runcount == 2)
-        CHECK(cleanup_runcount == 2)
+        CHECK(effect_count == 2)
+        CHECK(cleanup_count == 2)
     end
 
     do CASE "garbage collection"
@@ -574,26 +397,6 @@ TEST("cleanup()", function()
         CHECK(objB.cleaned == 2)
     end
 
-    -- this is not allowed, test to verify behavior anyways
-    do CASE "multiple cleanup"
-        local state = source(1)
-
-        local queue = {}
-    
-        watch(function()
-            state()
-            cleanup(function() table.insert(queue, 1) end)
-            cleanup(function() table.insert(queue, 2) end)
-        end)
-
-        CHECK(testkit.seq(queue, { 1 }))
-        state(2)
-        CHECK(testkit.seq(queue, { 1, 2, 1 }))
-        state(3)
-        CHECK(testkit.seq(queue, { 1, 2, 1, 2, 1 }))
-    end
-
-    --[[
     do CASE "multiple cleanup"
         local state = source(1)
 
@@ -610,18 +413,15 @@ TEST("cleanup()", function()
         CHECK(testkit.seq(queue, { 1, 2 }))
         state(3)
         CHECK(testkit.seq(queue, { 1, 2, 1, 2 }))
-
-        do
-            state = nil :: any
-            gc()
-            vide.step(0)
-        end
-
-        -- todo: guarantee call order when gc? (currently not)
-        --testkit.print2(queue)
-        --CHECK(testkit.seq(queue, { 1, 2, 1, 2, 1, 2 }))
     end
-    ]]
+
+    do CASE "no scope"
+        local ok = pcall(function()
+            cleanup(function() end)
+        end)
+
+        CHECK(not ok)
+    end
 end)
 
 TEST("create()", function()
@@ -822,9 +622,11 @@ TEST("create()", function()
                     Text = state,
                 }
 
+                local binding = assert(node.children)[1]
+
                 wref = weak {
                     instance = instance,
-                    binding = next(node.effects)
+                    binding = binding
                 }
             end
             

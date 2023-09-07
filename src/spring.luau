@@ -24,10 +24,11 @@ Unsupported datatypes:
 local throw = require(script.Parent.throw)
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
-local create = graph.create
-local set = graph.set
-local set_child = graph.set_child
+local create_node = graph.create_node
+local update = graph.update
 local capture = graph.capture
+local add_child = graph.add_child
+local track = graph.track
 
 local UPDATE_RATE = 120
 local TOLERANCE = 0.0001
@@ -146,7 +147,6 @@ setmetatable(springs, { __mode = "v" })
 
 local function spring<T>(source: () -> T, period: number?, damping_ratio: number?): () -> T
     local inputs, initial_value = capture(source)
-    local output, output_get = create(initial_value)
 
     local vtype = typeof(initial_value)
     
@@ -177,23 +177,25 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
         source_value = initial_value,
     }
 
-    -- reschedule spring for simulation on input update
-    local function input_updated()
+    local output = create_node(initial_value)
+
+
+    local updater = create_node(false)
+    updater.effect = function()
         local v = source()
         data.x1_123, data.x1_456 = type_to_vec6[typeof(v)](v)
         data.source_value = v
         springs[data] = output -- todo: investigate why insertion is not O(1) at ~20k springs
     end
 
-    -- unused field, use so output prevents gc of inputs
-    output.effect = input_updated
-
-    -- register above function as side-effect for all inputs
     for _, input in next, inputs do
-        set_child(input, output)
+        add_child(input, updater)
     end
 
-    return output_get, data
+    return function()
+        track(output)
+        return output.cache
+    end
 end
 
 local function step_springs(dt: number)
@@ -251,10 +253,11 @@ local function update_spring_sources()
         if (v_123 + v_456 + dx_123 + dx_456).Magnitude < TOLERANCE then
             -- close enough to target, unshedule spring and set value to target
             table.insert(remove_queue, data)
-            set(output, data.source_value)
+            output.cache = data.source_value
         else
-            set(output, vec6_to_type[typeof(data.source_value)](x0_123, x0_456))
+            output.cache = vec6_to_type[typeof(data.source_value)](x0_123, x0_456)
         end
+        update(output)
     end
 
     for _, data in next, remove_queue do

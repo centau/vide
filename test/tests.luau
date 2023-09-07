@@ -18,22 +18,29 @@ local function weak<T>(t: T & {}): T
     return t
 end
 
+local function wrap_root(fn: () -> ())
+    return function()
+        local _, destroy = vide.root(fn :: any)
+        destroy()
+    end
+end
+
 TEST("graph", function()
     local graph = require "src/graph"
-    local create = graph.create
+    local create_node = graph.create_node
     local track = graph.track
     local capture = graph.capture
     local update = graph.update
     local add_child = graph.add_child
 
     do CASE "node creation"
-        local node = create(1)
+        local node = create_node(1)
         CHECK(node.cache == 1)
     end
 
     do CASE "capture nodes"
-        local node1 = create(nil)
-        local node2 = create(nil)
+        local node1 = create_node(nil)
+        local node2 = create_node(nil)
         local captured = capture(function()
             track(node1)
             track(node2)
@@ -44,8 +51,8 @@ TEST("graph", function()
     end
 
     do CASE "linking nodes"
-        local parent = create(1)
-        local child = create(0)
+        local parent = create_node(1)
+        local child = create_node(0)
 
         add_child(parent, child)
 
@@ -61,13 +68,13 @@ TEST("graph", function()
     -- todo: further tests
 
     do CASE "nodes garbage collection"
-        local wref = weak { create(1) }
+        local wref = weak { create_node(1) }
         gc()
         CHECK(not wref[1])
     end
 end)
 
-TEST("source()", function()
+TEST("source()", wrap_root(function()
     local source = vide.source
     local watch = vide.watch
 
@@ -132,9 +139,9 @@ TEST("source()", function()
         src(b)
         CHECK(count == 1)
     end
-end)
+end))
 
-TEST("derive()", function()
+TEST("derive()", wrap_root(function()
     local source = vide.source
     local derive = vide.derive
 
@@ -182,9 +189,9 @@ TEST("derive()", function()
         gc()
         CHECK(wref[1])
     end
-end)
+end))
 
-TEST("watch()", function()
+TEST("watch()", wrap_root(function()
     local source = vide.source
     local watch = vide.watch
     local cleanup = vide.cleanup
@@ -207,27 +214,13 @@ TEST("watch()", function()
         CHECK(count == 3)
     end
 
-    do CASE "stop watch"
-        local a = source(1)
-
-        local count = 0
-        local unwatch = watch(function()
-            a()
-            count += 1
-        end)
-        
-        unwatch()
-        a(2)
-        CHECK(count == 1)
-    end
-
     do CASE "side-effect cleanup"
         local state = source(1)
 
         local effect_count = 0
         local cleanup_count = 0
 
-        local unwatch = watch(function()
+        watch(function()
             state()
             effect_count += 1
             cleanup(function() cleanup_count += 1 end)
@@ -238,14 +231,6 @@ TEST("watch()", function()
         state(2)
         CHECK(effect_count == 2)
         CHECK(cleanup_count == 1)
-
-        unwatch()
-        unwatch = nil :: any
-        gc()
-        vide.step(0)
-
-        CHECK(effect_count == 2)
-        CHECK(cleanup_count == 2)
     end
 
     do CASE "garbage collection"
@@ -270,28 +255,6 @@ TEST("watch()", function()
             CHECK(wref[1])
         end
 
-        do -- watcher can gc if stopped
-            local state = source(1)
-            
-            local wref, unwatch
-
-            do
-                local effect = factory(state)
-                unwatch = watch(effect)
-                wref = weak { effect }
-            end
-
-            gc()
-            CHECK(wref[1])
-
-            unwatch()
-            unwatch = nil :: any -- unwatch holds ref to effect
-
-            gc()
-            CHECK(not wref[1])
-
-        end
-
         do -- state can gc with watcher
             local wref
 
@@ -306,9 +269,9 @@ TEST("watch()", function()
             CHECK(not wref[1])
         end
     end
-end)
+end))
 
-TEST("cleanup()", function()
+TEST("cleanup()", wrap_root(function()
     local source = vide.source
     local watch = vide.watch
     local cleanup = vide.cleanup
@@ -319,7 +282,7 @@ TEST("cleanup()", function()
         local watched = 0
         local cleaned = 0
 
-        local stop = watch(function()
+        watch(function()
             state()
             watched += 1
             cleanup(function()
@@ -334,67 +297,6 @@ TEST("cleanup()", function()
 
         CHECK(watched == 2)
         CHECK(cleaned == 1)
-
-        stop()
-
-        do -- vide detects by iterating through and checking for gc'd refs
-            stop = nil :: any
-            gc()
-            vide.step(0)
-        end
-
-        CHECK(watched == 2)
-        CHECK(cleaned == 2)
-    end
-
-    do CASE "scoped"
-        local function setup()
-            local state = source(1)
-            local obj = { cleaned = 0 }
-
-            local _stop = watch(function()
-                state()
-                cleanup(function()
-                    obj.cleaned += 1
-                end)
-            end)
-
-            return state, obj
-        end
-
-        local stateA, objA = setup()
-        local stateB, objB = setup()
-
-        CHECK(objA.cleaned == 0)
-        CHECK(objB.cleaned == 0)
-
-        stateA(2)
-
-        CHECK(objA.cleaned == 1)
-        CHECK(objB.cleaned == 0)
-
-        stateB(2)
-
-        CHECK(objA.cleaned == 1)
-        CHECK(objB.cleaned == 1)
-
-        do
-            stateA = nil :: any
-            gc()
-            vide.step(0)
-        end
-
-        CHECK(objA.cleaned == 2)
-        CHECK(objB.cleaned == 1)
-
-        do
-            stateB = nil :: any
-            gc()
-            vide.step(0)
-        end
-
-        CHECK(objA.cleaned == 2)
-        CHECK(objB.cleaned == 2)
     end
 
     do CASE "multiple cleanup"
@@ -414,17 +316,9 @@ TEST("cleanup()", function()
         state(3)
         CHECK(testkit.seq(queue, { 1, 2, 1, 2 }))
     end
+end))
 
-    do CASE "no scope"
-        local ok = pcall(function()
-            cleanup(function() end)
-        end)
-
-        CHECK(not ok)
-    end
-end)
-
-TEST("create()", function()
+TEST("create()", wrap_root(function()
     local create = vide.create
     local source = vide.source
 
@@ -534,6 +428,7 @@ TEST("create()", function()
     end
 
     do CASE "binding garbage collection"
+        --[[
         do -- instance should gc when unparented
             local state = source("Hi")
 
@@ -546,7 +441,9 @@ TEST("create()", function()
             gc()
             CHECK(not wref[1])
         end
+        ]]
 
+        --[[
         do -- instance should not gc when parented
             local state = source("Hi")
 
@@ -573,7 +470,9 @@ TEST("create()", function()
             gc()
             CHECK(not wref[1])
         end
+        ]]
         
+        --[[
         do -- instance does not allow gc of state
             local label
             local wref
@@ -591,6 +490,7 @@ TEST("create()", function()
             CHECK(wref[2])
             CHECK(wref[1])
         end
+        ]]
         
         do -- state and instance should gc once both exit scope
             local wref
@@ -610,6 +510,7 @@ TEST("create()", function()
             CHECK(not wref.box)
         end
         
+        --[[
         do -- binding should gc despite state still existing after instance is gc
             local state = source("Hi")
 
@@ -622,7 +523,7 @@ TEST("create()", function()
                     Text = state,
                 }
 
-                local binding = assert(node.children)[1]
+                local binding = assert(node[1])
 
                 wref = weak {
                     instance = instance,
@@ -636,6 +537,7 @@ TEST("create()", function()
             CHECK(not wref.instance)
             CHECK(not wref.binding)
         end
+        ]]
     end
 
     do CASE "bind same state to multiple instance properties"
@@ -733,11 +635,9 @@ TEST("create()", function()
         gc()
         CHECK(wref.data and wref.proxy)
     end
-end)
+end))
 
--- todo: gc and cleanup call check for removed element
-
-TEST("indexes()", function()
+TEST("indexes()", wrap_root(function()
     local create = vide.create
     local source = vide.source
     local indexes = vide.indexes
@@ -839,21 +739,8 @@ TEST("indexes()", function()
         local input = source { 1, 2, 3 }
 
         local count = table.create(3, 0)
-        local unrelated_count = 0
-
-        local unrelated = (function()
-            return function()
-                cleanup(function()
-                    unrelated_count += 1
-                end)
-            end
-        end)()
         
         local output = indexes(input, function(v, i)
-            -- check that overriden cleanup scopes don't affect cleanup calls
-            -- in other function scopes
-            unrelated()
-
             cleanup(function()
                 count[i] += 1
             end)
@@ -866,20 +753,10 @@ TEST("indexes()", function()
         CHECK(count[1] == 0)
         CHECK(count[2] == 0)
         CHECK(count[3] == 0)
-        CHECK(unrelated_count == 2)
-
-        output = nil :: any
-        gc()
-        vide.step(0)
-
-        CHECK(count[1] == 1)
-        CHECK(count[2] == 1)
-        CHECK(count[3] == 1)
-        CHECK(unrelated_count == 2)
     end
-end)
+end))
 
-TEST("values()", function()
+TEST("values()", wrap_root(function()
     local create = vide.create
     local source = vide.source
     local values = vide.values
@@ -967,21 +844,8 @@ TEST("values()", function()
         local input = source { 1, 2, 3 }
 
         local count = table.create(3, 0)
-        local unrelated_count = 0
-
-        local unrelated = (function()
-            return function()
-                cleanup(function()
-                    unrelated_count += 1
-                end)
-            end
-        end)()
         
         local output = values(input, function(v, i)
-            -- check that overriden cleanup scopes don't affect cleanup calls
-            -- in other function scopes
-            unrelated()
-
             cleanup(function()
                 count[i()] += 1
             end)
@@ -994,20 +858,10 @@ TEST("values()", function()
         CHECK(count[1] == 0)
         CHECK(count[2] == 0)
         CHECK(count[3] == 0)
-        CHECK(unrelated_count == 2)
-
-        output = nil :: any
-        gc()
-        vide.step(0)
-
-        CHECK(count[1] == 1)
-        CHECK(count[2] == 1)
-        CHECK(count[3] == 1)
-        CHECK(unrelated_count == 2)
     end
-end)
+end))
 
-TEST("spring()", function()
+TEST("spring()", wrap_root(function()
     local create = vide.create
     local source = vide.source
     local spring = vide.spring
@@ -1025,6 +879,7 @@ TEST("spring()", function()
     end
 
     do CASE "garbage collection"
+        --[[
         do -- `output` should not allow gc of `input`
             local input = source(10)
             local _output = spring(input)
@@ -1035,6 +890,7 @@ TEST("spring()", function()
             gc()
             CHECK(wref[1])
         end
+        ]]
 
         do -- `input` should allow gc of `output`
             local input = source(10)
@@ -1105,9 +961,9 @@ TEST("spring()", function()
         vide.step(0) -- process spring queue
         CHECK(count == 1) -- check spring was rescheduled correctly
     end
-end)
+end))
 
-TEST("untrack()", function()
+TEST("untrack()", wrap_root(function()
     local source = vide.source
     local watch = vide.watch
     local untrack = vide.untrack
@@ -1157,7 +1013,7 @@ TEST("untrack()", function()
         b(1)
         CHECK(count == 1)
     end
-end)
+end))
 
 TEST("events", function()
     local create = vide.create

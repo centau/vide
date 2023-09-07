@@ -5,6 +5,7 @@
 
 if not game then script = require "test/relative-string" end
 
+local root = require(script.root)
 local create = require(script.create)
 local apply = require(script.apply)
 local source = require(script.source)
@@ -48,6 +49,7 @@ end)
 
 local vide = {
     -- core
+    root = root,
     create = create,
     source = source,
     watch = watch,

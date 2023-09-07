@@ -2,14 +2,18 @@ if not game then script = require "test/relative-string" end
 
 local throw = require(script.Parent.throw)
 local flags = require(script.Parent.flags)
-local on_gc = require(script.Parent.on_gc)()
+
+export type Scope = {
+    parent: Scope | false,
+    cleanups: { () -> () } | false,
+    [number]: Scope -- children
+}
 
 export type Node<T> = {
+    scope: Scope,
     cache: T,
-    effect:  (unknown) -> (),
-    parents: { Node<T> } | false,
-    children: { Node<T> } | false, -- weak values
-    cleanups: { () -> () } | false
+    effect:  (T) -> (),
+    [number]: Node<T> -- children
 }
 
 -- flag used to detect when node reference capturing is active
@@ -17,7 +21,7 @@ local reff = false
 -- array of all nodes referenced since above flag was set
 local refs = {} :: { Node<unknown> }
 
-local scopes = { n = 0 } :: { [number]: Node<unknown>, n: number }
+local scopes = { n = 0 } :: { [number]: Scope, n: number }
 
 local WEAK_VALUES = { __mode = "v" }
 local EVALUATION_ERR = "error while evaluating source:\n\n"
@@ -50,14 +54,14 @@ local check_for_yield: <T...>(fn: (T...) -> unknown, T...) -> () do
     end
 end
 
-local function get_scope(): Node<unknown>
+local function get_scope(): Scope
     return scopes[scopes.n]
 end
 
-local function open_scope(node: Node<unknown>)
+local function open_scope(scope: Scope)
     local n = scopes.n + 1
     scopes.n = n
-    scopes[n] = node
+    scopes[n] = scope
 end
 
 local function close_scope()
@@ -66,20 +70,20 @@ local function close_scope()
     scopes[n] = nil
 end
 
-local function add_cleanup(node: Node<unknown>, cleanup: () -> ())
-    if node.cleanups then
-        table.insert(node.cleanups, cleanup)
+local function add_cleanup(scope: Scope, cleanup: () -> ())
+    if scope.cleanups then
+        table.insert(scope.cleanups, cleanup)
     else
-        node.cleanups = { cleanup }
+        scope.cleanups = { cleanup }
     end
 end
 
-local function run_cleanups(node: { cleanups: { () -> () } | false})
-    if node.cleanups then
-        for _, fn in next, node.cleanups do
+local function run_cleanups(scope: Scope)
+    if scope.cleanups then
+        for _, fn in next, scope.cleanups do
             fn()
         end
-        table.clear(node.cleanups)
+        table.clear(scope.cleanups)
     end
 end
 
@@ -94,85 +98,38 @@ The weak key is passed as an argument to its side-effect callback.
 
 ]]
 
-local function set_effect<T>(node: Node<unknown>, fn: () -> ())
-    node.effect = fn
-end
-
-local function run_effect(node: Node<unknown>)
+local function run_effect<T>(node: Node<T>)
     node.effect(node.cache)
 end
 
--- links two nodes as parent-child
-local function add_child(parent: Node<unknown>, child: Node<unknown>)
-    if parent.children then
-        table.insert(parent.children, child)    
-    else
-        parent.children = { child }
-        setmetatable(parent.children :: any, {})
+local function add_child(parent: Node<any>, child: Node<any>)
+    table.insert(parent, child)
+end
+
+local function add_children(parent: Node<any>, children: { Node<any> })
+    for _, child in next, children do
+        table.insert(parent, child)
     end
 end
 
-local function add_children(parent: Node<unknown>, children: { Node<unknown> })
-    if parent.children then
-        for _, child in next, children do
-            table.insert(parent.children, child)
-        end
-    else
-        parent.children = table.clone(children)
+local function destroy(scope: Scope)
+    run_cleanups(scope)
+    for _, child in ipairs(scope) do
+        destroy(child)
     end
-end
-
-local function add_parent(child: Node<unknown>, parent: Node<unknown>)
-    child.parents = { parent }
-end
-
-local function rec(node: { effect: any, children: { Node<unknown> }, cleanups: { () -> () }})
-    run_cleanups(node)
-    node.effect = function() assert(false) end
-    if node.children then
-        for _, child in node.children do
-            rec(child)
-        end
-    end
-end
-
-local function destroy(node: Node<unknown>)
-    if node.parents then
-        for _, parent in node.parents do
-            parent.children[table.find(parent.children, node)] = nil -- todo: can iter invalidation occur here?
-        end
-    end
-    rec(node)
-end
-
-local function init_scope(node: Node<unknown>)
-    local parent = scopes[scopes.n]
-    if parent then
-        add_child(parent, node)
-        add_parent(node, parent)
-    end
-    open_scope(node)
 end
 
 -- runs node effects, recalculates descendants and runs descendant effects
-local function update(node: Node<unknown>)
-    if node.children then
-        for _, child in node.children do
-            open_scope(child)
-            run_cleanups(child)
-            run_effect(child)
-            update(child)
-            close_scope()
-        end
+local function update<T>(node: Node<T>)
+    for _, child in ipairs(node) do
+        local scope = child.scope
+        assert(scope)
+        open_scope(scope :: Scope)
+        run_cleanups(scope :: Scope)
+        run_effect(child)
+        update(child)
+        close_scope()
     end
-end
-
--- links two nodes as parent-child with a function to compute a new value for child
-local function link<T>(parent: Node<unknown>, child: Node<T>, derive: () -> T)
-    child.effect = function()
-        child.cache = derive()
-    end
-    add_child(parent, child)
 end
 
 -- detect what nodes were referenced in the given callback and returns them in an array
@@ -197,53 +154,51 @@ local function capture<T, U>(fn: (U?) -> T, arg: U?): ({ Node<unknown> }, T)
     return refs, result :: T
 end
 
--- captures and links any detected nodes
-local function capture_and_link<T>(child: Node<T>, derive: () -> T): T
-    local nodes, value = capture(derive, nil)
+local function capture_parents<T, U>(child: Node<T>, fn: (U?) -> T, arg: U?): T
+    local refs, result = capture(fn, arg)
 
-    child.effect = function()
-        child.cache = derive()
-    end
-    for _, parent: Node<unknown> in next, nodes do
+    for _, parent in next, refs do
         add_child(parent, child)
     end
 
-    return value :: T
+    return result
 end
 
-local function track(node: Node<unknown>)
-    if reff then table.insert(refs, node) end
+local function track<T>(node: Node<T>)
+    if reff then table.insert(refs, node :: Node<any>) end
 end
 
-local function create<T>(value: T): Node<T>
+local function create_scope(): Scope
+    return {
+        parent = get_scope() or false,
+        cleanups = false
+    }
+end
+
+local function create_node<T>(value: T): Node<T>
     local node = {
+        scope = create_scope(),
         cache = value,
         effect = function() end,
-        parents = false :: false,
-        children = false :: false,
-        cleanups = false :: false
     }
 
     return node
 end
 
 return table.freeze {
-    init_scope = init_scope,
     open_scope = open_scope,
     close_scope = close_scope,
     get_scope = get_scope,
     add_cleanup = add_cleanup,
     destroy = destroy,
     run_cleanups = run_cleanups,
-    set_effect = set_effect,
     track = track,
     update = update,
-    link = link,
-    add_parent = add_parent,
     add_child = add_child,
     add_children = add_children,
     capture = capture,
-    capture_and_link = capture_and_link,
-    create = create :: (<T>(value: T) -> (Node<T>, () -> T)) & (<T>() -> (Node<T>, () -> T)),
+    capture_parents = capture_parents,
+    create_node = create_node,
+    create_scope = create_scope,
     refs = refs
 }

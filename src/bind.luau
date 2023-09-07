@@ -5,11 +5,11 @@ local throw = require(script.Parent.throw)
 local flags = require(script.Parent.flags)
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
-local create = graph.create
-local init_scope = graph.init_scope
+local create_node = graph.create_node
+local open_scope = graph.open_scope
 local close_scope = graph.close_scope
 local add_child = graph.add_child
-local capture = graph.capture
+local capture_parents = graph.capture_parents
 
 --[[
 
@@ -67,21 +67,14 @@ function bind(instance: Instance, property: string, setter: (Instance) -> ())
         end
     end
 
-    local binding = create(instance)
-
-    init_scope(binding)
-
-    -- run setter to capture any nodes being depended on
-    local nodes = (capture(setter :: () -> unknown, instance))
-
-    close_scope()
-
+    local binding = create_node(instance)
     binding.effect = setter
 
-    -- register the setter as a side-effect of each node
-    for _, node in next, nodes do
-        add_child(node, binding)
-    end
+    open_scope(binding.scope)
+
+    capture_parents(binding, setter :: () -> any, instance)
+
+    close_scope()
 end
 
 local function bind_property(instance: Instance, property: string, fn: () -> unknown)

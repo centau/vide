@@ -6,8 +6,9 @@ local throw = require(script.Parent.throw)
 local flags = require(script.Parent.flags)
 local graph = require(script.Parent.graph)
 type Scope = graph.Scope
-type Node<T> = graph.Node<T>
+type StartNode<T> = graph.StartNode<T>
 local create_node = graph.create_node
+local create_start_node = graph.create_start_node
 local create_scope = graph.create_scope
 local track = graph.track
 local update = graph.update
@@ -38,7 +39,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
     local input_cache = {} :: Map<K, VI>
     local output_cache = {} :: Map<K, VO>
-    local input_nodes = {} :: Map<K, Node<VI>>
+    local input_nodes = {} :: Map<K, StartNode<VI>>
     local remove_queue = {} :: { K }
     local output_array = {} :: { VO }
 
@@ -77,7 +78,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
                     open_scope(scope)
 
-                    local node = create_node(v)
+                    local node = create_start_node(v)
                     input_nodes[i] = node
                     input_cache[i] = v
                     output_cache[i] = transform(function()
@@ -131,7 +132,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
     local new_input_cache_up = {} :: Map<VI, K>
 
     local output_cache = {} :: Map<VI, VO>
-    local input_nodes = {} :: Map<VI, Node<K>>
+    local input_nodes = {} :: Map<VI, StartNode<K>>
     local output_array = {} :: { VO }
 
     local scopes = {} :: Map<VI, Scope>
@@ -163,7 +164,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
 
                 open_scope(scope)
 
-                local node = create_node(i)
+                local node = create_start_node(i)
                 input_nodes[v] = node
                 output_cache[v] = transform(v, function()
                     track(node)

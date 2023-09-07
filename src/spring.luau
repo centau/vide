@@ -24,7 +24,9 @@ Unsupported datatypes:
 local throw = require(script.Parent.throw)
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
+type StartNode<T> = graph.StartNode<T>
 local create_node = graph.create_node
+local create_start_node = graph.create_start_node
 local update = graph.update
 local capture = graph.capture
 local add_child = graph.add_child
@@ -142,7 +144,7 @@ setmetatable(vec6_to_type, invalid_type)
 
 -- maps spring data to its corresponding output node
 -- lifetime of spring data is tied to output node
-local springs: { [SpringData<any>]: Node<any> } = {}
+local springs: { [SpringData<any>]: StartNode<any> } = {}
 setmetatable(springs, { __mode = "v" })
 
 local function spring<T>(source: () -> T, period: number?, damping_ratio: number?): () -> T
@@ -177,8 +179,7 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
         source_value = initial_value,
     }
 
-    local output = create_node(initial_value)
-
+    local output = create_start_node(initial_value)
 
     local updater = create_node(false)
     updater.effect = function()

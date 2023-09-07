@@ -2,7 +2,7 @@ if not game then script = require "test/relative-string" end
 
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
-local create_node = graph.create_node
+local create_start_node = graph.create_start_node
 local get_scope = graph.get_scope
 local track = graph.track
 local update = graph.update
@@ -10,9 +10,9 @@ local update = graph.update
 export type Source<T> = (() -> T) & ((T) -> T)
 
 local function source<T>(initial_value: T): Source<T>
-    assert(get_scope())
+    --assert(get_scope())
 
-    local node = create_node(initial_value)
+    local node = create_start_node(initial_value)
 
     return function(...): T
         if select("#", ...) == 0 then -- no args were given

@@ -9,17 +9,20 @@ export type Scope = {
     [number]: Scope -- children
 }
 
-export type Node<T> = {
-    scope: Scope,
+export type StartNode<T> = {
     cache: T,
+    [number]: Node<T>
+}
+
+export type Node<T> = StartNode<T> & {
+    scope: Scope,
     effect:  (T) -> (),
-    [number]: Node<T> -- children
 }
 
 -- flag used to detect when node reference capturing is active
 local reff = false
 -- array of all nodes referenced since above flag was set
-local refs = {} :: { Node<unknown> }
+local refs = {} :: { StartNode<unknown> }
 
 local scopes = { n = 0 } :: { [number]: Scope, n: number }
 
@@ -102,7 +105,7 @@ local function run_effect<T>(node: Node<T>)
     node.effect(node.cache)
 end
 
-local function add_child(parent: Node<any>, child: Node<any>)
+local function add_child(parent: StartNode<any>, child: Node<any>)
     table.insert(parent, child)
 end
 
@@ -120,7 +123,7 @@ local function destroy(scope: Scope)
 end
 
 -- runs node effects, recalculates descendants and runs descendant effects
-local function update<T>(node: Node<T>)
+local function update<T>(node: StartNode<T>)
     for _, child in ipairs(node) do
         local scope = child.scope
         assert(scope)
@@ -133,7 +136,7 @@ local function update<T>(node: Node<T>)
 end
 
 -- detect what nodes were referenced in the given callback and returns them in an array
-local function capture<T, U>(fn: (U?) -> T, arg: U?): ({ Node<unknown> }, T)
+local function capture<T, U>(fn: (U?) -> T, arg: U?): ({ StartNode<unknown> }, T)
     if reff then throw("recursive capture detected") end
 
     table.clear(refs)
@@ -164,7 +167,7 @@ local function capture_parents<T, U>(child: Node<T>, fn: (U?) -> T, arg: U?): T
     return result
 end
 
-local function track<T>(node: Node<T>)
+local function track<T>(node: StartNode<T>)
     if reff then table.insert(refs, node :: Node<any>) end
 end
 
@@ -176,13 +179,15 @@ local function create_scope(): Scope
 end
 
 local function create_node<T>(value: T): Node<T>
-    local node = {
+    return {
         scope = create_scope(),
         cache = value,
         effect = function() end,
     }
+end
 
-    return node
+local function create_start_node<T>(value: T): StartNode<T>
+    return { cache = value }
 end
 
 return table.freeze {
@@ -199,6 +204,7 @@ return table.freeze {
     capture = capture,
     capture_parents = capture_parents,
     create_node = create_node,
+    create_start_node = create_start_node,
     create_scope = create_scope,
     refs = refs
 }

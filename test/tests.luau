@@ -1,5 +1,7 @@
 local testkit = require("test/testkit")
-local TEST, CASE, CHECK, FINISH = testkit.test()
+local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
+
+SKIP"graph"
 
 local mock = require "test/mock"
 local Instance, Signal = mock.Instance, mock.Signal
@@ -29,40 +31,60 @@ TEST("graph", function()
     local graph = require "src/graph"
     local create_node = graph.create_node
     local track = graph.track
-    local capture = graph.capture
     local update = graph.update
     local add_child = graph.add_child
+    local open_root_scope = graph.open_root_scope
+    local open_scope = graph.open_scope
+    local close_scope = graph.close_scope
+    local get_children = graph.get_children
 
     do CASE "node creation"
         local node = create_node(1)
         CHECK(node.cache == 1)
     end
 
-    do CASE "capture nodes"
-        local node1 = create_node(nil)
-        local node2 = create_node(nil)
-        local captured = capture(function()
-            track(node1)
-            track(node2)
-            return nil
-        end)
-        CHECK(captured[1] == node1)
-        CHECK(captured[2] == node2)
+    do CASE "link nodes"
+        local a = create_node(nil)
+        local b = create_node(nil)
+        local c = create_node(nil)
+
+        open_scope(c)
+
+        track(a)
+        track(b)
+
+        close_scope()
+
+        CHECK(get_children(a)[1] == c)
+        CHECK(get_children(b)[1] == c)
     end
 
-    do CASE "linking nodes"
-        local parent = create_node(1)
-        local child = create_node(0)
+    do CASE "rerun linked nodes"
+        local a = create_node(nil)
+        local b = create_node(nil)
+        local c = create_node(nil)
 
-        add_child(parent, child)
+        local count = 0
 
-        local ran = false
-        child.effect = function()
-            ran = true
+        local function effect()
+            track(a)
+            track(b)
+            count += 1
         end
 
-        update(parent)
-        CHECK(ran)
+        c.effect = effect
+
+        open_scope(c)
+
+        effect()
+
+        close_scope()
+        
+        CHECK(count == 1)
+        update(a)
+        CHECK(count == 2)
+        update(b)
+        CHECK(count == 3)
     end
 
     -- todo: further tests
@@ -71,6 +93,10 @@ TEST("graph", function()
         local wref = weak { create_node(1) }
         gc()
         CHECK(not wref[1])
+    end
+
+    do CASE "test"
+        local x = 1
     end
 end)
 

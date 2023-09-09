@@ -2,6 +2,7 @@ if not game then script = require "test/relative-string" end
 local typeof = game and typeof or require "test/mock".typeof:: never
 local Instance = game and Instance or require "test/mock".Instance :: never
 
+local types = require(script.Parent.types)
 local throw = require(script.Parent.throw)
 local defaults = require(script.Parent.defaults)
 local apply = require(script.Parent.apply)
@@ -45,30 +46,30 @@ end
 type Props = { [any]: any }
 return (create :: any) :: 
 ( <T>(T & Instance) -> (Props) -> T ) &
-( ("Folder") -> (Props) -> Folder ) &
-( ("BillboardGui") -> (Props) -> BillboardGui ) &
-( ("CanvasGroup") -> (Props) -> CanvasGroup ) &
-( ("Frame") -> (Props) -> Frame ) &
-( ("ImageButton") -> (Props) -> ImageButton ) &
-( ("ImageLabel") -> (Props) -> ImageLabel ) &
-( ("ScreenGui") -> (Props) -> ScreenGui ) &
-( ("ScrollingFrame") -> (Props) -> ScrollingFrame ) &
-( ("SurfaceGui") -> (Props) -> SurfaceGui ) &
-( ("TextBox") -> (Props) -> TextBox ) &
-( ("TextButton") -> (Props) -> TextButton ) &
-( ("TextLabel") -> (Props) -> TextLabel ) &
-( ("UIAspectRatioConstraint") -> (Props) -> UIAspectRatioConstraint ) &
-( ("UICorner") -> (Props) -> UICorner ) &
-( ("UIGradient") -> (Props) -> UIGradient ) &
-( ("UIGridLayout") -> (Props) -> UIGridLayout ) &
-( ("UIListLayout") -> (Props) -> UIListLayout ) &
-( ("UIPadding") -> (Props) -> UIPadding ) &
-( ("UIPageLayout") -> (Props) -> UIPageLayout ) &
-( ("UIScale") -> (Props) -> UIScale ) &
-( ("UISizeConstraint") -> (Props) -> UISizeConstraint ) &
-( ("UIStroke") -> (Props) -> UIStroke ) &
-( ("UITableLayout") -> (Props) -> UITableLayout ) &
-( ("UITextSizeConstraint") -> (Props) -> UITextSizeConstraint ) &
-( ("VideoFrame") -> (Props) -> VideoFrame ) &
-( ("ViewportFrame") -> (Props) -> ViewportFrame ) &
+( ("Folder") -> (types.FolderProps) -> Folder ) &
+( ("BillboardGui") -> (types.BillboardGuiProps) -> BillboardGui ) &
+( ("CanvasGroup") -> (types.CanvasGroupProps) -> CanvasGroup ) &
+( ("Frame") -> (types.FrameProps) -> Frame ) &
+( ("ImageButton") -> (types.ImageButtonProps) -> ImageButton ) &
+( ("ImageLabel") -> (types.ImageLabelProps) -> ImageLabel ) &
+( ("ScreenGui") -> (types.ScreenGuiProps) -> ScreenGui ) &
+( ("ScrollingFrame") -> (types.ScrollingFrameProps) -> ScrollingFrame ) &
+( ("SurfaceGui") -> (types.SurfaceGuiProps) -> SurfaceGui ) &
+( ("TextBox") -> (types.TextBoxProps) -> TextBox ) &
+( ("TextButton") -> (types.TextButtonProps) -> TextButton ) &
+( ("TextLabel") -> (types.TextLabelProps) -> TextLabel ) &
+( ("UIAspectRatioConstraint") -> (types.UIAspectRatioConstraintProps) -> UIAspectRatioConstraint ) &
+( ("UICorner") -> (types.UICornerProps) -> UICorner ) &
+( ("UIGradient") -> (types.UIGradientProps) -> UIGradient ) &
+( ("UIGridLayout") -> (types.UIGridLayoutProps) -> UIGridLayout ) &
+( ("UIListLayout") -> (types.UIListLayoutProps) -> UIListLayout ) &
+( ("UIPadding") -> (types.UIPaddingProps) -> UIPadding ) &
+( ("UIPageLayout") -> (types.UIPageLayoutProps) -> UIPageLayout ) &
+( ("UIScale") -> (types.UIScaleProps) -> UIScale ) &
+( ("UISizeConstraint") -> (types.UISizeConstraintProps) -> UISizeConstraint ) &
+( ("UIStroke") -> (types.UIStrokeProps) -> UIStroke ) &
+( ("UITableLayout") -> (types.UITableLayoutProps) -> UITableLayout ) &
+( ("UITextSizeConstraint") -> (types.UITextSizeConstraintProps) -> UITextSizeConstraint ) &
+( ("VideoFrame") -> (types.VideoFrameProps) -> VideoFrame ) &
+( ("ViewportFrame") -> (types.ViewportFrameProps) -> ViewportFrame ) &
 ( (string) -> (Props) -> Instance )

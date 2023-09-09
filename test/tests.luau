@@ -87,6 +87,42 @@ TEST("graph", function()
         CHECK(count == 3)
     end
 
+    do CASE "etst"
+        --[[
+        
+        root
+            Items -> Indexes()
+
+                indexes_root
+                    v1 + sel -> bind
+                    v2 + sel -> bind
+
+        ]]
+        local items = create_node { 1, 2 }
+
+        local count = 0
+
+        local function effect()
+            track(a)
+            track(b)
+            count += 1
+        end
+
+        c.effect = effect
+
+        open_scope(c)
+
+        effect()
+
+        close_scope()
+        
+        CHECK(count == 1)
+        update(a)
+        CHECK(count == 2)
+        update(b)
+        CHECK(count == 3)
+    end
+
     -- todo: further tests
 
     do CASE "nodes garbage collection"

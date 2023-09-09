@@ -5,11 +5,12 @@ local flags = require(script.Parent.flags)
 
 export type StartNode<T> = {
     cache: T,
-    n: number,
-    [number]: Node<T>
+    children: { [Node<T>]: true } | false
 }
 
-export type Node<T> = StartNode<T> & {
+export type Node<T> =  {
+    cache: T,
+    children: { [Node<T>]: true } | false,
     effect:  (T) -> (),
     cleanups: { () -> () } | false,
 }
@@ -50,9 +51,11 @@ local function get_scope(): Node<unknown>
 end
 
 local function add_child<T>(parent: Node<any>, child: Node<any>)
-    local n = parent.n + 1
-    parent.n = n
-    parent[n] = child
+    if parent.children then
+        parent.children[child] = true
+    else
+        parent.children = { [child] = true :: true }
+    end
 end
 
 -- local function open_root_scope<T>(node: Node<T>)
@@ -107,15 +110,17 @@ local function destroy<T>(node: Node<T>)
     end
 end
 
+
 -- runs node effects, recalculates descendants and runs descendant effects
 local function update<T>(node: StartNode<T>)
-    local children = { unpack(node) }
-    for i = 1, node.n do
-        node[i] = nil
-    end
-    node.n = 0
+    if not node.children then return end
 
-    for _, child in children do
+    local cache = {}
+    for child in node.children do
+        table.insert(cache, child)
+    end
+
+    for _, child in next, cache do
         open_scope(child)
         run_cleanups(child)
         run_effect(child)
@@ -132,17 +137,25 @@ local function create_node<T>(value: T): Node<T>
     return {
         cache = value,
         effect = function() end,
-        cleanups = false :: false,
-        n = 0
+        cleanups = false,
+        children = false
     }
 end
 
 local function get_children(node: Node<unknown>): { Node<unknown> }
-    return { unpack(node) }
+    if not node.children then return {} end
+
+    local children = {}
+
+    for child in node.children do
+        table.insert(children, child)
+    end
+
+    return children
 end
 
 local function create_start_node<T>(value: T): StartNode<T>
-    return { cache = value, n = 0 }
+    return { cache = value, children = false }
 end
 
 return table.freeze {

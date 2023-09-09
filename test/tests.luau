@@ -1268,7 +1268,9 @@ TEST("spring()", function()
         local output = spring(input, 1, 1)
 
         local _label = create "TextLabel" {
-            Text = output
+            Text = function()
+                return tostring(output())
+            end
         }
 
         local wref = { output }

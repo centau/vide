@@ -1500,4 +1500,4 @@ export type UITextSizeConstraintProps = {
 	Destroying: (() -> ())?,
 }
 
-return nil
+return {}

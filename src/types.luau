@@ -355,3 +355,5 @@ type GuiButtonProps = GuiObjectProps & {
 	MouseButton2Down: ((x: number, y: number) -> ())?,
 	MouseButton2Up: ((x: number, y: number) -> ())?,
 }
+
+return nil

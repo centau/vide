@@ -138,7 +138,7 @@ local function apply<T>(instance: T & Instance, properties: { [unknown]: unknown
     -- finally set parent if any
     if parent then
         if type(parent) == "function" then
-            error("cannot set parent to state")
+            bind.parent(instance, parent :: () -> ())
         else
             instance.Parent = parent :: Instance
         end

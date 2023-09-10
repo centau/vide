@@ -27,8 +27,10 @@ type Node<T> = graph.Node<T>
 type StartNode<T> = graph.StartNode<T>
 local create_node = graph.create_node
 local create_start_node = graph.create_start_node
+local get_scope = graph.get_scope
+local open_scope = graph.open_scope
+local close_scope = graph.close_scope
 local update = graph.update
-local capture = graph.capture
 local add_child = graph.add_child
 local track = graph.track
 
@@ -148,7 +150,18 @@ local springs: { [SpringData<any>]: StartNode<any> } = {}
 setmetatable(springs, { __mode = "v" })
 
 local function spring<T>(source: () -> T, period: number?, damping_ratio: number?): () -> T
-    local inputs, initial_value = capture(source)
+    local owner = get_scope()
+    assert(owner)
+
+    local updater = create_node(false)
+    updater.effect = true :: any -- todo
+
+    add_child(owner, updater)
+    open_scope(updater)
+
+    local initial_value = source()
+
+    close_scope()
 
     local vtype = typeof(initial_value)
     
@@ -178,19 +191,14 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
 
         source_value = initial_value,
     }
-
+    
     local output = create_start_node(initial_value)
 
-    local updater = create_node(false)
     updater.effect = function()
         local v = source()
         data.x1_123, data.x1_456 = type_to_vec6[typeof(v)](v)
         data.source_value = v
         springs[data] = output -- todo: investigate why insertion is not O(1) at ~20k springs
-    end
-
-    for _, input in next, inputs do
-        add_child(input, updater)
     end
 
     return function()
@@ -258,6 +266,7 @@ local function update_spring_sources()
         else
             output.cache = vec6_to_type[typeof(data.source_value)](x0_123, x0_456)
         end
+
         update(output)
     end
 

@@ -5,24 +5,24 @@ local throw = require(script.Parent.throw)
 local on_gc = require(script.Parent.on_gc)()
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
-local create_scope = graph.create_scope
+local create_node = graph.create_node
 local open_scope = graph.open_scope
 local close_scope = graph.close_scope
 local get_scope = graph.get_scope
 local destroy = graph.destroy
 
 local function root<T>(fn: () -> T): (T, () -> ())
-    assert(not get_scope())
-    local scope = create_scope()
+    --assert(not get_scope())
+    local node = create_node(false)
 
-    open_scope(scope)
+    open_scope(node)
 
     local v = fn()
 
     close_scope()
 
     return v, function()
-        destroy(scope)
+        destroy(node)
     end
 end
 

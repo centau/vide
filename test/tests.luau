@@ -1,13 +1,15 @@
 local testkit = require("test/testkit")
 local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
 
-SKIP"graph"
-
 local mock = require "test/mock"
 local Instance, Signal = mock.Instance, mock.Signal
 local Vector2, UDim2 = mock.Vector2, mock.UDim2
 
 local vide = require "src/init"
+local graph = require "src/graph"
+type Node<T> = graph.Node<T>
+
+type Map<K, V> = { [K] : V }
 
 local function gc(n: number?)
     for i = 1, n or 3 do
@@ -27,26 +29,40 @@ local function wrap_root(fn: () -> ())
     end
 end
 
+local NIL = NIL
+
 TEST("graph", function()
-    local graph = require "src/graph"
     local create_node = graph.create_node
+    local create_start_node = graph.create_start_node
     local track = graph.track
     local update = graph.update
     local add_child = graph.add_child
-    local open_root_scope = graph.open_root_scope
+    local get_scope = graph.get_scope
     local open_scope = graph.open_scope
     local close_scope = graph.close_scope
     local get_children = graph.get_children
+    local add_cleanup = graph.add_cleanup
+    local destroy = graph.destroy
 
-    do CASE "node creation"
-        local node = create_node(1)
-        CHECK(node.cache == 1)
+    local function node<T>(v: T?)
+        local n = create_node(v or false)
+        n.effect = function() end
+        return n
+    end
+
+    local function scope()
+        return create_node(false)
+    end
+
+    local function cleanup(fn: () -> ())
+        local node = assert(get_scope())
+        add_cleanup(node, fn)
     end
 
     do CASE "link nodes"
-        local a = create_node(nil)
-        local b = create_node(nil)
-        local c = create_node(nil)
+        local a = node()
+        local b = node()
+        local c = node()
 
         open_scope(c)
 
@@ -60,9 +76,9 @@ TEST("graph", function()
     end
 
     do CASE "rerun linked nodes"
-        local a = create_node(nil)
-        local b = create_node(nil)
-        local c = create_node(nil)
+        local a = node()
+        local b = node()
+        local c = node()
 
         local count = 0
 
@@ -87,52 +103,165 @@ TEST("graph", function()
         CHECK(count == 3)
     end
 
-    do CASE "etst"
-        --[[
+    do CASE "case 1"
+        -- local function indexes<K, V>(input: Node<Map<K, V>>): Map<K, Node<V>>
+        --     local root = get_scope()
+        --     local updated = create_node(false)
+
+        --     local scopes = {}
+        --     local outputs = {}
+
+        --     function updated.effect()
+        --         open_scope(root)
+
+        --         for i, v in input do
+        --             if not scopes[i] then
+        --                 scopes[i] = create_node(false)
+        --                 outputs[i] = create_start_node(v)
+        --             end
         
-        root
-            Items -> Indexes()
+        --             open_scope(scopes[i])
+        --             outputs[i].cache = v
+        --             update(outputs[i])
+        --             close_scope()
+        --         end
 
-                indexes_root
-                    v1 + sel -> bind
-                    v2 + sel -> bind
+        --         for i, v in outputs do
+        --             if input[i] == nil then
+        --                 destroy(scopes[i])
+        --             end
+        --         end
 
-        ]]
-        local items = create_node { 1, 2 }
+        --         close_scope()
+        --     end
 
-        local count = 0
+        --     open_scope(updated)
+        --     updated.effect(false)
+        --     close_scope()
+            
+        --     return outputs
+        -- end
 
-        local function effect()
-            track(a)
-            track(b)
-            count += 1
+        -- construct graph
+
+        local items = node { "a", "b" }
+        local selected = node "a"
+
+        local root = scope()
+
+        local scope1 = scope()
+        local scope2 = scope()
+
+        local items_updated
+
+        local bind1
+        local bind2
+
+        local cleaned = {} :: { [any]: any }
+
+        local function clean(s)
+            cleanup(function()
+                cleaned[s] = true
+            end)
         end
 
-        c.effect = effect
+        do open_scope(root) 
+            clean "root"
+            items_updated = node()
+            items_updated.effect = function() end
+            track(items_updated) -- should not
 
-        open_scope(c)
+            add_child(root, items_updated)
+            do open_scope(items_updated)
+                track(items)
 
-        effect()
+                do open_scope(root)
+                    add_child(root, scope1)
+                    do open_scope(scope1)
+                        clean "scope1"
+                        bind1 = node()
+                        bind1.effect = function() end
 
-        close_scope()
+                        add_child(scope1, bind1)
+                        do open_scope(bind1)
+                            clean "bind1"
+                            track(selected)
+                        close_scope() end
+                    close_scope() end
+
+                    add_child(root, scope2)
+                    do open_scope(scope2)
+                        clean "scope2"
+                        bind2 = node()
+                        bind2.effect = function() end
+                        add_child(scope2, bind2)
+                        do open_scope(bind2)
+                            clean "bind2"
+                            track(selected)
+                        close_scope() end
+                    close_scope() end
+                close_scope() end
+            close_scope() end 
+        close_scope() end
         
-        CHECK(count == 1)
-        update(a)
-        CHECK(count == 2)
-        update(b)
-        CHECK(count == 3)
+
+        -- verify graph
+
+        do
+            local c = get_children(items_updated)
+            CHECK(#c == 0)
+        end
+    
+        do
+            local c = get_children(root)
+            CHECK(#c == 3)
+            CHECK(table.find(c, items_updated))
+            CHECK(table.find(c, scope1 :: Node<any>))
+            CHECK(table.find(c, scope2 :: Node<any>))
+        end
+
+        do
+            local c = get_children(selected)
+            CHECK(#c == 2)
+            CHECK(table.find(c, bind1))
+            CHECK(table.find(c, bind2))
+        end
+
+        do
+            local c = get_children(scope1)
+            CHECK(#c == 1)
+            CHECK(table.find(c, bind1))
+        end
+
+        do
+            local c = get_children(scope2)
+            CHECK(#c == 1)
+            CHECK(table.find(c, bind2))
+        end
+
+        -- destroy
+
+        CHECK(table.find(get_children(root), scope1 :: Node<any>))
+
+        destroy(scope1)
+        CHECK(table.find(get_children(root), scope1 :: Node<any>))
+        CHECK(cleaned.scope1)
+        CHECK(cleaned.bind1)
+        scope1 = NIL
+        bind1 = NIL
+        bind2 = NIL
+        gc()
+        CHECK(#get_children(root) == 2)
+        CHECK(#get_children(selected) == 1)
     end
 
     -- todo: further tests
 
     do CASE "nodes garbage collection"
         local wref = weak { create_node(1) }
+        destroy(wref[1])
         gc()
         CHECK(not wref[1])
-    end
-
-    do CASE "test"
-        local x = 1
     end
 end)
 
@@ -154,31 +283,31 @@ TEST("source()", wrap_root(function()
     do CASE "does not update if same value"
         local src = source(1)
 
-        local count = -1
+        local count = 0
         watch(function()
             src()
             count += 1
         end)
 
-        CHECK(count == 0)
-        src(1)
-        CHECK(count == 0)
-        src(2)
         CHECK(count == 1)
+        src(1)
+        CHECK(count == 1)
+        src(2)
+        CHECK(count == 2)
     end
 
     do CASE "does update if same value is mutable table"
         local src = source {}
 
-        local count = -1
+        local count = 0
         watch(function()
             src()
             count += 1
         end)
 
-        CHECK(count == 0)
-        src(src())
         CHECK(count == 1)
+        src(src())
+        CHECK(count == 2)
     end
 
     do CASE "does not update if same value is frozen table"
@@ -187,25 +316,26 @@ TEST("source()", wrap_root(function()
 
         local src = source(a)
 
-        local count = -1
+        local count = 0
         watch(function()
             src()
             count += 1
         end)
 
-        CHECK(count == 0)
+        CHECK(count == 1)
         src(a)
-        CHECK(count == 0)
-        src(b)
         CHECK(count == 1)
         src(b)
-        CHECK(count == 1)
+        CHECK(count == 2)
+        src(b)
+        CHECK(count == 2)
     end
 end))
 
 TEST("derive()", wrap_root(function()
     local source = vide.source
     local derive = vide.derive
+    local watch = vide.watch
 
     do CASE "derive new value on source change"
         local a = source(1)
@@ -236,6 +366,30 @@ TEST("derive()", wrap_root(function()
         CHECK(c() == 2)
     end
 
+    do CASE "does not update if same value"
+        local num = source(0)
+
+        local is_even = derive(function()
+            return num() % 2 == 0
+        end)
+
+        local count = 0
+
+        watch(function()
+            is_even()
+            count += 1
+        end)
+        
+        num(1) -- odd
+        CHECK(count == 2)
+        num(2) -- even
+        CHECK(count == 3)
+        num(4) -- even
+        CHECK(count == 3)
+        num(5) -- odd
+        CHECK(count == 4)
+    end
+
     do CASE "garbage collection"
         -- check that `b` does not allow gc of `a`        
         local a = source(1)
@@ -244,7 +398,7 @@ TEST("derive()", wrap_root(function()
             return a()
         end)
 
-        b = nil :: any
+        b = NIL
 
         local wref = weak { a }
 
@@ -256,9 +410,8 @@ end))
 TEST("watch()", wrap_root(function()
     local source = vide.source
     local watch = vide.watch
-    local cleanup = vide.cleanup
 
-    do CASE "capture sources"
+    do CASE "rerun on source change"
         local a = source(1)
         local b = source(1)
 
@@ -275,70 +428,31 @@ TEST("watch()", wrap_root(function()
         b(2)
         CHECK(count == 3)
     end
-
-    do CASE "side-effect cleanup"
-        local state = source(1)
-
-        local effect_count = 0
-        local cleanup_count = 0
-
-        watch(function()
-            state()
-            effect_count += 1
-            cleanup(function() cleanup_count += 1 end)
-        end)
-
-        CHECK(effect_count == 1)
-        CHECK(cleanup_count == 0)
-        state(2)
-        CHECK(effect_count == 2)
-        CHECK(cleanup_count == 1)
-    end
-
-    do CASE "garbage collection"
-        local function factory(p)
-            return function()
-                p()
-            end
-        end
-
-        do -- state prevents gc of watcher
-            local state = source(1)
-
-            local wref
-
-            do
-                local effect = factory(state)
-                watch(effect)
-                wref = { effect }
-            end
-
-            gc()
-            CHECK(wref[1])
-        end
-
-        do -- state can gc with watcher
-            local wref
-
-            do
-                local state = source(1)
-                local effect = factory(state)
-                watch(effect)
-                wref = weak { state }
-            end
-
-            gc()
-            CHECK(not wref[1])
-        end
-    end
 end))
 
 TEST("cleanup()", wrap_root(function()
+    local root = vide.root
     local source = vide.source
     local watch = vide.watch
     local cleanup = vide.cleanup
 
-    do CASE "cleanup runs for watcher"
+    do CASE "root cleanup"
+        local count = 0
+
+        local _, destroy = root(function()
+            cleanup(function()
+                count += 1
+            end)
+
+            return nil
+        end)
+
+        CHECK(count == 0)
+        destroy()
+        CHECK(count == 1)
+    end
+
+    do CASE "cleanup on rerun"
         local state = source(1)
 
         local watched = 0
@@ -381,8 +495,10 @@ TEST("cleanup()", wrap_root(function()
 end))
 
 TEST("create()", wrap_root(function()
+    local root = vide.root
     local create = vide.create
     local source = vide.source
+    local cleanup = vide.cleanup
 
     do CASE "apply default properties"
         local defaults = require("src/defaults")
@@ -429,9 +545,7 @@ TEST("create()", wrap_root(function()
             {
                 Text = "1",
 
-                {
-                    Text = "2"
-                }
+                { Text = "2" }
             }
         }
 
@@ -489,129 +603,38 @@ TEST("create()", wrap_root(function()
         CHECK(label.Text == "Bar")
     end
 
-    do CASE "binding garbage collection"
-        --[[
-        do -- instance should gc when unparented
-            local state = source("Hi")
+    do CASE "binding destroy"
+        local count = 0
 
-            local wref = weak {
-                create "TextLabel" {
-                    Text = state,
-                }
+        local _, destroy = root(function()
+            local src = source(0)
+
+            return create "TextLabel" {
+                Text = function()
+                    cleanup(function()
+                        count += 1
+                    end)
+
+                    return src()
+                end
             }
+        end)
 
-            gc()
-            CHECK(not wref[1])
-        end
-        ]]
-
-        --[[
-        do -- instance should not gc when parented
-            local state = source("Hi")
-
-            local parent = create "Frame" {}
-
-            local wref = weak {
-                create "TextLabel" {
-                    Parent = parent,
-                    Text = state,
-                }
-            }
-
-            gc()
-            CHECK(wref[1])
-
-            wref[1].Parent = nil
-            wref[1].Parent = parent
-
-            gc()
-            CHECK(wref[1])
-
-            wref[1]:Destroy()
-
-            gc()
-            CHECK(not wref[1])
-        end
-        ]]
-        
-        --[[
-        do -- instance does not allow gc of state
-            local label
-            local wref
-
-            do
-                local state = source("Hi")
-                label = create "TextLabel" {
-                    Name = state,
-                }
-                wref = weak { state :: any, label }
-
-            end
-
-            gc()
-            CHECK(wref[2])
-            CHECK(wref[1])
-        end
-        ]]
-        
-        do -- state and instance should gc once both exit scope
-            local wref
-    
-            do
-                local text = source("Hi")
-
-                local box = create "TextLabel" {
-                    Text = text,
-                }
-
-                wref = weak { text = text, box = box}
-            end
-
-            gc()
-            CHECK(not wref.text)
-            CHECK(not wref.box)
-        end
-        
-        --[[
-        do -- binding should gc despite state still existing after instance is gc
-            local state = source("Hi")
-
-            local node = require "src/graph".capture(state)[1]
-
-            local wref
-
-            do
-                local instance = create "TextLabel" {
-                    Text = state,
-                }
-
-                local binding = assert(node[1])
-
-                wref = weak {
-                    instance = instance,
-                    binding = binding
-                }
-            end
-            
-            CHECK(wref.binding)
-
-            gc()
-            CHECK(not wref.instance)
-            CHECK(not wref.binding)
-        end
-        ]]
+        CHECK(count == 0)
+        destroy()
+        CHECK(count == 1)
     end
 
     do CASE "bind same state to multiple instance properties"
-        local state = source "1"
+        local src = source "1"
 
         local text = create "TextBox" {
-            Name = state,
-            Text = state,
-            PlaceholderText = state
+            Name = src,
+            Text = src,
+            PlaceholderText = src
         }
 
-        state "2"
+        src "2"
 
         CHECK(text.Name == "2")
         CHECK(text.Text == "2")
@@ -619,7 +642,7 @@ TEST("create()", wrap_root(function()
     end
 
     do CASE "bind children"
-        local state = source()
+        local children = source()
 
         local a, b, c = 
             create "TextLabel" { Name = "A" },
@@ -627,50 +650,53 @@ TEST("create()", wrap_root(function()
             create "TextLabel" { Name = "C" }
 
         local frame = create "Frame" {
-            state
+            children
         }
   
-        state { a, b }
+        children { a, b }
 
         CHECK(frame:FindFirstChild "A")
         CHECK(frame:FindFirstChild "B")
 
         -- check that b is removed and c is added while a remains untouched
         
-        state { a, c }
+        children { a, c }
 
         CHECK(frame:FindFirstChild "A")
         CHECK(frame:FindFirstChild "C")
         CHECK(not frame:FindFirstChild "B")
 
-        state(nil)
+        children(nil)
 
         CHECK(#frame:GetChildren() == 0)
     end
 
-    --[[
-    do CASE "Parent set to nil by state does not allow gc"
-        local frame = create "Frame" { Name = "Parent" }
-        local parent = source(frame :: Frame?)
+    do CASE "parent bound to source"
+        local wref, destroy = root(function()
+            local frame = create "Frame" { Name = "Parent" }
+            local parent = source(frame :: Frame?)
 
-        local wref = weak {
-            create "TextLabel" { Parent = parent, Name = "Child" }
-        }
+            local wref = weak {
+                create "TextLabel" { Parent = parent, Name = "Child" }
+            }
+
+            gc()
+            CHECK(wref[1])
+
+            parent(nil)
+
+            return wref
+        end)
 
         gc()
         CHECK(wref[1])
 
-        parent(nil)
-
-        gc()
-        CHECK(wref[1])
-
-        wref[1]:Destroy()
+        destroy()
+        destroy = NIL
 
         gc()
         CHECK(not wref[1])
     end
-    ]]
 
     do CASE "garbage collection test"
         local wref
@@ -761,7 +787,7 @@ TEST("indexes()", wrap_root(function()
 
         CHECK(t[1].Text == "1")
         CHECK(t[2].Text == "2")
-        CHECK(t[3] == nil :: any)
+        CHECK(t[3] == NIL)
         CHECK(destroyed == true)
     end
 
@@ -775,7 +801,7 @@ TEST("indexes()", wrap_root(function()
 
             local wref = weak { input }
 
-            input = nil :: any
+            input = NIL
 
             gc()
             CHECK(wref[1]) 
@@ -790,7 +816,7 @@ TEST("indexes()", wrap_root(function()
 
             local wref = weak { output }
 
-            output = nil :: any
+            output = NIL
 
             gc()
             CHECK(not wref[1])
@@ -880,7 +906,7 @@ TEST("values()", wrap_root(function()
 
         CHECK(t[1].Text == "1")
         CHECK(t[2].Text == "2")
-        CHECK(t[3] == nil :: any)
+        CHECK(t[3] == NIL)
         CHECK(destroyed == true)
     end
 
@@ -931,13 +957,14 @@ TEST("spring()", wrap_root(function()
 
     do CASE "update source (on next step)"
         local value = source(10)
-        local springed = spring(value, 1, 1)
+        local sprung = spring(value, 1, 1)
 
+        CHECK(sprung() == 10)
         value(20)
-        CHECK(springed() == 10)
+        CHECK(sprung() == 10)
         vide.step(1/60)
-        CHECK(springed() ~= 10)
-        CHECK(springed() > 10)
+        CHECK(sprung() ~= 10)
+        CHECK(sprung() > 10)
     end
 
     do CASE "garbage collection"
@@ -947,7 +974,7 @@ TEST("spring()", wrap_root(function()
             local _output = spring(input)
 
             local wref = weak { input }
-            input = nil :: any
+            input = NIL
 
             gc()
             CHECK(wref[1])
@@ -959,28 +986,26 @@ TEST("spring()", wrap_root(function()
             local output = spring(input)
         
             local wref = weak { output }
-            output = nil :: any
+            output = NIL
             
             gc()
             CHECK(not wref[1])
         end
 
-        do -- spring data gc
-            local capture = require "src/graph".capture
+        -- do -- spring data gc
+        --     local input = source(10)
 
-            local input = source(10)
-
-            local wref do
-                local output, data = (spring :: any)(input)
-                input(input() + 1) -- schedule spring calculation
-                local output_node = unpack(capture(output))
-                wref = weak { output_node, data }
-            end
+        --     local wref do
+        --         local output, data = (spring :: any)(input)
+        --         input(input() + 1) -- schedule spring calculation
+        --         local output_node = unpack(capture(output))
+        --         wref = weak { output_node, data }
+        --     end
     
-            gc()
-            CHECK(not wref[1])
-            CHECK(not wref[2])
-        end
+        --     gc()
+        --     CHECK(not wref[1])
+        --     CHECK(not wref[2])
+        -- end
     end
 
     do CASE "garbage collection (binded)"
@@ -992,7 +1017,7 @@ TEST("spring()", wrap_root(function()
         }
 
         local wref = { output }
-        output = nil :: any
+        output = NIL
 
         gc()
         CHECK(wref[1]) -- `output` should not gc
@@ -1026,8 +1051,11 @@ TEST("spring()", wrap_root(function()
 end))
 
 TEST("untrack()", wrap_root(function()
+    local root = vide.root
     local source = vide.source
+    local derive = vide.derive
     local watch = vide.watch
+    local cleanup = vide.cleanup
     local untrack = vide.untrack
 
     do CASE "does not register dependency"
@@ -1074,6 +1102,55 @@ TEST("untrack()", wrap_root(function()
         a(1)
         b(1)
         CHECK(count == 1)
+    end
+
+    do CASE "outer scope"
+        local outer_count = 0
+        local inner_count = 0
+        local cleaned_count = 0
+
+        local input = source(0)
+
+        local output, destroy = root(function()
+            local output = derive(function()
+                outer_count += 1
+
+                return untrack(function()
+                    return derive(function()
+                        inner_count += 1
+    
+                        cleanup(function()
+                            cleaned_count += 1
+                        end)
+    
+                        return tostring(input())
+                    end)
+                end)
+            end)
+
+            return output
+        end)
+
+        CHECK(outer_count == 1)
+        CHECK(inner_count == 1)
+        CHECK(cleaned_count == 0)
+
+        local output2 = output()
+
+        CHECK(output2() == "0")
+
+        input(1)
+
+        -- todo
+        CHECK(outer_count == 2)
+        CHECK(inner_count == 3)
+        CHECK(cleaned_count == 1)
+
+        local output3 = output()
+        CHECK(output2() == "1")
+        CHECK(output3() == "1")
+
+        CHECK(output2 ~= output3)
     end
 end))
 

@@ -9,12 +9,8 @@ type Scope = graph.Scope
 type StartNode<T> = graph.StartNode<T>
 local create_node = graph.create_node
 local create_start_node = graph.create_start_node
-local create_scope = graph.create_scope
 local track = graph.track
 local update = graph.update
-local capture = graph.capture
-local capture_parents = graph.capture_parents
-local add_child = graph.add_child
 local get_scope = graph.get_scope
 local open_scope = graph.open_scope
 local close_scope = graph.close_scope
@@ -33,9 +29,8 @@ end
 
 -- todo: optimize output array
 local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI, K) -> VO): () -> { VO }
-    assert(get_scope())
-
-    local root = create_scope()
+    local owner = get_scope()
+    assert(owner)
 
     local input_cache = {} :: Map<K, VI>
     local output_cache = {} :: Map<K, VO>
@@ -65,7 +60,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
         table.clear(remove_queue)
 
-        open_scope(root)
+        open_scope(owner) -- todo: needed?
 
         -- process new or changed values
         for i, v in next, data do
@@ -73,10 +68,11 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
             if cv ~= v then
                 if cv == nil then
-                    local scope = create_scope()
+                    local scope = create_node(false)
                     scopes[i] = scope
 
                     open_scope(scope)
+                    track(owner)
 
                     local node = create_start_node(v)
                     input_nodes[i] = node
@@ -112,9 +108,11 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
         update_children(input())
     end
 
-    local value = capture_parents(output, input)
+    open_scope(output)
 
-    output.cache = update_children(value)
+    output.cache = update_children(input())
+
+    close_scope()
 
     return function()
         track(output)
@@ -124,9 +122,8 @@ end
 
 -- todo: optimize output array
 local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> K) -> VO): () -> { VO }
-    assert(get_scope())
-
-    local root = create_scope()
+    local owner = get_scope()
+    assert(owner)
     
     local cur_input_cache_up = {} :: Map<VI, K>
     local new_input_cache_up = {} :: Map<VI, K>
@@ -159,7 +156,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
             local cv = cur_input_cache[v]
             
             if cv == nil then
-                local scope = create_scope()
+                local scope = create_node(false)
                 scopes[v] = scope
 
                 open_scope(scope)
@@ -213,9 +210,11 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
         update_children(input())
     end
 
-    local value = capture_parents(output, input)
+    open_scope(output)
 
-    output.cache = update_children(value)
+    output.cache = update_children(input())
+
+    close_scope()
 
     return function()
         track(output)

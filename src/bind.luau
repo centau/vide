@@ -6,10 +6,11 @@ local flags = require(script.Parent.flags)
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
 local create_node = graph.create_node
+local get_scope = graph.get_scope
 local open_scope = graph.open_scope
 local close_scope = graph.close_scope
+local track = graph.track
 local add_child = graph.add_child
-local capture_parents = graph.capture_parents
 
 --[[
 
@@ -70,9 +71,13 @@ function bind(instance: Instance, property: string, setter: (Instance) -> ())
     local binding = create_node(instance)
     binding.effect = setter
 
-    open_scope(binding.scope)
+    local owner = get_scope()
+    assert(owner)
 
-    capture_parents(binding, setter :: () -> any, instance)
+    open_scope(binding)
+    track(owner)
+
+    setter(instance)
 
     close_scope()
 end
@@ -84,12 +89,7 @@ local function bind_property(instance: Instance, property: string, fn: () -> unk
 end
 
 local function bind_parent(instance: Instance, fn: () -> Instance?)
-    instance.Destroying:Connect(function()
-        instance = nil :: any -- allow gc when destroyed
-    end)
-
     bind(instance, "Parent", function(instance)
-        local _ = instance -- state will strongly reference instance when parent is bound
         instance.Parent = fn()    
     end)
 end

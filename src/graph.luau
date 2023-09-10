@@ -11,13 +11,16 @@ export type StartNode<T> = {
 export type Node<T> =  {
     cache: T,
     children: { [Node<T>]: true } | false,
-    effect:  (T) -> (),
+    effect:  (T) -> () | false,
     cleanups: { () -> () } | false,
 }
+
+local active = {} :: { [Node<any>]: true }
 
 local scopes = { n = 0 } :: { [number]: Node<any>, n: number }
 
 local WEAK_VALUES = { __mode = "v" }
+local WEAK_KEYS = { __mode = "k" }
 local EVALUATION_ERR = "error while evaluating source:\n\n"
 
 -- runs a given callback in a context that Luau does not allow yielding in
@@ -46,34 +49,27 @@ local check_for_yield: <T...>(fn: (T...) -> unknown, T...) -> () do
     end
 end
 
-local function get_scope(): Node<unknown>
+local function get_stack_scope(offset: number): Node<unknown>?
+    return scopes[scopes.n - offset]
+end
+
+local function get_scope(): Node<unknown>?
     return scopes[scopes.n]
 end
 
-local function add_child<T>(parent: Node<any>, child: Node<any>)
+local function add_child<T>(parent: StartNode<any>, child: Node<any>)
     if parent.children then
         parent.children[child] = true
     else
         parent.children = { [child] = true :: true }
+        setmetatable(parent.children :: any, WEAK_KEYS) -- todo:
     end
 end
-
--- local function open_root_scope<T>(node: Node<T>)
---     assert(not scopes[1])
-
---     local n = scopes.n + 1
---     scopes.n = n
---     scopes[n] = node
--- end
 
 local function open_scope<T>(node: Node<T>)
     local n = scopes.n + 1
     scopes.n = n
     scopes[n] = node
-
-    -- local parent = scopes[n-1]
-    -- assert(parent)
-    -- add_child(parent, node)
 end
 
 local function close_scope()
@@ -100,49 +96,71 @@ local function run_cleanups<T>(node: Node<T>)
 end
 
 local function run_effect<T>(node: Node<T>)
-    node.effect(node.cache)
+    if node.effect then
+        node.effect(node.cache)
+    end
 end
 
 local function destroy<T>(node: Node<T>)
     run_cleanups(node)
-    for _, child in ipairs(node) do
-        destroy(child)
+    active[node] = nil
+    if node.children then
+        for child in node.children do
+            destroy(child)
+        end
     end
 end
 
 
 -- runs node effects, recalculates descendants and runs descendant effects
-local function update<T>(node: StartNode<T>)
+local function rec<T>(node: StartNode<T>, update_queue: { Node<any> })
     if not node.children then return end
 
-    local cache = {}
-    for child in node.children do
-        table.insert(cache, child)
+    for child in next, node.children do
+        table.insert(update_queue, child)
+        rec(child, update_queue)
     end
 
-    for _, child in next, cache do
-        open_scope(child)
-        run_cleanups(child)
-        run_effect(child)
-        close_scope()
-        update(child)
-    end
+    table.clear(node.children)
 end
 
-local function track<T>(node: Node<T>)
-    add_child(node, get_scope())
+local function update<T>(node: StartNode<T>)
+    local update_queue = {} :: { Node<any> }
+    --assert(#update_queue == 0, "update already in progress")
+    rec(node, update_queue)
+
+    for _, n in next, update_queue do
+        open_scope(n) -- todo
+        run_cleanups(n)
+        run_effect(n)
+        close_scope()
+    end
+
+    table.clear(update_queue)
+end
+
+local function track<T>(node: StartNode<T>)
+    local scope = get_scope()
+    assert(scope)
+    if scope.effect then -- todo
+        add_child(node, scope)
+    end
 end
 
 local function create_node<T>(value: T): Node<T>
-    return {
+    local node: Node<T> = {
         cache = value,
-        effect = function() end,
-        cleanups = false,
-        children = false
+        effect = false,
+        cleanups = false :: false,
+        children = false :: false
     }
+
+    active[node] = true
+
+    return node
 end
 
-local function get_children(node: Node<unknown>): { Node<unknown> }
+local function get_children<T>(node: Node<T>): { Node<unknown> }
     if not node.children then return {} end
 
     local children = {}
@@ -151,7 +169,7 @@ local function get_children(node: Node<unknown>): { Node<unknown> }
         table.insert(children, child)
     end
 
-    return children
+    return children :: { Node<any> }
 end
 
 local function create_start_node<T>(value: T): StartNode<T>
@@ -159,10 +177,10 @@ local function create_start_node<T>(value: T): StartNode<T>
 end
 
 return table.freeze {
-    open_root_scope = open_root_scope,
     open_scope = open_scope,
     close_scope = close_scope,
     get_scope = get_scope,
+    get_stack_scope = get_stack_scope,
     add_cleanup = add_cleanup,
     destroy = destroy,
     run_cleanups = run_cleanups,

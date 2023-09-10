@@ -2,7 +2,6 @@ if not game then script = require "test/relative-string" end
 
 local graph = require(script.Parent.graph)
 local create_node = graph.create_node
-local capture_parents = graph.capture_parents
 local add_child = graph.add_child
 local update = graph.update
 local track = graph.track
@@ -11,17 +10,19 @@ local open_scope = graph.open_scope
 local close_scope = graph.close_scope
 
 local function derive<T>(fn: () -> T): () -> T
-    assert(get_scope())
+    local owner = get_scope()
+    assert(owner)
 
     local node = create_node((false :: any) :: T)
     node.effect = function()
         node.cache = fn()
-        update(node)
     end
 
-    open_scope(node.scope)
+    add_child(owner, node)
 
-    node.cache = capture_parents(node, fn)
+    open_scope(node)
+
+    node.cache = fn()
 
     close_scope()
 

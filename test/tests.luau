@@ -1062,7 +1062,7 @@ TEST("untrack()", wrap_root(function()
         local a = source(0)
         local b = source(0)
 
-        local count = -1
+        local count = 0
 
         watch(function()
             count += 1
@@ -1071,10 +1071,10 @@ TEST("untrack()", wrap_root(function()
         end)
 
         b(1)
-        CHECK(count == 1)
+        CHECK(count == 2)
 
         a(1)
-        CHECK(count == 1)
+        CHECK(count == 2)
 
         CHECK(a() == untrack(a))
     end
@@ -1088,7 +1088,7 @@ TEST("untrack()", wrap_root(function()
             return a() + b()
         end
 
-        local count = -1
+        local count = 0
 
         watch(function()
             count += 1
@@ -1097,11 +1097,11 @@ TEST("untrack()", wrap_root(function()
         end)
 
         c(1)
-        CHECK(count == 1)
+        CHECK(count == 2)
 
         a(1)
         b(1)
-        CHECK(count == 1)
+        CHECK(count == 2)
     end
 
     do CASE "outer scope"
@@ -1141,16 +1141,19 @@ TEST("untrack()", wrap_root(function()
 
         input(1)
 
-        -- todo
-        CHECK(outer_count == 2)
-        CHECK(inner_count == 3)
+        CHECK(outer_count == 1)
+        CHECK(inner_count == 2)
         CHECK(cleaned_count == 1)
 
         local output3 = output()
         CHECK(output2() == "1")
         CHECK(output3() == "1")
 
-        CHECK(output2 ~= output3)
+        CHECK(output2 == output3)
+
+        destroy()
+
+        CHECK(cleaned_count == 2)
     end
 end))
 

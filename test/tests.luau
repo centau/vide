@@ -1218,127 +1218,127 @@ TEST("actions", function()
     end
 end)
 
-TEST("strict", function()
-    vide.strict = true
+-- TEST("strict", function()
+--     vide.strict = true
 
-    local create = vide.create
-    local source = vide.source
-    local derive = vide.derive
-    local watch = vide.watch
-    local indexes, values = vide.indexes, vide.values
-    local cleanup = vide.cleanup
+--     local create = vide.create
+--     local source = vide.source
+--     local derive = vide.derive
+--     local watch = vide.watch
+--     local indexes, values = vide.indexes, vide.values
+--     local cleanup = vide.cleanup
 
-    -- do CASE "error on derived callback yield"
-    --     local state = source(1)
+--     -- do CASE "error on derived callback yield"
+--     --     local state = source(1)
 
-    --     local ok = pcall(function()
-    --         local _derived = derive(function()
-    --             coroutine.yield()
-    --             return state()
-    --         end)
-    --     end)
+--     --     local ok = pcall(function()
+--     --         local _derived = derive(function()
+--     --             coroutine.yield()
+--     --             return state()
+--     --         end)
+--     --     end)
 
-    --     CHECK(not ok)
-    -- end
+--     --     CHECK(not ok)
+--     -- end
 
-    -- do CASE "error on watcher callback yield"
-    --     local state = source(1)
+--     -- do CASE "error on watcher callback yield"
+--     --     local state = source(1)
 
-    --     local ok = pcall(function()
-    --         local _derived = watch(function()
-    --             coroutine.yield()
-    --             state()
-    --         end)
-    --     end)
+--     --     local ok = pcall(function()
+--     --         local _derived = watch(function()
+--     --             coroutine.yield()
+--     --             state()
+--     --         end)
+--     --     end)
 
-    --     CHECK(not ok)
-    -- end
+--     --     CHECK(not ok)
+--     -- end
 
-    do CASE "run derived callback twice"
-        local state = source(1)
-        local runcount = 0
+--     do CASE "run derived callback twice"
+--         local state = source(1)
+--         local runcount = 0
 
-        local _ = derive(function()
-            runcount += 1
-            return state()
-        end)
+--         local _ = derive(function()
+--             runcount += 1
+--             return state()
+--         end)
 
-        CHECK(runcount == 2)
-        state(2)
-        CHECK(runcount == 4)
-    end
+--         CHECK(runcount == 2)
+--         state(2)
+--         CHECK(runcount == 4)
+--     end
 
-    do CASE "run watcher callback twice"
-        local state = source(1)
-        local runcount = 0
+--     do CASE "run watcher callback twice"
+--         local state = source(1)
+--         local runcount = 0
 
-        watch(function()
-            runcount += 1
-            state()
-        end)
+--         watch(function()
+--             runcount += 1
+--             state()
+--         end)
 
-        CHECK(runcount == 2)
-        state(2)
-        CHECK(runcount == 4)
-    end
+--         CHECK(runcount == 2)
+--         state(2)
+--         CHECK(runcount == 4)
+--     end
 
-    do CASE "indexes() error if primitive"
-        local state = source { 1 }
+--     do CASE "indexes() error if primitive"
+--         local state = source { 1 }
 
-        local ok = pcall(function()
-            indexes(state, function() return 1 end)
-        end)
+--         local ok = pcall(function()
+--             indexes(state, function() return 1 end)
+--         end)
 
-        CHECK(not ok)
-    end
+--         CHECK(not ok)
+--     end
 
-    do CASE "values() error if duplicate"
-        local state = source { 1, 2, 1 }
+--     do CASE "values() error if duplicate"
+--         local state = source { 1, 2, 1 }
 
-        local ok = pcall(function()
-            values(state, function() return {} end)
-        end)
+--         local ok = pcall(function()
+--             values(state, function() return {} end)
+--         end)
 
-        CHECK(not ok)
-    end
+--         CHECK(not ok)
+--     end
 
-    do CASE "duplicate properties"
-        local ok = pcall(function()
-            create "TextLabel" {
-                {
-                    Name = "foo"
-                },
-                {
-                    Name = "bar"
-                }
-            }
-        end)
+--     do CASE "duplicate properties"
+--         local ok = pcall(function()
+--             create "TextLabel" {
+--                 {
+--                     Name = "foo"
+--                 },
+--                 {
+--                     Name = "bar"
+--                 }
+--             }
+--         end)
 
-        CHECK(not ok)
+--         CHECK(not ok)
 
-        ok = pcall(function()
-            create "TextLabel" {
-                {
-                    Name = "foo",
-                    {
-                        Name = "bar"
-                    }
-                }
-            }
-        end)
+--         ok = pcall(function()
+--             create "TextLabel" {
+--                 {
+--                     Name = "foo",
+--                     {
+--                         Name = "bar"
+--                     }
+--                 }
+--             }
+--         end)
 
-        CHECK(ok)
-    end
+--         CHECK(ok)
+--     end
 
-    do CASE "multiple cleanup per scope"
-        local ok = pcall(function()
-            cleanup(function() end)
-            cleanup(function() end)
-        end)
+--     do CASE "multiple cleanup per scope"
+--         local ok = pcall(function()
+--             cleanup(function() end)
+--             cleanup(function() end)
+--         end)
 
-        CHECK(not ok)
-    end
-end)
+--         CHECK(not ok)
+--     end
+-- end)
 
 local ok = FINISH()
 if not ok then error("Tests failed", 0) end

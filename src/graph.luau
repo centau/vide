@@ -111,38 +111,42 @@ local function destroy<T>(node: Node<T>)
     end
 end
 
+local update_queue = {} :: { Node<any> }
 
 -- runs node effects, recalculates descendants and runs descendant effects
-local function rec<T>(node: StartNode<T>, update_queue: { Node<any> })
+local function rec<T>(node: StartNode<T>)
     if not node.children then return end
 
     for child in next, node.children do
         table.insert(update_queue, child)
-        rec(child, update_queue)
+        rec(child)
     end
 
     table.clear(node.children)
 end
 
 local function update<T>(node: StartNode<T>)
-    local update_queue = {} :: { Node<any> }
     --assert(#update_queue == 0, "update already in progress")
-    rec(node, update_queue)
+    -- check if recursive update
+    local first = update_queue[1] == nil
 
-    for _, n in next, update_queue do
-        open_scope(n) -- todo
-        run_cleanups(n)
-        run_effect(n)
-        close_scope()
+    rec(node)
+
+    if first then
+        for _, n in next, update_queue do
+            open_scope(n) -- todo
+            run_cleanups(n)
+            run_effect(n)
+            close_scope()
+        end
+
+        table.clear(update_queue)
     end
-
-    table.clear(update_queue)
 end
 
 local function track<T>(node: StartNode<T>)
     local scope = get_scope()
-    assert(scope)
-    if scope.effect then -- todo
+    if scope and scope.effect then -- todo
         add_child(node, scope)
     end
 end

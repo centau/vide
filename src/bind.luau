@@ -30,6 +30,16 @@ todo: investigate behavior in case B is parented to A, and A has no parent or re
 
 ]]
 
+type Binding = {
+    instance: Instance,
+    property: string,
+    source: () -> unknown
+}
+
+local function binder(b: Binding)
+    (b.instance :: any)[b.property] = b.source()
+end
+
 
 
 -- todo: replace with throw's method
@@ -55,77 +65,110 @@ local function traceback(skips: number) -- ensures trace begins outside of any v
     return debug.traceback(nil, s)
 end
 
-function bind(instance: Instance, property: string, setter: (Instance) -> ())
-    if flags.strict then
-        -- wrap setter in function with stack inspection for better error msgs
-        local fn = setter
-        local bind_trace = traceback(0)
-        setter = function(instance)
-            local ok, err: string? = xpcall(fn, function(err: string)
-                return err .. "\nsource updated at: " .. traceback(2)
-            end, instance)
-            if not ok then warn(`error occured updating {property}: {err}bound at: {bind_trace}`) end
-        end
-    end
+function create_binding<T>(updater: (T) -> (), binding_data: T)
+    -- if flags.strict then
+    --     -- wrap setter in function with stack inspection for better error msgs
+    --     local fn = setter
+    --     local bind_trace = traceback(0)
+    --     setter = function(instance)
+    --         local ok, err: string? = xpcall(fn, function(err: string)
+    --             return err .. "\nsource updated at: " .. traceback(2)
+    --         end, instance)
+    --         if not ok then warn(`error occured updating {property}: {err}bound at: {bind_trace}`) end
+    --     end
+    -- end
 
-    local binding = create_node(instance)
-    binding.effect = setter
+    local binding = create_node(binding_data)
+    binding.effect = updater
 
     local owner = get_scope()
     assert(owner)
 
+    add_child(owner, binding)
     open_scope(binding)
-    track(owner)
 
-    setter(instance)
+    updater(binding_data)
 
     close_scope()
 end
 
-local function bind_property(instance: Instance, property: string, fn: () -> unknown)
-    bind(instance, property, function(instance_weak: any)
-        instance_weak[property] = fn()
-    end)
+type PropertyBinding = {
+    instance: Instance,
+    property: string,
+    source: () -> unknown
+}
+
+local function update_property(p: PropertyBinding)
+    (p.instance :: any)[p.property] = p.source()
 end
 
-local function bind_parent(instance: Instance, fn: () -> Instance?)
-    bind(instance, "Parent", function(instance)
-        instance.Parent = fn()    
-    end)
+type ParentBinding = {
+    instance: Instance,
+    parent: () -> Instance
+}
+
+local function update_parent(p: ParentBinding)
+    p.instance.Parent = p.parent()
 end
 
-local function bind_children(parent: Instance, fn: () -> { Instance })
-    local current_child_set: { [Instance]: true } = {} -- cache of all children parented before update
-    local new_child_set: { [Instance]: true } = {} -- cache of all children parented after update
+type ChildrenBinding = {
+    instance: Instance,
+    cur_children_set: { [Instance]: true },
+    new_children_set: { [Instance]: true },
+    children: () -> { Instance }
+}
 
-    bind(parent, "Children", function(parent_weak)
-        local new_childs = fn() -- all (and only) children that should be parented after this update
-        if new_childs and type(new_childs) ~= "table" then
-            throw(`Cannot parent instance of type { type(new_childs) } `)
-        end
+local function update_children(p: ChildrenBinding)
+    local cur_children_set: { [Instance]: true } = p.cur_children_set -- cache of all children parented before update
+    local new_child_set: { [Instance]: true } = p.new_children_set -- cache of all children parented after update
 
-        if new_childs then
-            for _, child in next, new_childs do
-                new_child_set[child] = true -- record child set from this update
-                if not current_child_set[child] then
-                    child.Parent = parent_weak -- if child wasn't already parented then parent it
-                else 
-                    current_child_set[child] = nil -- remove child from cache if it was already in cache
-                end
+    local new_children = p.children() -- all (and only) children that should be parented after this update
+    
+    if type(new_children) ~= "table" then
+        new_children = { new_children }
+    end
+
+    if new_children then
+        for _, child in next, new_children do
+            new_child_set[child] = true -- record child set from this update
+            if not cur_children_set[child] then
+                child.Parent = p.instance -- if child wasn't already parented then parent it
+            else 
+                cur_children_set[child] = nil -- remove child from cache if it was already in cache
             end
         end
+    end
 
-        for child in next, current_child_set do
-            child.Parent = nil -- unparent all children that weren't in the new children set
-        end
+    for child in next, cur_children_set do
+        child.Parent = nil -- unparent all children that weren't in the new children set
+    end
 
-        table.clear(current_child_set) -- clear cache, preserve capacity
-        current_child_set, new_child_set = new_child_set, current_child_set
-    end)
+    table.clear(cur_children_set) -- clear cache, preserve capacity
+    p.cur_children_set, p.new_children_set = new_child_set, cur_children_set
 end
 
 return {
-    property = bind_property,
-    parent = bind_parent,
-    children = bind_children,
+    property = function(instance, property, source)
+        return create_binding(update_property, {
+            instance = instance,
+            property = property,
+            source = source
+        })
+    end,
+
+    parent = function(instance, parent)
+        return create_binding(update_parent, {
+            instance = instance,
+            parent = parent
+        })
+    end,
+
+    children = function(instance, children)
+        return create_binding(update_children, {
+            instance = instance,
+            cur_children_set = {},
+            new_children_set = {},
+            children = children
+        })
+    end
 }

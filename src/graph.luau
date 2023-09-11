@@ -5,17 +5,16 @@ local flags = require(script.Parent.flags)
 
 export type StartNode<T> = {
     cache: T,
-    children: { [Node<T>]: true } | false
+    children: { Node<T> } | false
 }
 
 export type Node<T> =  {
     cache: T,
-    children: { [Node<T>]: true } | false,
+    parents: { StartNode<T> },
+    children: { Node<T> } | false,
     effect:  (T) -> () | false,
     cleanups: { () -> () } | false,
 }
-
-local active = {} :: { [Node<any>]: true }
 
 local scopes = { n = 0 } :: { [number]: Node<any>, n: number }
 
@@ -59,11 +58,12 @@ end
 
 local function add_child<T>(parent: StartNode<any>, child: Node<any>)
     if parent.children then
-        parent.children[child] = true
+        table.insert(parent.children :: { Node<T> }, child)
     else
-        parent.children = { [child] = true :: true }
-        setmetatable(parent.children :: any, WEAK_KEYS) -- todo:
+        parent.children = { child }
     end
+
+    table.insert(child.parents, parent)
 end
 
 local function open_scope<T>(node: Node<T>)
@@ -101,13 +101,25 @@ local function run_effect<T>(node: Node<T>)
     end
 end
 
+local function unparent<T>(node: Node<T>)
+    for _, parent in node.parents do
+        local children = parent.children :: {}
+        local idx = table.find(children :: {}, node)
+        
+        local n = #children
+        children[idx] = children[n]
+        children[n] = nil
+    end
+
+    table.clear(node.parents)
+end
+
 local function destroy<T>(node: Node<T>)
     run_cleanups(node)
-    active[node] = nil
-    if node.children then
-        for child in node.children do
-            destroy(child)
-        end
+    unparent(node)
+    local children = node.children :: {}
+    if children then
+        while children[1] do destroy(children[1]) end
     end
 end
 
@@ -117,12 +129,15 @@ local update_queue = {} :: { Node<any> }
 local function rec<T>(node: StartNode<T>)
     if not node.children then return end
 
-    for child in next, node.children do
-        table.insert(update_queue, child)
-        rec(child)
+    local children = node.children :: {}
+
+    while children[1] do
+        table.insert(update_queue, children[1])
+        rec(children[1])
+        unparent(children[1])
     end
 
-    table.clear(node.children)
+    table.clear(children)
 end
 
 local function update<T>(node: StartNode<T>)
@@ -156,10 +171,9 @@ local function create_node<T>(value: T): Node<T>
         cache = value,
         effect = false,
         cleanups = false :: false,
+        parents = {},
         children = false :: false
     }
-
-    active[node] = true
 
     return node
 end
@@ -169,7 +183,7 @@ local function get_children<T>(node: Node<T>): { Node<unknown> }
 
     local children = {}
 
-    for child in node.children do
+    for _, child in node.children do
         table.insert(children, child)
     end
 

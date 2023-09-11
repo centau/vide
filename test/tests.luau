@@ -103,7 +103,7 @@ TEST("graph", function()
         CHECK(count == 3)
     end
 
-    do CASE "diamond problem"
+    do CASE "diamond graph"
         local a, b, c, d = node(), node(), node(), node()
 
         local b_cnt, c_cnt, d_cnt = 0, 0, 0
@@ -119,7 +119,7 @@ TEST("graph", function()
 
         CHECK(b_cnt == 1)
         CHECK(c_cnt == 1)
-        CHECK(d_cnt == 2) -- confirm current behavior
+        CHECK(d_cnt == 1)
     end
 
     do CASE "duplicate child on rerun"
@@ -384,6 +384,36 @@ TEST("derive()", wrap_root(function()
         num(4) -- even
         CHECK(count == 3)
         num(5) -- odd
+        CHECK(count == 4)
+    end
+
+    do CASE "conditional derive"
+        local a = source(false)
+        local b = source(false)
+
+        local c = derive(function()
+            return
+                if a() then "a"
+                elseif b() then "b"
+                else "never"
+        end)
+
+        local count = 0
+
+        watch(function() count += 1 end)
+
+        b(true)
+        CHECK(c() == "b")
+        CHECK(count == 2)
+        a(true)
+        CHECK(c() == "a")
+        CHECK(count == 3)
+        b(false)
+        CHECK(count == 3)
+        b(true)
+        CHECK(count == 3)
+        a(false)
+        CHECK(c() == "b")
         CHECK(count == 4)
     end
 

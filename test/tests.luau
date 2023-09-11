@@ -400,7 +400,7 @@ TEST("derive()", wrap_root(function()
 
         local count = 0
 
-        watch(function() count += 1 end)
+        watch(function() c() count += 1 end)
 
         b(true)
         CHECK(c() == "b")

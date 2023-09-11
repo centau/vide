@@ -9,6 +9,7 @@ type Scope = graph.Scope
 type StartNode<T> = graph.StartNode<T>
 local create_node = graph.create_node
 local create_start_node = graph.create_start_node
+local set_owner = graph.set_owner
 local track = graph.track
 local update = graph.update
 local get_scope = graph.get_scope
@@ -36,7 +37,6 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
     local output_cache = {} :: Map<K, VO>
     local input_nodes = {} :: Map<K, StartNode<VI>>
     local remove_queue = {} :: { K }
-    local output_array = {} :: { VO }
 
     local scopes = {} :: Map<K, Scope>
 
@@ -71,8 +71,8 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
                     local scope = create_node(false)
                     scopes[i] = scope
 
+                    set_owner(scope, owner)
                     open_scope(scope)
-                    track(owner)
 
                     local node = create_start_node(v)
                     input_nodes[i] = node
@@ -93,8 +93,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
         close_scope()
 
-        -- output elements
-        table.clear(output_array)
+        local output_array = table.create(#scopes)
         for _, v in next, output_cache do
             table.insert(output_array, v)
         end
@@ -105,7 +104,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
     local output = create_node(false :: any)
     output.effect = function()
-        update_children(input())
+        return update_children(input())
     end
 
     open_scope(output)
@@ -130,7 +129,6 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
 
     local output_cache = {} :: Map<VI, VO>
     local input_nodes = {} :: Map<VI, StartNode<K>>
-    local output_array = {} :: { VO }
 
     local scopes = {} :: Map<VI, Scope>
 
@@ -147,7 +145,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
             end
         end
 
-        open_scope(root)
+        open_scope(owner)
     
         -- process data
         for i, v in next, data do
@@ -159,6 +157,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
                 local scope = create_node(false)
                 scopes[v] = scope
 
+                set_owner(scope, owner)
                 open_scope(scope)
 
                 local node = create_start_node(i)
@@ -193,13 +192,10 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
         table.clear(cur_input_cache)
         cur_input_cache_up, new_input_cache_up = new_input_cache, cur_input_cache
 
-        -- output elements
-        table.clear(output_array)
-
+        local output_array = table.create(#scopes)
         for _, v in next, output_cache do
             table.insert(output_array, v)
         end
-
         check_primitives(output_array)
 
         return output_array
@@ -207,7 +203,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
 
     local output = create_node(false :: any)
     output.effect = function()
-        update_children(input())
+        return update_children(input())
     end
 
     open_scope(output)

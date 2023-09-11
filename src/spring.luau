@@ -31,7 +31,7 @@ local get_scope = graph.get_scope
 local open_scope = graph.open_scope
 local close_scope = graph.close_scope
 local update = graph.update
-local add_child = graph.add_child
+local set_owner = graph.set_owner
 local track = graph.track
 
 local UPDATE_RATE = 120
@@ -156,7 +156,7 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
     local updater = create_node(false)
     updater.effect = true :: any -- todo
 
-    add_child(owner, updater)
+    set_owner(updater, owner)
     open_scope(updater)
 
     local initial_value = source()

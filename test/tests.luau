@@ -241,7 +241,6 @@ TEST("graph", function()
         CHECK(table.find(get_children(root), scope1 :: Node<any>))
 
         destroy(scope1)
-        CHECK(table.find(get_children(root), scope1 :: Node<any>))
         CHECK(cleaned.scope1)
         CHECK(cleaned.bind1)
         scope1 = NIL
@@ -251,8 +250,6 @@ TEST("graph", function()
         CHECK(#get_children(root) == 2)
         CHECK(#get_children(selected) == 1)
     end
-
-    -- todo: further tests
 
     do CASE "nodes garbage collection"
         local wref = weak { create_node(1) }
@@ -330,9 +327,11 @@ TEST("source()", wrap_root(function()
 end))
 
 TEST("derive()", wrap_root(function()
+    local root = vide.root
     local source = vide.source
     local derive = vide.derive
     local watch = vide.watch
+    local cleanup = vide.cleanup
 
     do CASE "derive new value on source change"
         local a = source(1)
@@ -367,7 +366,7 @@ TEST("derive()", wrap_root(function()
         local num = source(0)
 
         local is_even = derive(function()
-            return num() % 2 == 0
+            return bit32.band(num(), 0b01) == 0
         end)
 
         local count = 0
@@ -417,15 +416,37 @@ TEST("derive()", wrap_root(function()
         CHECK(count == 4)
     end
 
+    do CASE "owner not disconnected"
+        local count = 0
+        local a = source(0)
+
+        local _, destroy = root(function()
+
+            local b = derive(function()
+                cleanup(function()
+                    count += 1
+                end)
+
+                return a()
+            end)
+        end)
+
+        CHECK(count == 0)
+        a(1) -- b clears parents (should not clear owner)
+        CHECK(count == 1)
+        destroy()
+        CHECK(count == 2)
+    end
+
     do CASE "garbage collection"
         -- check that `b` does not allow gc of `a`        
         local a = source(1)
 
-        local b = derive(function()
+        local _b = derive(function()
             return a()
         end)
 
-        b = NIL
+        _b = NIL
 
         local wref = weak { a }
 

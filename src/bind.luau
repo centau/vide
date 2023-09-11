@@ -9,38 +9,7 @@ local create_node = graph.create_node
 local get_scope = graph.get_scope
 local open_scope = graph.open_scope
 local close_scope = graph.close_scope
-local track = graph.track
-local add_child = graph.add_child
-
---[[
-
-Roblox instances in Luau are referenced using a kind of userdata proxy,
-this proxy can be garbage collected independently from the actual instance, even
-if the instance is still parented. Since reactive bindings allow the garbage
-collection of instances, this proxy can can garbage collected while the instance
-is still parented, causing the binding to be lost and no longer update the
-instance on changes.
-
-Vide's solution to this is to hold the proxy in memory as long as the instance
-is parented to the datamodel by using `GetPropertyChanged("Parent")` to add or
-remove the proxy from a table whose sole purpose is to strongly reference
-proxies.
-
-todo: investigate behavior in case B is parented to A, and A has no parent or reference, and B has a binding.
-
-]]
-
-type Binding = {
-    instance: Instance,
-    property: string,
-    source: () -> unknown
-}
-
-local function binder(b: Binding)
-    (b.instance :: any)[b.property] = b.source()
-end
-
-
+local set_owner = graph.set_owner
 
 -- todo: replace with throw's method
 local root do
@@ -65,7 +34,7 @@ local function traceback(skips: number) -- ensures trace begins outside of any v
     return debug.traceback(nil, s)
 end
 
-function create_binding<T>(updater: (T) -> (), binding_data: T)
+function create_binding<T>(updater: (T) -> T, binding_data: T)
     -- if flags.strict then
     --     -- wrap setter in function with stack inspection for better error msgs
     --     local fn = setter
@@ -84,7 +53,7 @@ function create_binding<T>(updater: (T) -> (), binding_data: T)
     local owner = get_scope()
     assert(owner)
 
-    add_child(owner, binding)
+    set_owner(binding, owner)
     open_scope(binding)
 
     updater(binding_data)
@@ -100,6 +69,7 @@ type PropertyBinding = {
 
 local function update_property(p: PropertyBinding)
     (p.instance :: any)[p.property] = p.source()
+    return p
 end
 
 type ParentBinding = {
@@ -109,6 +79,7 @@ type ParentBinding = {
 
 local function update_parent(p: ParentBinding)
     p.instance.Parent = p.parent()
+    return p
 end
 
 type ChildrenBinding = {
@@ -145,6 +116,8 @@ local function update_children(p: ChildrenBinding)
 
     table.clear(cur_children_set) -- clear cache, preserve capacity
     p.cur_children_set, p.new_children_set = new_child_set, cur_children_set
+
+    return p
 end
 
 return {

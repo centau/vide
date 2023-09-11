@@ -10,9 +10,10 @@ export type StartNode<T> = {
 
 export type Node<T> =  {
     cache: T,
+    owner: Node<T> | false,
     parents: { StartNode<T> },
     children: { Node<T> } | false,
-    effect:  (T) -> () | false,
+    effect:  ((T) -> T) | false,
     cleanups: { () -> () } | false,
 }
 
@@ -56,14 +57,24 @@ local function get_scope(): Node<unknown>?
     return scopes[scopes.n]
 end
 
+
 local function add_child<T>(parent: StartNode<any>, child: Node<any>)
     if parent.children then
         table.insert(parent.children :: { Node<T> }, child)
     else
         parent.children = { child }
     end
-
+    
     table.insert(child.parents, parent)
+end
+
+local function set_owner(node: Node<any>, owner: Node<any>)
+    node.owner = owner
+    if owner.children then
+        table.insert(owner.children :: { Node<any> }, node)
+    else
+        owner.children = { node }
+    end
 end
 
 local function open_scope<T>(node: Node<T>)
@@ -95,20 +106,18 @@ local function run_cleanups<T>(node: Node<T>)
     end
 end
 
-local function run_effect<T>(node: Node<T>)
-    if node.effect then
-        node.effect(node.cache)
-    end
+local function remove_child<T>(parent: StartNode<T>, child: Node<T>)
+    local children = parent.children :: {}
+    local idx = table.find(children :: {}, child)
+    
+    local n = #children
+    children[idx] = children[n]
+    children[n] = nil
 end
 
 local function unparent<T>(node: Node<T>)
     for _, parent in node.parents do
-        local children = parent.children :: {}
-        local idx = table.find(children :: {}, node)
-        
-        local n = #children
-        children[idx] = children[n]
-        children[n] = nil
+        remove_child(parent, node)
     end
 
     table.clear(node.parents)
@@ -117,6 +126,8 @@ end
 local function destroy<T>(node: Node<T>)
     run_cleanups(node)
     unparent(node)
+    if node.owner then remove_child(node.owner, node) end
+    node.owner = false
     local children = node.children :: {}
     if children then
         while children[1] do destroy(children[1]) end
@@ -125,36 +136,77 @@ end
 
 local update_queue = {} :: { Node<any> }
 
--- runs node effects, recalculates descendants and runs descendant effects
-local function rec<T>(node: StartNode<T>)
-    if not node.children then return end
+-- -- runs node effects, recalculates descendants and runs descendant effects
+-- local function rec<T>(node: StartNode<T>)
+--     if not node.children then return end
 
-    local children = node.children :: {}
+--     local children = node.children :: {}
 
-    while children[1] do
-        table.insert(update_queue, children[1])
-        rec(children[1])
-        unparent(children[1])
-    end
+--     while children[1] do
+--         table.insert(update_queue, children[1])
+--         rec(children[1])
+--         unparent(children[1])
+--     end
 
-    table.clear(children)
-end
+--     table.clear(children)
+-- end
+
+-- local function update<T>(node: StartNode<T>)
+--     --assert(#update_queue == 0, "update already in progress")
+--     -- check if recursive update
+--     local first = update_queue[1] == nil
+
+--     rec(node)
+
+--     if first then
+--         for _, n in next, update_queue do
+--             open_scope(n) -- todo
+--             run_cleanups(n)
+--             run_effect(n)
+--             close_scope()
+--         end
+
+--         table.clear(update_queue)
+--     end
+-- end
 
 local function update<T>(node: StartNode<T>)
-    --assert(#update_queue == 0, "update already in progress")
-    -- check if recursive update
-    local first = update_queue[1] == nil
+    local children = node.children :: {}
+    if not children then return end
 
-    rec(node)
+    local n0 = #update_queue
+    local first_update = n0 == 0
+    local n = n0
 
-    if first then
-        for _, n in next, update_queue do
-            open_scope(n) -- todo
-            run_cleanups(n)
-            run_effect(n)
-            close_scope()
+    do
+        local child = children[1]
+        while child do -- todo: case where child in owner context
+            unparent(child)
+
+            n += 1
+            update_queue[n] = child
+
+            child = children[1]
         end
+    end
 
+    for i = n0 + 1, n do
+        local child = update_queue[i]
+
+        local old_value = child.cache
+
+        open_scope(child)
+        run_cleanups(child)
+        local new_value = child.effect and child.effect(old_value)
+        close_scope()
+
+        if old_value ~= new_value then
+            child.cache = new_value
+            update(child)
+        end
+    end
+
+    if first_update then
         table.clear(update_queue)
     end
 end
@@ -169,7 +221,8 @@ end
 local function create_node<T>(value: T): Node<T>
     local node: Node<T> = {
         cache = value,
-        effect = false,
+        owner = false,
+        effect = false :: false,
         cleanups = false :: false,
         parents = {},
         children = false :: false
@@ -200,6 +253,7 @@ return table.freeze {
     get_scope = get_scope,
     get_stack_scope = get_stack_scope,
     add_cleanup = add_cleanup,
+    set_owner = set_owner,
     destroy = destroy,
     run_cleanups = run_cleanups,
     track = track,

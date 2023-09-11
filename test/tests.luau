@@ -103,45 +103,42 @@ TEST("graph", function()
         CHECK(count == 3)
     end
 
+    do CASE "diamond problem"
+        local a, b, c, d = node(), node(), node(), node()
+
+        local b_cnt, c_cnt, d_cnt = 0, 0, 0
+        function b.effect() b_cnt += 1 end
+        function c.effect() c_cnt += 1 end
+        function d.effect() d_cnt += 1 end
+
+        open_scope(b); track(a); close_scope()
+        open_scope(c); track(a); close_scope()
+        open_scope(d); track(b); track(c); close_scope()
+
+        update(a)
+
+        CHECK(b_cnt == 1)
+        CHECK(c_cnt == 1)
+        CHECK(d_cnt == 2) -- confirm current behavior
+    end
+
+    do CASE "duplicate child on rerun"
+        local a, b, c = node(), node(), node()
+
+        function c.effect()
+            track(a)
+            track(b)
+        end
+
+        open_scope(c); assert(c.effect)(NIL); close_scope()
+
+        update(a)
+
+        CHECK(#get_children(a) == 1)
+        CHECK(#get_children(b) == 1)
+    end
+
     do CASE "case 1"
-        -- local function indexes<K, V>(input: Node<Map<K, V>>): Map<K, Node<V>>
-        --     local root = get_scope()
-        --     local updated = create_node(false)
-
-        --     local scopes = {}
-        --     local outputs = {}
-
-        --     function updated.effect()
-        --         open_scope(root)
-
-        --         for i, v in input do
-        --             if not scopes[i] then
-        --                 scopes[i] = create_node(false)
-        --                 outputs[i] = create_start_node(v)
-        --             end
-        
-        --             open_scope(scopes[i])
-        --             outputs[i].cache = v
-        --             update(outputs[i])
-        --             close_scope()
-        --         end
-
-        --         for i, v in outputs do
-        --             if input[i] == nil then
-        --                 destroy(scopes[i])
-        --             end
-        --         end
-
-        --         close_scope()
-        --     end
-
-        --     open_scope(updated)
-        --     updated.effect(false)
-        --     close_scope()
-            
-        --     return outputs
-        -- end
-
         -- construct graph
 
         local items = node { "a", "b" }

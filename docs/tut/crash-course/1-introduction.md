@@ -3,7 +3,7 @@
 This is a brief tutorial designed to give you a quick run through the usage of
 Vide.
 
-Vide is largely inspired by other UI libraries such as Solid and Fusion.
+Vide is heavily inspired by [Solid](https://www.solidjs.com/).
 
 ## Why Vide?
 
@@ -21,5 +21,6 @@ Some of the main focuses behind Vide's design choices:
 - Being completely typecheckable.
 - Flexibility, particularly with integrating other libraries and allowing users
   to use their own patterns.
-- A powerful reactive system that does not interfere with the lifetime of
-  instances.
+- Independence from instance lifetimes.
+- A powerful reactive system that can surgically update properties as a result
+  of state changes.

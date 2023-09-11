@@ -2,6 +2,26 @@
 
 <br/>
 
+## root()
+
+Creates and runs a function in a new reactive scope.
+
+- **Type**
+
+    ```lua
+    function root<T>(fn: () -> T): (T, () -> ())
+    ```
+
+- **Details**
+
+    Creates a new root reactive scope, where creation and derivations of sources
+    can be tracked and properly disposed of.
+
+    Returns the result of the given function.
+
+    Also returns a function to destroy the root, which will run any cleanups
+    and allow derived sources created to garbage collect.
+
 ## source()
 
 Creates a new source with the given value.
@@ -14,10 +34,10 @@ Creates a new source with the given value.
 
 - **Details**
 
-    Calling the returned source with no arguments will return its stored value,
-    calling with arguments will set a new value.
+    Calling the returned source with no argument will return its stored value,
+    calling with an argument will set a new value.
 
-    Reading from the source from within any reactive scope will cause changes
+    Reading from the source from within a reactive scope will cause changes
     to that source to be tracked and anything depending on it to update.
 
 - **Example**

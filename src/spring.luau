@@ -151,6 +151,7 @@ setmetatable(springs, { __mode = "v" })
 
 local function spring<T>(source: () -> T, period: number?, damping_ratio: number?): () -> T
     local owner = get_scope()
+    if not owner then throw("cannot derive in non-reactive scope") end
     assert(owner)
 
     local updater = create_node(false)
@@ -199,6 +200,7 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
         data.x1_123, data.x1_456 = type_to_vec6[typeof(v)](v)
         data.source_value = v
         springs[data] = output -- todo: investigate why insertion is not O(1) at ~20k springs
+        return false
     end
 
     return function()

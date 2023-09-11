@@ -5,7 +5,7 @@ if not game then script = require "test/relative-string" end
 local throw = require(script.Parent.throw)
 local flags = require(script.Parent.flags)
 local graph = require(script.Parent.graph)
-type Scope = graph.Scope
+type Node<T> = graph.Node<T>
 type StartNode<T> = graph.StartNode<T>
 local create_node = graph.create_node
 local create_start_node = graph.create_start_node
@@ -28,9 +28,12 @@ local function check_primitives(t: {})
     end
 end
 
+-- todo: verify destruction of subscopes when owner scope is destroyed
+
 -- todo: optimize output array
 local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI, K) -> VO): () -> { VO }
     local owner = get_scope()
+    if not owner then throw("cannot derive in non-reactive scope") end
     assert(owner)
 
     local input_cache = {} :: Map<K, VI>
@@ -38,7 +41,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
     local input_nodes = {} :: Map<K, StartNode<VI>>
     local remove_queue = {} :: { K }
 
-    local scopes = {} :: Map<K, Scope>
+    local scopes = {} :: Map<K, Node<unknown>>
 
     local function update_children(data)
         -- queue removed values
@@ -69,7 +72,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
             if cv ~= v then
                 if cv == nil then
                     local scope = create_node(false)
-                    scopes[i] = scope
+                    scopes[i] = scope :: Node<any>
 
                     set_owner(scope, owner)
                     open_scope(scope)
@@ -122,6 +125,7 @@ end
 -- todo: optimize output array
 local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> K) -> VO): () -> { VO }
     local owner = get_scope()
+    if not owner then throw("cannot derive in non-reactive scope") end
     assert(owner)
     
     local cur_input_cache_up = {} :: Map<VI, K>
@@ -130,7 +134,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
     local output_cache = {} :: Map<VI, VO>
     local input_nodes = {} :: Map<VI, StartNode<K>>
 
-    local scopes = {} :: Map<VI, Scope>
+    local scopes = {} :: Map<VI, Node<unknown>>
 
     local function update_children(data: Map<K, VI>)
         local cur_input_cache, new_input_cache = cur_input_cache_up, new_input_cache_up
@@ -155,7 +159,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
             
             if cv == nil then
                 local scope = create_node(false)
-                scopes[v] = scope
+                scopes[v] = scope :: Node<any>
 
                 set_owner(scope, owner)
                 open_scope(scope)

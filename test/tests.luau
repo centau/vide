@@ -1,5 +1,5 @@
 local testkit = require("test/testkit")
-local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
+local TEST, CASE, CHECK, FINISH = testkit.test()
 
 local mock = require "test/mock"
 local Instance, Signal = mock.Instance, mock.Signal
@@ -29,7 +29,7 @@ local function wrap_root(fn: () -> ())
     end
 end
 
-local NIL = NIL
+local NIL = nil
 
 TEST("graph", function()
     local create_node = graph.create_node

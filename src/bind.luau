@@ -51,6 +51,7 @@ function create_binding<T>(updater: (T) -> T, binding_data: T)
     binding.effect = updater
 
     local owner = get_scope()
+    if not owner then throw("cannot bind property in non-reactive scope") end
     assert(owner)
 
     set_owner(binding, owner)

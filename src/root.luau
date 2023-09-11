@@ -14,7 +14,6 @@ local destroy = graph.destroy
 local refs = {}
 
 local function root<T>(fn: () -> T): (T, () -> ())
-    --assert(not get_scope())
     local node = create_node(false)
 
     open_scope(node)

@@ -1,15 +1,13 @@
 if not game then script = require "test/relative-string" end
 
-local create = require(script.Parent.create)
+local throw = require(script.Parent.throw)
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
-local create_node = graph.create_node
 local get_scope = graph.get_scope
-local open_scope = graph.open_scope
-local close_scope = graph.close_scope
 
 local function untrack<T>(source: () -> T): T
     local scope = get_scope()
+    if not scope then throw("cannot untrack  in non-reactive scope") end
     assert(scope)
 
     local effect = scope.effect

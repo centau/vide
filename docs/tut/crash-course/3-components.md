@@ -5,7 +5,7 @@ Components are custom-made reusable pieces of UI made from other pieces of UI.
 By using components you can make your application more modular and better
 organized.
 
-```lua
+```lua [Button.lua]
 local function Button(props: {
     Position: UDim2,
     Text: string,
@@ -20,6 +20,27 @@ local function Button(props: {
         Activated = props.Activated
     }
 end
+
+return Button
+```
+
+```lua [App.lua]
+local Button = require(Button)
+
+local function App()
+    return create "ScreenGui" {
+        Button {
+            Position = UDim2.fromOffset(200, 200),
+            Text = "click me!",
+
+            Activated = function()
+                print "clickeD"
+            end
+        }
+    }
+end
+
+root(App).Parent = game.StarterGui
 ```
 
 Above is a simple example of a button component with its background color set to

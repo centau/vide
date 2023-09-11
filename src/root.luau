@@ -18,7 +18,7 @@ local function root<T>(fn: () -> T): (T, () -> ())
 
     open_scope(node)
 
-    local v = fn()
+    local ok, v = pcall(fn)
 
     close_scope()
 

@@ -1,18 +1,8 @@
 local BENCH, START = require("test/testkit").benchmark()
 
--- try prevent inlining by wrapping in a closure referencing an upvalue that
--- cannot be determined at compile-time
-local function NO_INLINE(fn)
-    local r = math.random()
-    return function(x)
-        local _ = r
-        fn(x)
-    end
-end
-
 local vide = require "src/init"
 
-local N = 2^18 -- 262144[
+local N = 2^18 -- 262144
 
 BENCH("create state", function()
     local source = vide.source
@@ -152,6 +142,8 @@ BENCH("update binding", function()
         return nil
     end)
 end)
+
+N /= 1024
 
 BENCH("indexes() no change", function()
     local data = {}
@@ -306,6 +298,8 @@ BENCH("values() all remove", function()
         return nil
     end)
 end)
+
+N *= 1024
 
 BENCH("register new cleanup", function()
     local cleanup = vide.cleanup

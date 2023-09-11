@@ -1,4 +1,4 @@
-# Creating UI Elements
+# Creating UI
 
 Instances are created using [`create()`](../../api/creation.md#create).
 

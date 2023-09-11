@@ -8,6 +8,8 @@
 - solution to nested reactivity, see: SolidJS stores
 - SolidJS control flow components
 - equality checking of derived sources
+- investigate performance of wide graphs
+- optimize child removal
 - implement from solid:
   - Show
   - Switch

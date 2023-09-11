@@ -136,40 +136,6 @@ end
 
 local update_queue = {} :: { Node<any> }
 
--- -- runs node effects, recalculates descendants and runs descendant effects
--- local function rec<T>(node: StartNode<T>)
---     if not node.children then return end
-
---     local children = node.children :: {}
-
---     while children[1] do
---         table.insert(update_queue, children[1])
---         rec(children[1])
---         unparent(children[1])
---     end
-
---     table.clear(children)
--- end
-
--- local function update<T>(node: StartNode<T>)
---     --assert(#update_queue == 0, "update already in progress")
---     -- check if recursive update
---     local first = update_queue[1] == nil
-
---     rec(node)
-
---     if first then
---         for _, n in next, update_queue do
---             open_scope(n) -- todo
---             run_cleanups(n)
---             run_effect(n)
---             close_scope()
---         end
-
---         table.clear(update_queue)
---     end
--- end
-
 local function update<T>(node: StartNode<T>)
     local children = node.children :: {}
     if not children then return end

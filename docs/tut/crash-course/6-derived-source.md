@@ -63,7 +63,7 @@ callback when deriving or binding sources. If a source is in a function but is
 never referenced the first time it runs, Vide will not know to rerun the
 function if that source changes.
 
-An example to watch out for is when using sources within branches:
+An example to effect out for is when using sources within branches:
 
 ```lua
 local condition = source(true)

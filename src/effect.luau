@@ -8,9 +8,9 @@ local open_scope = graph.open_scope
 local close_scope = graph.close_scope
 local set_owner = graph.set_owner
 
-local function watch<T>(effect: (T) -> T, initial_value: T)
+local function effect<T>(effect: (T) -> T, initial_value: T)
     local owner = get_scope()
-    if not owner then throw("cannot watch in non-reactive scope") end
+    if not owner then throw("cannot effect in non-reactive scope") end
     assert(owner)
 
     local node = create_node(initial_value)
@@ -24,4 +24,4 @@ local function watch<T>(effect: (T) -> T, initial_value: T)
     close_scope()
 end
 
-return watch :: (<T>(effect: (T) -> T, initial_value: T) -> ()) & ((effect: () -> ()) -> ())
+return effect :: (<T>(effect: (T) -> T, initial_value: T) -> ()) & ((effect: () -> ()) -> ())

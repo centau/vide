@@ -9,7 +9,6 @@ A source in Vide can be created using
 
 ```lua
 local source = vide.source
-
 local count = source(0)
 ```
 
@@ -24,7 +23,10 @@ count(count() + 1) -- increment source by 1
 
 Below is an example of a stateful counter component.
 
-```lua
+```lua [Counter.luau]
+local vide = require(vide)
+local source = vide.source
+
 local function Counter(props: { Position: UDim2 })
     local count = source(0)
 
@@ -54,22 +56,3 @@ This allows you as the programmer to not need to manually update GUI as the stat
 of your program changes. You just define how the data maps to UI, and Vide's
 reactive system will surgically update any properties depending on sources that
 are changed.
-
-Since sources are just functions, you can also pass external sources to
-components like so:
-
-```lua
-local function Text(p: {
-    Text: () -> string
-})
-    return create "TextLabel" {
-        Text = p.Text
-    }
-end
-
-local text = source "hi"
-
-Text {
-    Text = text
-}
-```

@@ -261,7 +261,7 @@ end)
 
 TEST("source()", wrap_root(function()
     local source = vide.source
-    local watch = vide.watch
+    local effect = vide.effect
 
     do CASE "create source"
         local src = source(1)
@@ -278,7 +278,7 @@ TEST("source()", wrap_root(function()
         local src = source(1)
 
         local count = 0
-        watch(function()
+        effect(function()
             src()
             count += 1
         end)
@@ -294,7 +294,7 @@ TEST("source()", wrap_root(function()
         local src = source {}
 
         local count = 0
-        watch(function()
+        effect(function()
             src()
             count += 1
         end)
@@ -311,7 +311,7 @@ TEST("source()", wrap_root(function()
         local src = source(a)
 
         local count = 0
-        watch(function()
+        effect(function()
             src()
             count += 1
         end)
@@ -330,7 +330,7 @@ TEST("derive()", wrap_root(function()
     local root = vide.root
     local source = vide.source
     local derive = vide.derive
-    local watch = vide.watch
+    local effect = vide.effect
     local cleanup = vide.cleanup
 
     do CASE "derive new value on source change"
@@ -371,7 +371,7 @@ TEST("derive()", wrap_root(function()
 
         local count = 0
 
-        watch(function()
+        effect(function()
             is_even()
             count += 1
         end)
@@ -399,7 +399,7 @@ TEST("derive()", wrap_root(function()
 
         local count = 0
 
-        watch(function() c() count += 1 end)
+        effect(function() c() count += 1 end)
 
         b(true)
         CHECK(c() == "b")
@@ -455,16 +455,16 @@ TEST("derive()", wrap_root(function()
     end
 end))
 
-TEST("watch()", wrap_root(function()
+TEST("effect()", wrap_root(function()
     local source = vide.source
-    local watch = vide.watch
+    local effect = vide.effect
 
     do CASE "rerun on source change"
         local a = source(1)
         local b = source(1)
 
         local count = 0
-        watch(function()
+        effect(function()
             a()
             b()
             count += 1
@@ -481,7 +481,7 @@ end))
 TEST("cleanup()", wrap_root(function()
     local root = vide.root
     local source = vide.source
-    local watch = vide.watch
+    local effect = vide.effect
     local cleanup = vide.cleanup
 
     do CASE "root cleanup"
@@ -503,23 +503,23 @@ TEST("cleanup()", wrap_root(function()
     do CASE "cleanup on rerun"
         local state = source(1)
 
-        local watched = 0
+        local effected = 0
         local cleaned = 0
 
-        watch(function()
+        effect(function()
             state()
-            watched += 1
+            effected += 1
             cleanup(function()
                 cleaned += 1  
             end)
         end)
 
-        CHECK(watched == 1)
+        CHECK(effected == 1)
         CHECK(cleaned == 0)
 
         state(2)
 
-        CHECK(watched == 2)
+        CHECK(effected == 2)
         CHECK(cleaned == 1)
     end
 
@@ -528,7 +528,7 @@ TEST("cleanup()", wrap_root(function()
 
         local queue = {}
     
-        watch(function()
+        effect(function()
             state()
             cleanup(function() table.insert(queue, 1) end)
             cleanup(function() table.insert(queue, 2) end)
@@ -1001,7 +1001,7 @@ TEST("spring()", wrap_root(function()
     local create = vide.create
     local source = vide.source
     local spring = vide.spring
-    local watch = vide.watch
+    local effect = vide.effect
 
     do CASE "update source (on next step)"
         local value = source(10)
@@ -1082,7 +1082,7 @@ TEST("spring()", wrap_root(function()
         CHECK(output() == input()) -- check spring is at target
 
         local count = -1
-        watch(function()
+        effect(function()
             output()
             count += 1
         end)
@@ -1102,7 +1102,7 @@ TEST("untrack()", wrap_root(function()
     local root = vide.root
     local source = vide.source
     local derive = vide.derive
-    local watch = vide.watch
+    local effect = vide.effect
     local cleanup = vide.cleanup
     local untrack = vide.untrack
 
@@ -1112,7 +1112,7 @@ TEST("untrack()", wrap_root(function()
 
         local count = 0
 
-        watch(function()
+        effect(function()
             count += 1
             untrack(a)
             b()
@@ -1138,7 +1138,7 @@ TEST("untrack()", wrap_root(function()
 
         local count = 0
 
-        watch(function()
+        effect(function()
             count += 1
             untrack(d)
             c()
@@ -1275,7 +1275,7 @@ end)
 --     local create = vide.create
 --     local source = vide.source
 --     local derive = vide.derive
---     local watch = vide.watch
+--     local effect = vide.effect
 --     local indexes, values = vide.indexes, vide.values
 --     local cleanup = vide.cleanup
 
@@ -1292,11 +1292,11 @@ end)
 --     --     CHECK(not ok)
 --     -- end
 
---     -- do CASE "error on watcher callback yield"
+--     -- do CASE "error on effecter callback yield"
 --     --     local state = source(1)
 
 --     --     local ok = pcall(function()
---     --         local _derived = watch(function()
+--     --         local _derived = effect(function()
 --     --             coroutine.yield()
 --     --             state()
 --     --         end)
@@ -1319,11 +1319,11 @@ end)
 --         CHECK(runcount == 4)
 --     end
 
---     do CASE "run watcher callback twice"
+--     do CASE "run effecter callback twice"
 --         local state = source(1)
 --         local runcount = 0
 
---         watch(function()
+--         effect(function()
 --             runcount += 1
 --             state()
 --         end)

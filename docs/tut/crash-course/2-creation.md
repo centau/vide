@@ -3,7 +3,7 @@
 Instances are created using [`create()`](../../api/creation.md#create).
 
 ```lua
-local vide = require(path_to_vide)
+local vide = require(vide)
 local create = vide.create
 ```
 

@@ -41,7 +41,7 @@ local check_for_yield: <T...>(fn: (T...) -> unknown, T...) -> () do
 
         if not ok then
             if err == "attempt to yield across metamethod/C-call boundary" or err == "thread is not yieldable" then
-                throw(EVALUATION_ERR .. "cannot yield when deriving node in watcher")
+                throw(EVALUATION_ERR .. "cannot yield when deriving node in effecter")
             else
                 throw(EVALUATION_ERR .. err)
             end

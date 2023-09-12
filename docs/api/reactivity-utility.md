@@ -15,7 +15,7 @@ Runs a callback anytime a reactive scope is re-ran.
     ```lua
     local data = source(1)
 
-    watch(function()
+    effect(function()
         local label = create "TextLabel" { Text = data() }
 
         cleanup(function()

@@ -12,14 +12,14 @@ and identifying improper usage.
 Currently, strict mode will:
 
 1. Run derived sources twice a source updates.
-2. Run watchers twice when a source updates.
+2. Run effecters twice when a source updates.
 3. Throw an error if yields occur where they are not allowed.
 4. Checks for `indexes()` and `values()` returning primitive values.
 5. Checks for duplicate nested properties at same depth.
 6. Better error reporting and stack traces.
 7. Checks for multiple `cleanup()` calls in the same function scope.
 
-By rerunning sources and watchers, any side-effects are made more apparent.
+By rerunning sources and effecters, any side-effects are made more apparent.
 This also helps ensure that cleanups are being handled correctly.
 
 Accidental yielding within reactive scopes can break Vide's reactive graph,

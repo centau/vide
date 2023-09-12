@@ -50,16 +50,16 @@ Creates a new source with the given value.
     count(count() + 1) -- 1
     ```
 
-## watch()
+## effect()
 
 Runs a callback on source update.
 
 - **Type**
 
     ```lua
-    function watch(source: () -> ()): Unwatch
+    function effect(source: () -> ()): Uneffect
 
-    type Unwatch = () -> ()
+    type Uneffect = () -> ()
     ```
 
 - **Details**
@@ -70,7 +70,7 @@ Runs a callback on source update.
     Any time a source referenced in the callback is changed, the callback will
     be reran.
 
-    Also returns a function that when called, stops the watcher immediately.
+    Also returns a function that when called, stops the effecter immediately.
 
     ::: warning
     `source()` cannot yield.
@@ -81,7 +81,7 @@ Runs a callback on source update.
     ```lua
     local state = source(1)
 
-    watch(function()
+    effect(function()
         print(state())
     end)
 

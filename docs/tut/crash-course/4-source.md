@@ -4,35 +4,18 @@
 core of reactivity in Vide, as updates to a source can automatically update
 properties or other sources depending on that source.
 
-A source in Vide can be created using
-[`source()`](../../api/reactivity-core.md#source).
+A source in Vide can be created using `source()`.
 
 ```lua
-local source = vide.source
-local count = source(0)
-```
-
-The value passed to `source()` is the initial value of the source.
-
-The value of a source can be set by calling it with an argument, and can be read
-by calling it with no arguments.
-
-```lua
-count(count() + 1) -- increment source by 1
-```
-
-Below is an example of a stateful counter component.
-
-```lua [Counter.luau]
 local vide = require(vide)
 local source = vide.source
 
-local function Counter(props: { Position: UDim2 })
+local function Counter()
     local count = source(0)
 
     return create "TextButton" {
-        Position = props.Position,
-        Size = UDim2.new(200, 50),
+        Position = UDim2.fromOffset(300, 300),
+        Size = UDim2.fromOffset(200, 50),
 
         Text = count,
 
@@ -41,18 +24,28 @@ local function Counter(props: { Position: UDim2 })
         end
     }
 end
+
+mount(function() return create "ScreenGui" { Counter {} } end, game.StarterGui)
 ```
 
-Each call of `Counter {}` will create a new counter element, each with their own
-independent count.
+The value passed to `source()` is the initial value of the source.
 
-Vide detects when you assign a function to a property. This is known
-as *binding* and doing so will cause the property to *automatically* update
-whenever a source in that function is updated, by rerunning the function and
-assigning its return value. You can only bind non-event
-properties, otherwise the function is connected as the event callback.
+The value of a source can be set by calling it with an argument, and can be read
+by calling it with no arguments.
 
-This allows you as the programmer to not need to manually update GUI as the state
+```lua
+count(count() + 1) -- increment count by 1
+```
+
+Each call of `Counter {}` will create a new counter, each maintaining their
+own count.
+
+When you assign a function to a non-event property, Vide will immediately run it
+and check what sources were read from. When updating those sources again after,
+this function will be re-ran and its return value applied to the property.
+This is known as *binding* properties.
+
+This allows you as the programmer to not need to manually update UI as the state
 of your program changes. You just define how the data maps to UI, and Vide's
-reactive system will surgically update any properties depending on sources that
-are changed.
+reactive system will automatically update any properties depending on sources
+that are updated.

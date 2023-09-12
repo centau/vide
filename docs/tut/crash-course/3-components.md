@@ -29,6 +29,7 @@ return Button
 
 ```lua [App.luau]
 local vide = require(vide)
+local mount = vide.mount
 local create = vide.create
 
 local Button = require(Button)
@@ -46,7 +47,7 @@ local function App()
     }
 end
 
-root(App).Parent = game.StarterGui
+mount(App, game.StarterGui)
 ```
 
 Above is a simple example of a button component with a set color and size,

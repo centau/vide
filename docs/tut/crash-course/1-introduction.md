@@ -27,21 +27,21 @@ Some of the main focuses behind Vide's design choices:
 
 ## Structure Of A Vide App
 
-The entry point for all Vide apps is the `root()` function. This function
-sets up Vide's reactivity system and allows proper disposal of your app. It
-takes and calls a function that should create your entire app, then returns the
-result.
+The entry point for all Vide apps is the `mount()` function. This function
+sets up Vide's reactivity system. It takes and calls a function that should
+create your entire app, and will apply its result to a target.
 
 In Vide, your app should be composed of functions, each function creates a
 specific part of your app, and can be reused if needed. These functions are
 called *components*.
 
 ```lua
+
 local function App()
     return create "ScreenGui" {
         create "TextLabel" { Text = "hi" }
     }
 end
 
-root(App).Parent = game.StarterGui
+mount(App, game.StarterGui)
 ```

@@ -1,62 +1,54 @@
 # Creating UI
 
-Instances are created using [`create()`](../../api/creation.md#create).
-
-```lua
-local vide = require(vide)
-local create = vide.create
-```
+Instances are created using `create()`.
 
 `create()` returns a constructor for a class which then takes a table of
 properties to assign when creating a new instance for that class.
 
 Luau allows us to omit parentheses `()` when calling functions with string or
-table literals for brevity.
+table literals which Vide takes advantage of for brevity.
 
 ```lua
-local frame = create "Frame" {
-    Name = "Background",
-    Position = UDim2.fromScale(0.5, 0.5)
-}
-```
+local vide = require(vide)
+local mount = vide.mount
+local create = vide.create
 
-String keys are treated as properties and integer keys are treated as child
-instances.
+local function App()
+    return create "ScreenGui" {
+        create "Frame" {
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.fromScale(0.5, 0.5),
+            Size = UDim2.fromScale(0.4, 0.7),
 
-```lua
-create "ScreenGui" {
-    Parent = game.StarterGui,
+            create "TextLabel" {
+                Text = "hi"
+            },
 
-    create "Frame" {
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.fromScale(0.5, 0.5),
-        Size = UDim2.fromScale(0.4, 0.7),
+            create "TextLabel" {
+                Text = "bye"
+            },
 
-        create "TextLabel" {
-            Text = "hi"
-        },
+            create "TextButton" {
+                Text = "click me",
 
-        create"TextLabel" {
-            Text = "bye"
+                Activated = function()
+                    print "clicked!"
+                end
+            }
         }
     }
-}
+end
+
+mount(App, game.StarterGui)
 ```
 
-To connect to an event, just assign the event property a function.
+Assign a value to a string key to set a property, and assign a value to a
+number key to set a child. Events can be connected to by assigning a function
+to a string key.
 
-All event arguments are passed into the function.
-
-```lua
-create "TextButton" {
-    Activated = function()
-        print "clicked!"
-    end
-}
-```
-
-You can also use a form of aggregate initialization to create datatypes instead
-of explicitly typing out the class name and constructor.
+You can also use a shorthand to create datatypes instead of explicitly typing
+out the class name and constructor. The table will be unpacked into the `.new()`
+constructor of the property's type.
 
 ```lua
 create "Frame" {
@@ -64,7 +56,3 @@ create "Frame" {
     UDim2 = { 0.5, 0, 0.5, 0 }
 }
 ```
-
-When a property is assigned a table, Vide will inspect the type of the property
-being assigned to, and call that type's default `new()` constructor with the
-unpacked values from the assigned table.

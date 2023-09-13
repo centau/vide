@@ -7,8 +7,7 @@ local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
 local create_node = graph.create_node
 local get_scope = graph.get_scope
-local open_scope = graph.open_scope
-local close_scope = graph.close_scope
+local evaluate_node = graph.evaluate_node
 local set_owner = graph.set_owner
 
 -- todo: replace with throw's method
@@ -47,19 +46,14 @@ function create_binding<T>(updater: (T) -> T, binding_data: T)
     --     end
     -- end
 
-    local binding = create_node(binding_data)
-    binding.effect = updater
+    local binding = create_node(binding_data, updater)
 
     local owner = get_scope()
     if not owner then throw("cannot bind property in non-reactive scope") end
     assert(owner)
 
     set_owner(binding, owner)
-    open_scope(binding)
-
-    updater(binding_data)
-
-    close_scope()
+    evaluate_node(binding)
 end
 
 type PropertyBinding = {

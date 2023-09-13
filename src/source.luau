@@ -3,7 +3,6 @@ if not game then script = require "test/relative-string" end
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
 local create_start_node = graph.create_start_node
-local get_scope = graph.get_scope
 local track = graph.track
 local update = graph.update
 

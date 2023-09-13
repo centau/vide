@@ -6,26 +6,17 @@ local create_node = graph.create_node
 local set_owner = graph.set_owner
 local track = graph.track
 local get_scope = graph.get_scope
-local open_scope = graph.open_scope
-local close_scope = graph.close_scope
-
+local evaluate_node = graph.evaluate_node
 
 local function derive<T>(fn: () -> T): () -> T
     local owner = get_scope()
     if not owner then throw("cannot derive in non-reactive scope") end
     assert(owner)
 
-    local node = create_node((false :: any) :: T)
-    node.effect = function()
-        return fn()
-    end
+    local node = create_node(false :: any, fn)
 
     set_owner(node, owner)
-    open_scope(node)
-
-    node.cache = fn()
-
-    close_scope()
+    evaluate_node(node)
 
     return function()
         track(node)

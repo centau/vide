@@ -1,3 +1,5 @@
+if not game then script = require "test/relative-string" end
+
 local throw = require(script.Parent.throw)
 local flags = require(script.Parent.flags)
 local graph = require(script.Parent.graph)
@@ -15,18 +17,23 @@ local destroy = graph.destroy
 
 type Map<K, V> = { [K]: V }
 
-local function match<T, U>(source: () -> T, map: Map<T, () -> U>): () -> U
+local function match<T, U>(source: () -> T, map: Map<T, () -> U?>): () -> U?
     local owner = get_scope()
     assert(owner)
 
-    local match_updater = create_node(nil)
+    local match_updater = create_node(nil :: U?)
     function match_updater.effect()
         local value = source()
         open_scope(owner)
         local component = map[value]()
         close_scope()
-        output.cache = component
+        return component
     end
 
-    local output = create_start_node()
+    return function()
+        track(match_updater)
+        return match_updater.cache
+    end
 end
+
+return match

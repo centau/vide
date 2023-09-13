@@ -31,6 +31,14 @@ end
 
 local NIL = nil
 
+-- vide.mount(function()
+--     local src = vide.source(0)
+
+--     vide.effect(function()
+--         axasd += 1
+--     end)
+-- end)
+
 TEST("graph", function()
     local create_node = graph.create_node
     local create_start_node = graph.create_start_node

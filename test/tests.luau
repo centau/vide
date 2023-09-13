@@ -399,7 +399,7 @@ TEST("derive()", wrap_root(function()
 
         local count = 0
 
-        effect(function() c() count += 1 end)
+        effect(function() c(); count += 1 end)
 
         b(true)
         CHECK(c() == "b")
@@ -453,11 +453,28 @@ TEST("derive()", wrap_root(function()
         gc()
         CHECK(wref[1])
     end
+
+    do CASE "raw derive"
+        local a = source(1)
+        local b = derive(a)
+
+        local count = 0
+    
+        effect(function()
+            b()
+            count += 1
+        end)
+
+        CHECK(count == 1)
+        a(2)
+        CHECK(count == 2)
+    end
 end))
 
 TEST("effect()", wrap_root(function()
     local source = vide.source
     local effect = vide.effect
+    local derive = vide.derive
 
     do CASE "rerun on source change"
         local a = source(1)
@@ -475,6 +492,38 @@ TEST("effect()", wrap_root(function()
         CHECK(count == 2)
         b(2)
         CHECK(count == 3)
+    end
+
+    do CASE "rerun on derived source change"
+        local num = source(0)
+
+        local text = derive(function() return tostring(num()) end)
+        
+        local count = 0
+        effect(function()
+            text()
+            count += 1
+        end)
+
+        num(1)
+
+        CHECK(count == 2)
+    end
+
+    do CASE "cache"
+        local num = source(0)
+
+        local count
+
+        effect(function(x: number)
+            num()
+            count = x + 1
+            return x + 1
+        end, 0)
+
+        num(1)
+
+        CHECK(count == 2)
     end
 end))
 

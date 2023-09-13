@@ -109,16 +109,12 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
         return output_array
     end
 
-    local output = create_node(false :: any)
-    output.effect = function()
+    local output = create_node(false :: any, function()
         return update_children(input())
-    end
+    end)
 
-    open_scope(output)
+    evaluate_node(output)
 
-    output.cache = update_children(input())
-
-    close_scope()
 
     return function()
         track(output)
@@ -126,7 +122,6 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
     end
 end
 
--- todo: optimize output array
 local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> K) -> VO): () -> { VO }
     local owner = get_scope()
     if not owner then
@@ -211,16 +206,11 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
         return output_array
     end
 
-    local output = create_node(false :: any)
-    output.effect = function()
+    local output = create_node(false :: any, function()
         return update_children(input())
-    end
+    end)
 
-    open_scope(output)
-
-    output.cache = update_children(input())
-
-    close_scope()
+    evaluate_node(output)
 
     return function()
         track(output)

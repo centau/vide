@@ -73,7 +73,7 @@ BENCH("set derived value", function()
     local src = vide.source(1)
 
     vide.root(function()
-        local _derived = vide.derive(src)
+        local _derived = vide.derive(function() return src() end)
 
         for i = 1, START(N) do
             src(i)

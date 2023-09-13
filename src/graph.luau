@@ -11,11 +11,8 @@ export type StartNode<T> = {
 export type Node<T> =  {
     cache: T,
     effect:  ((T) -> T) | false,
-
-    owner: Node<T> | false,
     cleanups: { () -> () } | false,
-    
-    parents: { StartNode<T> },
+    parents: { owner: StartNode<T>?, [number]: StartNode<T> },
     [number]: Node<T>
 }
 
@@ -57,7 +54,7 @@ local function add_child<T>(parent: StartNode<any>, child: Node<any>)
 end
 
 local function set_owner(node: Node<any>, owner: Node<any>)
-    node.owner = owner
+    node.parents.owner = owner
     table.insert(owner, node)
 end
 
@@ -100,20 +97,21 @@ local function remove_child<T>(parent: StartNode<T>, child: Node<T>)
 end
 
 local function unparent<T>(node: Node<T>)
-    for _, parent in node.parents do
-        remove_child(parent, node)
-    end
+    local parents = node.parents
 
-    table.clear(node.parents)
+    for i, parent in ipairs(parents) do
+        remove_child(parent, node)
+        parents[i] = nil
+    end
 end
 
 local function destroy<T>(node: Node<T>)
     run_cleanups(node)
     unparent(node)
 
-    if node.owner then
-        remove_child(node.owner, node)
-        node.owner = false
+    if node.parents.owner then
+        remove_child(node.parents.owner, node)
+        node.parents.owner = nil
     end
 
     while node[1] do destroy(node[1]) end
@@ -188,11 +186,9 @@ end
 local function create_node<T>(value: T, effect: false | (T) -> T): Node<T>
     local node: Node<T> = {
         cache = value,
-        owner = false,
         effect = effect,
         cleanups = false :: false,
         parents = {},
-        children = false :: false
     }
 
     return node
@@ -203,7 +199,7 @@ local function get_children<T>(node: Node<T>): { Node<unknown> }
 end
 
 local function create_start_node<T>(value: T): StartNode<T>
-    return { cache = value, children = false }
+    return { cache = value }
 end
 
 return table.freeze {

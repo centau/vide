@@ -29,9 +29,6 @@ local function check_primitives(t: {})
     end
 end
 
--- todo: verify destruction of subscopes when owner scope is destroyed
-
--- todo: optimize output array
 local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI, K) -> VO): () -> { VO }
     local owner = get_scope()
     if not owner then
@@ -78,18 +75,23 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
                     local scope = create_node(false, false)
                     scopes[i] = scope :: Node<any>
 
+                    local node = create_start_node(v)
+
                     set_owner(scope, subowner)
                     open_scope(scope)
 
-                    local node = create_start_node(v)
-                    input_nodes[i] = node
-                    input_cache[i] = v
-                    output_cache[i] = transform(function()
+                    local ok, result = pcall(transform, function()
                         track(node)
                         return node.cache
                     end, i)
-
+                    
                     close_scope()
+
+                    if not ok then error(result, 0) end
+                    
+                    input_nodes[i] = node
+                    input_cache[i] = v
+                    output_cache[i] = result
                 else
                     input_nodes[i].cache = v
                     update(input_nodes[i])
@@ -98,6 +100,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
             end
         end
 
+        -- todo: handle early error
         close_scope()
 
         local output_array = table.create(#scopes)
@@ -109,16 +112,16 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
         return output_array
     end
 
-    local output = create_node(false :: any, function()
+    local node = create_node(false :: any, function()
         return update_children(input())
     end)
 
-    evaluate_node(output)
+    evaluate_node(node)
 
 
     return function()
-        track(output)
-        return output.cache
+        track(node)
+        return node.cache
     end
 end
 
@@ -162,17 +165,22 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
                 local scope = create_node(false, false)
                 scopes[v] = scope :: Node<any>
 
+                local node = create_start_node(i)
+    
                 set_owner(scope, subowner)
                 open_scope(scope)
-
-                local node = create_start_node(i)
-                input_nodes[v] = node
-                output_cache[v] = transform(v, function()
+                
+                local ok, result = pcall(transform, v, function()
                     track(node)
                     return node.cache
                 end)
-
+                
                 close_scope()
+
+                if not ok then error(result, 0) end
+
+                input_nodes[v] = node
+                output_cache[v] = result
             else
                 if cv ~= i then
                     input_nodes[v].cache = i
@@ -182,6 +190,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
             end
         end
 
+        -- todo: handle early error
         close_scope()
 
         -- remove old values
@@ -206,15 +215,15 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
         return output_array
     end
 
-    local output = create_node(false :: any, function()
+    local node = create_node(false :: any, function()
         return update_children(input())
     end)
 
-    evaluate_node(output)
+    evaluate_node(node)
 
     return function()
-        track(output)
-        return output.cache
+        track(node)
+        return node.cache
     end
 end
 

@@ -68,7 +68,6 @@ BENCH("derive 4 sources", function()
     end)
 end)
 
--- todo: why is this so fast?
 BENCH("set derived value", function()
     local src = vide.source(1)
 
@@ -110,7 +109,7 @@ BENCH("apply 8 properties", function()
     end
 end)
 
-BENCH("bind source", function()
+BENCH("bind property", function()
     local apply = require "src/apply"
 
     local instance = vide.create("Frame") {}

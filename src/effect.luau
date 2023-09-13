@@ -14,6 +14,7 @@ local function effect<T>(effect: (T) -> T, initial_value: T)
     end; assert(owner)
 
     local node = create_node(initial_value, effect)
+
     set_owner(node, owner)
     evaluate_node(node)
 end

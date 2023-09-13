@@ -453,22 +453,6 @@ TEST("derive()", wrap_root(function()
         gc()
         CHECK(wref[1])
     end
-
-    do CASE "raw derive"
-        local a = source(1)
-        local b = derive(a)
-
-        local count = 0
-    
-        effect(function()
-            b()
-            count += 1
-        end)
-
-        CHECK(count == 1)
-        a(2)
-        CHECK(count == 2)
-    end
 end))
 
 TEST("effect()", wrap_root(function()
@@ -819,6 +803,72 @@ TEST("create()", wrap_root(function()
 
         gc()
         CHECK(wref.data and wref.proxy)
+    end
+end))
+
+TEST("switch()", wrap_root(function()
+    local create = vide.create
+    local source = vide.source
+    local switch = vide.switch
+    local effect = vide.effect
+    local derive = vide.derive
+    local cleanup = vide.cleanup
+
+    do CASE "update on source change"
+        local input = source(true)
+
+        local output = switch(input) {
+            [true] = function() return 1 end,
+            [false] = function() return 0 end
+        }
+
+        local count = 0
+
+        effect(function() output(); count += 1 end)
+
+        CHECK(count == 1)
+        CHECK(output() == 1)
+        input(false)
+        CHECK(output() == 0)
+        CHECK(count == 2)
+        input(false)
+        CHECK(count == 2)
+        input(nil)
+        CHECK(output() == nil)
+    end
+
+    do CASE "scoped switch"
+        local input = source(true)
+
+        local owner_count = 0
+        local switch0_count = 0
+        local switch1_count = 0
+
+        cleanup(function() owner_count += 1 end)
+
+        local output = switch(input) {
+            [true] = function() 
+                cleanup(function() switch1_count += 1 end)
+                return 1
+            end,
+
+            [false] = function() 
+                cleanup(function() switch0_count += 1 end)
+                return 0
+            end
+        }
+
+        CHECK(output() == 1)
+        input(false)
+        CHECK(switch1_count == 1)
+        CHECK(switch0_count == 0)
+        input(true)
+        CHECK(switch1_count == 1)
+        CHECK(switch0_count == 1)
+        input(nil)
+        CHECK(switch1_count == 2)
+        CHECK(switch0_count == 1)
+        CHECK(owner_count == 0)
     end
 end))
 

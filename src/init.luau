@@ -14,7 +14,7 @@ local effect = require(script.effect)
 local cleanup = require(script.cleanup)
 local untrack = require(script.untrack)
 local derive = require(script.derive)
-local match = require(script.match)
+local switch = require(script.switch)
 local indexes, values = require(script.maps)()
 local spring, update_springs = require(script.spring)()
 local action = require(script.action)()
@@ -50,7 +50,7 @@ local vide = {
     source = source,
     effect = effect,
     derive = derive,
-    match = match,
+    switch = switch,
     indexes = indexes,
     values = values,
 

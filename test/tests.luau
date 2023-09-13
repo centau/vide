@@ -29,15 +29,7 @@ local function wrap_root(fn: () -> ())
     end
 end
 
-local NIL = nil
-
--- vide.mount(function()
---     local src = vide.source(0)
-
---     vide.effect(function()
---         axasd += 1
---     end)
--- end)
+local NIL = nil :: any
 
 TEST("graph", function()
     local create_node = graph.create_node

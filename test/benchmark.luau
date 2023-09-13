@@ -4,7 +4,9 @@ local vide = require "src/init"
 
 local N = 2^18 -- 262144
 
-BENCH("create state", function()
+-- todo: wide and deep graph benchmarks
+
+BENCH("create source", function()
     local source = vide.source
 
     local cache = table.create(N)
@@ -15,50 +17,50 @@ BENCH("create state", function()
 end)
 
 BENCH("get value", function()
-    local state = vide.source(1)
+    local src = vide.source(1)
 
     for i = 1, START(N) do
-        state()
+        src()
     end
 end)
 
 BENCH("set value", function()
-    local state = vide.source(1)
+    local src = vide.source(1)
 
     for i = 1, START(N) do
-        state(i)
+        src(i)
     end
 end)
 
-BENCH("derive 1 state", function()
+BENCH("derive 1 source", function()
     local derive = vide.derive
 
     local cache = table.create(N)
-    local state = vide.source(1)
+    local src = vide.source(1)
 
     vide.root(function()
         for i = 1, START(N) do
             cache[i] = derive(function()
-                return state()
+                return src()
             end)
         end
         return nil
     end)
 end)
 
-BENCH("derive 4 states", function()
+BENCH("derive 4 sources", function()
     local derive = vide.derive
 
     local cache = table.create(N)
-    local state = vide.source(1)
-    local state2 = vide.source(2)
-    local state3 = vide.source(3)
-    local state4 = vide.source(4)
+    local src = vide.source(1)
+    local src2 = vide.source(2)
+    local src3 = vide.source(3)
+    local src4 = vide.source(4)
 
     vide.root(function()
         for i = 1, START(N) do
             cache[i] = derive(function()
-                return state() + state2() + state3() + state4()
+                return src() + src2() + src3() + src4()
             end)
         end
 
@@ -66,14 +68,15 @@ BENCH("derive 4 states", function()
     end)
 end)
 
+-- todo: why is this so fast?
 BENCH("set derived value", function()
-    local state = vide.source(1)
+    local src = vide.source(1)
 
     vide.root(function()
-        local _derived = vide.derive(state)
+        local _derived = vide.derive(src)
 
         for i = 1, START(N) do
-            state(i)
+            src(i)
         end
 
         return nil
@@ -95,14 +98,14 @@ BENCH("apply 8 properties", function()
 
     for i = 1, START(N) do
         apply(instance, {
-            Name = i,
-            Name2 = i,
-            Name3 = i,
-            Name4 = i,
-            Name5 = i,
-            Name6 = i,
-            Name7 = i,
-            Name8 = i,
+            Text = i,
+            Text2 = i,
+            Text3 = i,
+            Text4 = i,
+            Text5 = i,
+            Text6 = i,
+            Text7 = i,
+            Text8 = i,
         })
     end
 end)
@@ -111,12 +114,12 @@ BENCH("bind source", function()
     local apply = require "src/apply"
 
     local instance = vide.create("Frame") {}
-    local state = vide.source(1)
+    local src = vide.source(1)
 
     vide.root(function()
         for i = 1, START(N) do
             apply(instance, {
-                Name = state
+                Text = src
             })
         end
 
@@ -128,15 +131,15 @@ BENCH("update binding", function()
     local apply = require "src/apply"
 
     local instance = vide.create("Frame") {}
-    local state = vide.source(1)
+    local src = vide.source(1)
 
     vide.root(function()
         apply(instance, {
-            Name = state
+            Text = src
         })
 
         for i = 1, START(N) do
-            state(i)
+            src(i)
         end
 
         return nil
@@ -145,6 +148,26 @@ end)
 
 N /= 1024
 
+BENCH("indexes() all new", function()
+    local data = {}
+
+    for i = 1, N do
+        data[i] = i
+    end
+
+    local src = vide.source(data)
+
+    vide.root(function() 
+        START(N)
+
+        local _list = vide.indexes(src, function(v, i)
+            return {}
+        end)
+
+        return nil
+    end)
+end)
+
 BENCH("indexes() no change", function()
     local data = {}
 
@@ -152,18 +175,16 @@ BENCH("indexes() no change", function()
         data[i] = i
     end
 
-    local state = vide.source(data)
+    local src = vide.source(data)
 
     vide.root(function() 
-        local _list = vide.indexes(state, function(v, i)
+        local _list = vide.indexes(src, function(v, i)
             return {}
         end)
 
-        --state(state()) -- fill double buffer
-
         START(N)
 
-        state(data)
+        src(data)
 
         return nil
     end)
@@ -176,15 +197,15 @@ BENCH("indexes() all change", function()
         data[i] = i
     end
 
-    local state = vide.source(data)
+    local src = vide.source(data)
 
 
     vide.root(function()
-        local _list = vide.indexes(state, function(v, i)
+        local _list = vide.indexes(src, function(v, i)
             return {}
         end)
 
-        --state(state()) -- fill double buffer
+        --src(src()) -- fill double buffer
 
         for i, v in data do
             data[i] = v + 1
@@ -192,7 +213,7 @@ BENCH("indexes() all change", function()
 
         START(N)
 
-        state(data)
+        src(data)
 
         return nil
     end)
@@ -205,10 +226,10 @@ BENCH("indexes() all remove", function()
         data[i] = i
     end
 
-    local state = vide.source(data)
+    local src = vide.source(data)
 
     vide.root(function()
-        local _list = vide.indexes(state, function(v, i)
+        local _list = vide.indexes(src, function(v, i)
             return {}
         end)
 
@@ -216,7 +237,27 @@ BENCH("indexes() all remove", function()
 
         START(N)
 
-        state(data)
+        src(data)
+
+        return nil
+    end)
+end)
+
+BENCH("values() all new", function()
+    local data = {}
+
+    for i = 1, N do
+        data[i] = {}
+    end
+
+    local src = vide.source(data)
+
+    vide.root(function()
+        START(N)
+        
+        local _list = vide.values(src, function(v, i)
+            return {}
+        end)
 
         return nil
     end)
@@ -229,18 +270,18 @@ BENCH("values() no change", function()
         data[i] = {}
     end
 
-    local state = vide.source(data)
+    local src = vide.source(data)
 
     vide.root(function()
-        local _list = vide.values(state, function(v, i)
+        local _list = vide.values(src, function(v, i)
             return {}
         end)
 
-        state(state()) -- fill double buffer
+        src(src()) -- fill double buffer
 
         START(N)
 
-        state(data)
+        src(data)
 
         return nil
     end)
@@ -253,14 +294,14 @@ BENCH("values() all change", function()
         data[i] = {}
     end
 
-    local state = vide.source(data)
+    local src = vide.source(data)
 
     vide.root(function()
-        local _list = vide.values(state, function(v, i)
+        local _list = vide.values(src, function(v, i)
             return {}
         end)
 
-        state(state()) -- fill double buffer
+        src(src()) -- fill double buffer
 
         for i = 1, N do
             local r = math.random(1, #data)
@@ -269,7 +310,7 @@ BENCH("values() all change", function()
 
         START(N)
 
-        state(data)
+        src(data)
 
         return nil
     end)
@@ -282,10 +323,10 @@ BENCH("values() all remove", function()
         data[i] = {}
     end
 
-    local state = vide.source(data)
+    local src = vide.source(data)
 
     vide.root(function()
-        local _list = vide.values(state, function(v, i)
+        local _list = vide.values(src, function(v, i)
             return {}
         end)
 
@@ -293,7 +334,7 @@ BENCH("values() all remove", function()
 
         START(N)
 
-        state(data)
+        src(data)
 
         return nil
     end)

@@ -15,6 +15,7 @@ local update = graph.update
 local get_scope = graph.get_scope
 local open_scope = graph.open_scope
 local close_scope = graph.close_scope
+local evaluate_node = graph.evaluate_node
 local destroy = graph.destroy
 
 type Map<K, V> = { [K]: V }
@@ -33,14 +34,17 @@ end
 -- todo: optimize output array
 local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI, K) -> VO): () -> { VO }
     local owner = get_scope()
-    if not owner then throw("cannot derive in non-reactive scope") end
-    assert(owner)
+    if not owner then
+        throw("cannot derive in non-reactive scope")
+    end; assert(owner)
+
+    local subowner = create_node(false, false)
+    set_owner(subowner, owner)
 
     local input_cache = {} :: Map<K, VI>
     local output_cache = {} :: Map<K, VO>
     local input_nodes = {} :: Map<K, StartNode<VI>>
     local remove_queue = {} :: { K }
-
     local scopes = {} :: Map<K, Node<unknown>>
 
     local function update_children(data)
@@ -63,7 +67,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
         table.clear(remove_queue)
 
-        open_scope(owner) -- todo: needed?
+        open_scope(subowner)
 
         -- process new or changed values
         for i, v in next, data do
@@ -71,10 +75,10 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
             if cv ~= v then
                 if cv == nil then
-                    local scope = create_node(false)
+                    local scope = create_node(false, false)
                     scopes[i] = scope :: Node<any>
 
-                    set_owner(scope, owner)
+                    set_owner(scope, subowner)
                     open_scope(scope)
 
                     local node = create_start_node(v)
@@ -125,15 +129,17 @@ end
 -- todo: optimize output array
 local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> K) -> VO): () -> { VO }
     local owner = get_scope()
-    if not owner then throw("cannot derive in non-reactive scope") end
-    assert(owner)
+    if not owner then
+        throw("cannot derive in non-reactive scope")
+    end; assert(owner)
+
+    local subowner = create_node(false, false)
+    set_owner(subowner, owner)
     
     local cur_input_cache_up = {} :: Map<VI, K>
     local new_input_cache_up = {} :: Map<VI, K>
-
     local output_cache = {} :: Map<VI, VO>
     local input_nodes = {} :: Map<VI, StartNode<K>>
-
     local scopes = {} :: Map<VI, Node<unknown>>
 
     local function update_children(data: Map<K, VI>)
@@ -149,7 +155,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
             end
         end
 
-        open_scope(owner)
+        open_scope(subowner)
     
         -- process data
         for i, v in next, data do
@@ -158,10 +164,10 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
             local cv = cur_input_cache[v]
             
             if cv == nil then
-                local scope = create_node(false)
+                local scope = create_node(false, false)
                 scopes[v] = scope :: Node<any>
 
-                set_owner(scope, owner)
+                set_owner(scope, subowner)
                 open_scope(scope)
 
                 local node = create_start_node(i)

@@ -10,8 +10,9 @@ local evaluate_node = graph.evaluate_node
 
 local function derive<T>(fn: () -> T): () -> T
     local owner = get_scope()
-    if not owner then throw("cannot derive in non-reactive scope") end
-    assert(owner)
+    if not owner then
+        throw("cannot derive in non-reactive scope")
+    end; assert(owner)
 
     local node = create_node(false :: any, fn)
 

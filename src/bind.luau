@@ -1,5 +1,4 @@
 if not game then script = require "test/relative-string" end
-local warn = game and warn or print :: never
 
 local throw = require(script.Parent.throw)
 local flags = require(script.Parent.flags)
@@ -33,27 +32,38 @@ local function traceback(skips: number) -- ensures trace begins outside of any v
     return debug.traceback(nil, s)
 end
 
-function create_binding<T>(updater: (T) -> T, binding_data: T)
-    -- if flags.strict then
-    --     -- wrap setter in function with stack inspection for better error msgs
-    --     local fn = setter
-    --     local bind_trace = traceback(0)
-    --     setter = function(instance)
-    --         local ok, err: string? = xpcall(fn, function(err: string)
-    --             return err .. "\nsource updated at: " .. traceback(2)
-    --         end, instance)
-    --         if not ok then warn(`error occured updating {property}: {err}bound at: {bind_trace}`) end
-    --     end
-    -- end
+function create_binding<T>(updater: (T) -> T, binding: T)
+    if flags.strict then
+        -- track bind creation trace
+        local fn = updater
+        local bind_trace = traceback(0)
+        updater = function(...)
+            local ok, result = xpcall(fn, function(err: string)
+                return err
+            end, ...)
 
-    local binding = create_node(binding_data, updater)
+            if not ok then
+                local btype =
+                    if (binding :: any).property then (binding :: any).property
+                    elseif (binding :: any).parent then "Parent"
+                    else "children"
+                error(`PROPERTY BINDING ERROR: Property {btype}\n{result}\nBIND CREATION TRACE:\n{bind_trace}`, 0)
+            end
 
+            return result
+        end
+    end
+
+    
     local owner = get_scope()
-    if not owner then throw("cannot bind property in non-reactive scope") end
-    assert(owner)
+    if not owner then
+        throw("cannot bind property in non-reactive scope")
+    end; assert(owner)
+    
+    local node = create_node(binding, updater)
 
-    set_owner(binding, owner)
-    evaluate_node(binding)
+    set_owner(node, owner)
+    evaluate_node(node)
 end
 
 type PropertyBinding = {
@@ -81,7 +91,7 @@ type ChildrenBinding = {
     instance: Instance,
     cur_children_set: { [Instance]: true },
     new_children_set: { [Instance]: true },
-    children: () -> { Instance }
+    children: () -> Instance | { Instance }
 }
 
 local function update_children(p: ChildrenBinding)
@@ -95,7 +105,7 @@ local function update_children(p: ChildrenBinding)
     end
 
     if new_children then
-        for _, child in next, new_children do
+        for _, child in next, new_children :: { Instance } do
             new_child_set[child] = true -- record child set from this update
             if not cur_children_set[child] then
                 child.Parent = p.instance -- if child wasn't already parented then parent it

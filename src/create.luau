@@ -7,11 +7,11 @@ local defaults = require(script.Parent.defaults)
 local apply = require(script.Parent.apply)
 local memoize = require(script.Parent.memoize)
 
-local function create_instance(class_name: string)
-    local ok, instance: Instance = pcall(Instance.new, class_name :: any)
-    if not ok then throw(`invalid class name, could not create instance of class { class_name }`) end
+local function create_instance(class: string)
+    local ok, instance: Instance = pcall(Instance.new, class :: any)
+    if not ok then throw(`invalid class name, could not create instance of class { class }`) end
 
-    local default: { [string]: unknown }? = defaults[class_name]
+    local default: { [string]: unknown }? = defaults[class]
     if default then
         for i, v in next, default do
             (instance :: any)[i] = v

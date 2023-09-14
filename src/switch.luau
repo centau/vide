@@ -22,22 +22,27 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
             throw("cannot switch in non-reactive scope")
         end; assert(owner)
 
-        local scope: Node<false>?
+        local last_scope: Node<false>?
         local last_component: (() -> U)?
 
-        local function update(): U?
+        local function update(cached): U?
             local component = map[source()]
-            if component == last_component then return nil end
+            if component == last_component then return cached end
             last_component = component
 
-            if scope then
-                destroy(scope :: Node<any>)
+            if last_scope then
+                destroy(last_scope :: Node<any>)
+                last_scope = nil
             end
 
             if component == nil then return nil end
 
+            if type(component) ~= "function" then
+                throw("map must map a value to a function")
+            end
+
             local new_scope = create_node(false, false)
-            scope = new_scope :: Node<any>
+            last_scope = new_scope :: Node<any>
             
             set_owner(new_scope, owner)
             open_scope(new_scope)
@@ -51,7 +56,7 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
             return result
         end
 
-        local node = create_node(nil, update :: () -> any)
+        local node = create_node(nil :: any, update)
 
         set_owner(node, owner)
         evaluate_node(node)

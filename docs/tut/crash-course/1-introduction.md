@@ -19,11 +19,11 @@ Some of the main focuses behind Vide's design choices:
 - Reducing the amount of imports needed for usage by leveraging Luau's syntax
   and semantics.
 - Being completely typecheckable.
-- Flexibility, particularly with integrating other libraries and allowing users
-  to use their own patterns.
+- Flexibility  with integrating other libraries and allowing users to use their
+  own patterns.
 - Independence from instance lifetimes.
-- A powerful reactive system that can surgically update properties as a result
-  of state changes.
+- A powerful reactive system that can update specific properties as a result of
+  state changes, updates are immediate with no diffing needed.
 
 ## Structure Of A Vide App
 

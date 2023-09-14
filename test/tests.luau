@@ -33,7 +33,6 @@ local NIL = nil :: any
 
 TEST("graph", function()
     local create_node = graph.create_node
-    local create_start_node = graph.create_start_node
     local track = graph.track
     local update = graph.update
     local add_child = graph.add_child
@@ -45,13 +44,11 @@ TEST("graph", function()
     local destroy = graph.destroy
 
     local function node<T>(v: T?)
-        local n = create_node(v or false)
-        n.effect = function() end
-        return n
+        return create_node(v or false, function(x) return not x end)
     end
 
     local function scope()
-        return create_node(false)
+        return create_node(false, false)
     end
 
     local function cleanup(fn: () -> ())
@@ -82,17 +79,18 @@ TEST("graph", function()
 
         local count = 0
 
-        local function effect()
+        local function effect(x)
             track(a)
             track(b)
             count += 1
+            return not x
         end
 
         c.effect = effect
 
         open_scope(c)
 
-        effect()
+        effect(c.cache)
 
         close_scope()
         
@@ -107,9 +105,9 @@ TEST("graph", function()
         local a, b, c, d = node(), node(), node(), node()
 
         local b_cnt, c_cnt, d_cnt = 0, 0, 0
-        function b.effect() b_cnt += 1 end
-        function c.effect() c_cnt += 1 end
-        function d.effect() d_cnt += 1 end
+        function b.effect(x) b_cnt += 1; return not x end
+        function c.effect(x) c_cnt += 1; return not x end
+        function d.effect(x) d_cnt += 1; return not x end
 
         open_scope(b); track(a); close_scope()
         open_scope(c); track(a); close_scope()
@@ -125,9 +123,10 @@ TEST("graph", function()
     do CASE "duplicate child on rerun"
         local a, b, c = node(), node(), node()
 
-        function c.effect()
+        function c.effect(x)
             track(a)
             track(b)
+            return not x
         end
 
         open_scope(c); assert(c.effect)(NIL); close_scope()
@@ -165,7 +164,6 @@ TEST("graph", function()
         do open_scope(root) 
             clean "root"
             items_updated = node()
-            items_updated.effect = function() end
             track(items_updated) -- should not
 
             add_child(root, items_updated)
@@ -177,7 +175,6 @@ TEST("graph", function()
                     do open_scope(scope1)
                         clean "scope1"
                         bind1 = node()
-                        bind1.effect = function() end
 
                         add_child(scope1, bind1)
                         do open_scope(bind1)
@@ -190,7 +187,6 @@ TEST("graph", function()
                     do open_scope(scope2)
                         clean "scope2"
                         bind2 = node()
-                        bind2.effect = function() end
                         add_child(scope2, bind2)
                         do open_scope(bind2)
                             clean "bind2"
@@ -252,11 +248,45 @@ TEST("graph", function()
     end
 
     do CASE "nodes garbage collection"
-        local wref = weak { create_node(1) }
+        local wref = weak { node(1) }
         destroy(wref[1])
         gc()
         CHECK(not wref[1])
     end
+end)
+
+TEST("mount()", function()
+    local mount = vide.mount
+    local create = vide.create
+    local source = vide.source
+    local cleanup = vide.cleanup
+
+    local screen = create "ScreenGui" {}
+
+    local text = source "foo"
+    local count = 0
+
+    local unmount = mount(function()
+        cleanup(function()
+            count += 1
+        end)
+
+        return create "TextLabel" {
+            Name = "TextLabel",
+            Text = text
+        }
+    end, screen)
+
+    local label = screen:FindFirstChild "TextLabel" :: TextLabel
+    CHECK(label)
+    CHECK(label.Text == "foo")
+
+    text "bar"
+    CHECK(label.Text == "bar")
+    CHECK(count == 0)
+
+    unmount()
+    CHECK(count == 1)
 end)
 
 TEST("source()", wrap_root(function()
@@ -422,7 +452,7 @@ TEST("derive()", wrap_root(function()
 
         local _, destroy = root(function()
 
-            local b = derive(function()
+            local _b = derive(function()
                 cleanup(function()
                     count += 1
                 end)
@@ -534,13 +564,13 @@ TEST("cleanup()", wrap_root(function()
     end
 
     do CASE "cleanup on rerun"
-        local state = source(1)
+        local src = source(1)
 
         local effected = 0
         local cleaned = 0
 
         effect(function()
-            state()
+            src()
             effected += 1
             cleanup(function()
                 cleaned += 1  
@@ -550,27 +580,27 @@ TEST("cleanup()", wrap_root(function()
         CHECK(effected == 1)
         CHECK(cleaned == 0)
 
-        state(2)
+        src(2)
 
         CHECK(effected == 2)
         CHECK(cleaned == 1)
     end
 
     do CASE "multiple cleanup"
-        local state = source(1)
+        local src = source(1)
 
         local queue = {}
     
         effect(function()
-            state()
+            src()
             cleanup(function() table.insert(queue, 1) end)
             cleanup(function() table.insert(queue, 2) end)
         end)
 
         CHECK(testkit.seq(queue, {}))
-        state(2)
+        src(2)
         CHECK(testkit.seq(queue, { 1, 2 }))
-        state(3)
+        src(3)
         CHECK(testkit.seq(queue, { 1, 2, 1, 2 }))
     end
 end))
@@ -660,7 +690,6 @@ TEST("create()", wrap_root(function()
         CHECK(frame:FindFirstChild "C")
         CHECK(frame:FindFirstChild "D")
         CHECK(frame:FindFirstChild "E")
-
         CHECK(frame:FindFirstChild "F")
         CHECK(frame:FindFirstChild "G")
     end
@@ -706,7 +735,7 @@ TEST("create()", wrap_root(function()
         CHECK(count == 1)
     end
 
-    do CASE "bind same state to multiple instance properties"
+    do CASE "bind same source to multiple instance properties"
         local src = source "1"
 
         local text = create "TextBox" {
@@ -807,11 +836,9 @@ TEST("create()", wrap_root(function()
 end))
 
 TEST("switch()", wrap_root(function()
-    local create = vide.create
     local source = vide.source
     local switch = vide.switch
     local effect = vide.effect
-    local derive = vide.derive
     local cleanup = vide.cleanup
 
     do CASE "update on source change"
@@ -828,13 +855,40 @@ TEST("switch()", wrap_root(function()
 
         CHECK(count == 1)
         CHECK(output() == 1)
+    
         input(false)
         CHECK(output() == 0)
         CHECK(count == 2)
+    
         input(false)
+        CHECK(output() == 0)
         CHECK(count == 2)
-        input(nil)
+    
+        input(NIL)
         CHECK(output() == nil)
+    end
+
+    do CASE "same component different map"
+        local input = source(0)
+
+        local function component()
+            return {}
+        end
+
+        local output = switch(input) {
+            [1] = component,
+            [2] = component
+        }
+
+        CHECK(output() == nil)
+
+        input(1)
+        local instance = output()
+        CHECK(instance)
+
+        input(2)
+        CHECK(output() == instance)
+
     end
 
     do CASE "scoped switch"
@@ -865,10 +919,29 @@ TEST("switch()", wrap_root(function()
         input(true)
         CHECK(switch1_count == 1)
         CHECK(switch0_count == 1)
-        input(nil)
+        input(NIL)
         CHECK(switch1_count == 2)
         CHECK(switch0_count == 1)
         CHECK(owner_count == 0)
+    end
+
+    do CASE "reactive stack resets after error"
+    local scopes = require "src/graph".scopes
+        local input = source(1)
+
+        local n0 = scopes.n
+
+        local ok = pcall(function()
+            switch(input) {
+                error :: any
+            }
+        end)
+
+        CHECK(not ok)
+
+        local n1 = scopes.n
+
+        CHECK(n0 == n1)
     end
 end))
 
@@ -893,10 +966,10 @@ TEST("indexes()", wrap_root(function()
     do CASE "cache result"
         local input = source { 1, 2, 3 }
 
-        local runcount = table.create(3, 0)
+        local count = table.create(3, 0)
 
         local output = indexes(input, function(v, i)
-            runcount[i] += 1
+            count[i] += 1
             return v
         end)
 
@@ -906,9 +979,9 @@ TEST("indexes()", wrap_root(function()
         CHECK(output()[2]() == 2)
         CHECK(output()[3]() == 4)
 
-        CHECK(runcount[1] == 1)
-        CHECK(runcount[2] == 1)
-        CHECK(runcount[3] == 1)
+        CHECK(count[1] == 1)
+        CHECK(count[2] == 1)
+        CHECK(count[3] == 1)
     end
 
     do CASE "removal reflected"
@@ -989,6 +1062,27 @@ TEST("indexes()", wrap_root(function()
         CHECK(count[2] == 0)
         CHECK(count[3] == 0)
     end
+
+    do CASE "reactive stack resets after error"
+        local scopes = require "src/graph".scopes
+
+        local input = source { 1 }
+
+        local n0 = scopes.n
+
+        local ok = pcall(function()
+            indexes(input, function()
+                error("")
+                return NIL
+            end)
+        end)
+
+        CHECK(not ok)
+
+        local n1 = scopes.n
+
+        CHECK(n0 == n1)
+    end
 end))
 
 TEST("values()", wrap_root(function()
@@ -1012,10 +1106,10 @@ TEST("values()", wrap_root(function()
     do CASE "cache result"
         local input = source { 1, 2, 3 }
 
-        local runcount = table.create(3, 0)
+        local count = table.create(3, 0)
 
         local output = values(input, function(v, i)
-            runcount[v] += 1
+            count[v] += 1
             return i
         end)
 
@@ -1025,9 +1119,9 @@ TEST("values()", wrap_root(function()
         CHECK(output()[2]() == 3)
         CHECK(output()[3]() == 2)
 
-        CHECK(runcount[1] == 1)
-        CHECK(runcount[2] == 1)
-        CHECK(runcount[3] == 1)
+        CHECK(count[1] == 1)
+        CHECK(count[2] == 1)
+        CHECK(count[3] == 1)
     end
 
     do CASE "removal reflected"
@@ -1093,6 +1187,27 @@ TEST("values()", wrap_root(function()
         CHECK(count[1] == 0)
         CHECK(count[2] == 0)
         CHECK(count[3] == 0)
+    end
+
+    do CASE "reactive stack resets after error"
+        local scopes = require "src/graph".scopes
+
+        local input = source { 1 }
+
+        local n0 = scopes.n
+
+        local ok = pcall(function()
+            values(input, function()
+                error("")
+                return NIL
+            end)
+        end)
+
+        CHECK(not ok)
+
+        local n1 = scopes.n
+
+        CHECK(n0 == n1)
     end
 end))
 
@@ -1226,7 +1341,7 @@ TEST("untrack()", wrap_root(function()
         CHECK(a() == untrack(a))
     end
 
-    do CASE "derived state"
+    do CASE "derived source"
         local a = source(0)
         local b = source(0)
         local c = source(0)
@@ -1368,127 +1483,156 @@ TEST("actions", function()
     end
 end)
 
--- TEST("strict", function()
---     vide.strict = true
+TEST("changed()", wrap_root(function()
+    local root = vide.root
+    local create = vide.create
+    local source = vide.source
+    local changed = vide.changed
 
---     local create = vide.create
---     local source = vide.source
---     local derive = vide.derive
---     local effect = vide.effect
---     local indexes, values = vide.indexes, vide.values
---     local cleanup = vide.cleanup
+    do CASE "outputs"
+        local output = source(nil)
 
---     -- do CASE "error on derived callback yield"
---     --     local state = source(1)
+        local text = create "TextLabel" {
+            Text = "a",
+            changed("Text", output)
+        }
 
---     --     local ok = pcall(function()
---     --         local _derived = derive(function()
---     --             coroutine.yield()
---     --             return state()
---     --         end)
---     --     end)
+        --CHECK(output() == "a")
+        text.Text = "b"
+        CHECK(output() == "b")
+    end
 
---     --     CHECK(not ok)
---     -- end
+    do CASE "connection disconnected"
+        local text, destroy = root(function()
+            local output = source(nil)
 
---     -- do CASE "error on effecter callback yield"
---     --     local state = source(1)
+            return create "TextLabel" {
+                Text = "a",
+                changed("Text", output)
+            }
+        end)
 
---     --     local ok = pcall(function()
---     --         local _derived = effect(function()
---     --             coroutine.yield()
---     --             state()
---     --         end)
---     --     end)
+        destroy() -- changed() should of disconnect connection
 
---     --     CHECK(not ok)
---     -- end
+        -- check if instance can gc
+        local wref = weak { text }
+        text = NIL
+        gc()
+        CHECK(not wref[1])
+    end
+end))
 
---     do CASE "run derived callback twice"
---         local state = source(1)
---         local runcount = 0
+TEST("strict", wrap_root(function()
+    vide.strict = true
 
---         local _ = derive(function()
---             runcount += 1
---             return state()
---         end)
+    local create = vide.create
+    local source = vide.source
+    local derive = vide.derive
+    local effect = vide.effect
+    local indexes, values = vide.indexes, vide.values
 
---         CHECK(runcount == 2)
---         state(2)
---         CHECK(runcount == 4)
---     end
+    do CASE "error on derived callback yield"
+        local src = source(1)
 
---     do CASE "run effecter callback twice"
---         local state = source(1)
---         local runcount = 0
+        local ok = pcall(function()
+            local _derived = derive(function()
+                coroutine.yield()
+                return src()
+            end)
+        end)
 
---         effect(function()
---             runcount += 1
---             state()
---         end)
+        CHECK(not ok)
+    end
 
---         CHECK(runcount == 2)
---         state(2)
---         CHECK(runcount == 4)
---     end
+    do CASE "error on effecter callback yield"
+        local src = source(1)
 
---     do CASE "indexes() error if primitive"
---         local state = source { 1 }
+        local ok = pcall(function()
+            effect(function()
+                coroutine.yield()
+                src()
+            end)
+        end)
 
---         local ok = pcall(function()
---             indexes(state, function() return 1 end)
---         end)
+        CHECK(not ok)
+    end
 
---         CHECK(not ok)
---     end
+    do CASE "run derived callback twice"
+        local src = source(1)
+        local count = 0
 
---     do CASE "values() error if duplicate"
---         local state = source { 1, 2, 1 }
+        local _ = derive(function()
+            count += 1
+            return src()
+        end)
 
---         local ok = pcall(function()
---             values(state, function() return {} end)
---         end)
+        CHECK(count == 2)
+        src(2)
+        CHECK(count == 4)
+    end
 
---         CHECK(not ok)
---     end
+    do CASE "run effect callback twice"
+        local src = source(1)
+        local count = 0
 
---     do CASE "duplicate properties"
---         local ok = pcall(function()
---             create "TextLabel" {
---                 {
---                     Name = "foo"
---                 },
---                 {
---                     Name = "bar"
---                 }
---             }
---         end)
+        effect(function()
+            count += 1
+            src()
+        end)
 
---         CHECK(not ok)
+        CHECK(count == 2)
+        src(2)
+        CHECK(count == 4)
+    end
 
---         ok = pcall(function()
---             create "TextLabel" {
---                 {
---                     Name = "foo",
---                     {
---                         Name = "bar"
---                     }
---                 }
---             }
---         end)
+    do CASE "indexes() error if primitive"
+        local src = source { 1 }
 
---         CHECK(ok)
---     end
+        local ok = pcall(function()
+            indexes(src, function() return 1 end)
+        end)
 
---     do CASE "multiple cleanup per scope"
---         local ok = pcall(function()
---             cleanup(function() end)
---             cleanup(function() end)
---         end)
+        CHECK(not ok)
+    end
 
---         CHECK(not ok)
---     end
--- end)
+    do CASE "values() error if duplicate"
+        local src = source { 1, 2, 1 }
+
+        local ok = pcall(function()
+            values(src, function() return {} end)
+        end)
+
+        CHECK(not ok)
+    end
+
+    do CASE "duplicate properties"
+        local ok = pcall(function()
+            create "TextLabel" {
+                {
+                    Name = "foo"
+                },
+                {
+                    Name = "bar"
+                }
+            }
+        end)
+
+        CHECK(not ok)
+
+        ok = pcall(function()
+            create "TextLabel" {
+                {
+                    Name = "foo",
+                    {
+                        Name = "bar"
+                    }
+                }
+            }
+        end)
+
+        CHECK(ok)
+    end
+end))
 
 local ok = FINISH()
 if not ok then error("Tests failed", 0) end

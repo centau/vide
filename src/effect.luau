@@ -7,16 +7,16 @@ local get_scope = graph.get_scope
 local evaluate_node = graph.evaluate_node
 local set_owner = graph.set_owner
 
-local function effect<T>(effect: (T) -> T, initial_value: T)
+local function effect<T>(callback: (T) -> T, initial_value: T)
     local owner = get_scope()
     if not owner then
         throw("cannot create effect in non-reactive scope")
     end; assert(owner)
 
-    local node = create_node(initial_value, effect)
+    local node = create_node(initial_value, callback)
 
     set_owner(node, owner)
     evaluate_node(node)
 end
 
-return effect :: (<T>(effect: (T) -> T, initial_value: T) -> ()) & ((effect: () -> ()) -> ())
+return effect :: (<T>(callback: (T) -> T, initial_value: T) -> ()) & ((callback: () -> ()) -> ())

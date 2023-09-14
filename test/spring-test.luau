@@ -65,7 +65,7 @@ local function main()
     until false
 end
 
-main()
+vide.root(main)
 
 
 

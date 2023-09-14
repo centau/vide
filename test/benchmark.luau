@@ -1,14 +1,19 @@
 local BENCH, START = require("test/testkit").benchmark()
 
 local vide = require "src/init"
+local root = vide.root
+local source = vide.source
+local derive = vide.derive
+local indexes = vide.indexes
+local values = vide.values
+local cleanup = vide.cleanup
+local create = vide.create
 
 local N = 2^18 -- 262144
 
 -- todo: wide and deep graph benchmarks
 
 BENCH("create source", function()
-    local source = vide.source
-
     local cache = table.create(N)
 
     for i = 1, START(N) do
@@ -17,7 +22,7 @@ BENCH("create source", function()
 end)
 
 BENCH("get value", function()
-    local src = vide.source(1)
+    local src = source(1)
 
     for i = 1, START(N) do
         src()
@@ -25,7 +30,7 @@ BENCH("get value", function()
 end)
 
 BENCH("set value", function()
-    local src = vide.source(1)
+    local src = source(1)
 
     for i = 1, START(N) do
         src(i)
@@ -33,12 +38,10 @@ BENCH("set value", function()
 end)
 
 BENCH("derive 1 source", function()
-    local derive = vide.derive
-
     local cache = table.create(N)
-    local src = vide.source(1)
+    local src = source(1)
 
-    vide.root(function()
+    root(function()
         for i = 1, START(N) do
             cache[i] = derive(function()
                 return src()
@@ -49,8 +52,6 @@ BENCH("derive 1 source", function()
 end)
 
 BENCH("derive 4 sources", function()
-    local derive = vide.derive
-
     local cache = table.create(N)
     local src = vide.source(1)
     local src2 = vide.source(2)
@@ -68,11 +69,11 @@ BENCH("derive 4 sources", function()
     end)
 end)
 
-BENCH("set derived value", function()
-    local src = vide.source(1)
+BENCH("update 1->1 graph", function()
+    local src = source(1)
 
-    vide.root(function()
-        local _derived = vide.derive(function() return src() end)
+    root(function()
+        local _derived = derive(function() return src() end)
 
         for i = 1, START(N) do
             src(i)
@@ -82,9 +83,104 @@ BENCH("set derived value", function()
     end)
 end)
 
+BENCH("update 1->1 graph with cleanup", function()
+    local src = source(1)
+
+    root(function()
+        derive(function()
+            cleanup(function() end)
+            return src()
+        end)
+
+        for i = 1, START(N) do
+            src(i)
+        end
+
+        return nil
+    end)
+end)
+
+BENCH("update 1->1000 graph", function()
+    local src = source(-1)
+
+    root(function()
+        for i = 1, 1000 do
+            derive(function() return src() end)
+        end
+
+        src(0)
+
+        for i = 1, START(10) do
+            src(i)
+        end
+    end)
+end)
+
+BENCH("update 1->1->1->1...1000 graph", function()
+    local src = source(-1)
+
+    root(function()
+        local last = src
+        for i = 1, 1000 do
+            local l = last
+            last = derive(function() return l() end)
+        end
+
+        src(0)
+
+        for i = 1, START(10) do
+            src(i)
+        end
+    end)
+end)
+
+-- todo: repeat with batching
+BENCH("update 1000->1 graph", function()
+    local srcs = {}
+    for i = 1, 1000 do
+        srcs[i] = source(0)
+    end
+
+    root(function()
+        derive(function()
+            for i = 1, 1000 do
+                srcs[i]()
+            end
+            return false
+        end)
+
+        for i = 1, START(1) do
+            for idx = 1, 1000 do
+                srcs[idx](i)
+            end
+        end
+    end)
+end)
+
+-- todo: optimize, repeat with batching
+BENCH("update 1000x 1->1 common extern. graph", function()
+    local ext = source(-1)
+
+    root(function()
+        local srcs = {}
+        for i = 1, 1000 do
+            srcs[i] = source(0)
+            derive(function() return srcs[i]() + ext() end)
+        end
+
+        ext(0)
+
+        for i = 1, START(10) do
+            for idx = 1, 1000 do
+                srcs[idx](i)
+            end
+        end
+    end)
+end)
+
 BENCH("apply 0 properties", function()
     local apply = require "src/apply"
-    local instance = vide.create("Frame") {}
+    local instance = create("Frame") {}
 
     for i = 1, START(N) do
         apply(instance, {})
@@ -93,7 +189,7 @@ end)
 
 BENCH("apply 8 properties", function()
     local apply = require "src/apply"
-    local instance = vide.create("Frame") {}
+    local instance = create("Frame") {}
 
     for i = 1, START(N) do
         apply(instance, {
@@ -112,10 +208,10 @@ end)
 BENCH("bind property", function()
     local apply = require "src/apply"
 
-    local instance = vide.create("Frame") {}
-    local src = vide.source(1)
+    local instance = create("Frame") {}
+    local src = source(1)
 
-    vide.root(function()
+    root(function()
         for i = 1, START(N) do
             apply(instance, {
                 Text = src
@@ -129,10 +225,10 @@ end)
 BENCH("update binding", function()
     local apply = require "src/apply"
 
-    local instance = vide.create("Frame") {}
-    local src = vide.source(1)
+    local instance = create("Frame") {}
+    local src = source(1)
 
-    vide.root(function()
+    root(function()
         apply(instance, {
             Text = src
         })
@@ -154,12 +250,12 @@ BENCH("indexes() all new", function()
         data[i] = i
     end
 
-    local src = vide.source(data)
+    local src = source(data)
 
-    vide.root(function() 
+    root(function() 
         START(N)
 
-        local _list = vide.indexes(src, function(v, i)
+        local _list = indexes(src, function(v, i)
             return {}
         end)
 
@@ -174,10 +270,10 @@ BENCH("indexes() no change", function()
         data[i] = i
     end
 
-    local src = vide.source(data)
+    local src = source(data)
 
-    vide.root(function() 
-        local _list = vide.indexes(src, function(v, i)
+    root(function() 
+        local _list = indexes(src, function(v, i)
             return {}
         end)
 
@@ -196,11 +292,11 @@ BENCH("indexes() all change", function()
         data[i] = i
     end
 
-    local src = vide.source(data)
+    local src = source(data)
 
 
-    vide.root(function()
-        local _list = vide.indexes(src, function(v, i)
+    root(function()
+        local _list = indexes(src, function(v, i)
             return {}
         end)
 
@@ -225,10 +321,10 @@ BENCH("indexes() all remove", function()
         data[i] = i
     end
 
-    local src = vide.source(data)
+    local src = source(data)
 
-    vide.root(function()
-        local _list = vide.indexes(src, function(v, i)
+    root(function()
+        local _list = indexes(src, function(v, i)
             return {}
         end)
 
@@ -249,12 +345,12 @@ BENCH("values() all new", function()
         data[i] = {}
     end
 
-    local src = vide.source(data)
+    local src = source(data)
 
-    vide.root(function()
+    root(function()
         START(N)
         
-        local _list = vide.values(src, function(v, i)
+        local _list = values(src, function(v, i)
             return {}
         end)
 
@@ -269,10 +365,10 @@ BENCH("values() no change", function()
         data[i] = {}
     end
 
-    local src = vide.source(data)
+    local src = source(data)
 
-    vide.root(function()
-        local _list = vide.values(src, function(v, i)
+    root(function()
+        local _list = values(src, function(v, i)
             return {}
         end)
 
@@ -293,10 +389,10 @@ BENCH("values() all change", function()
         data[i] = {}
     end
 
-    local src = vide.source(data)
+    local src = source(data)
 
-    vide.root(function()
-        local _list = vide.values(src, function(v, i)
+    root(function()
+        local _list = values(src, function(v, i)
             return {}
         end)
 
@@ -322,10 +418,10 @@ BENCH("values() all remove", function()
         data[i] = {}
     end
 
-    local src = vide.source(data)
+    local src = source(data)
 
-    vide.root(function()
-        local _list = vide.values(src, function(v, i)
+    root(function()
+        local _list = values(src, function(v, i)
             return {}
         end)
 
@@ -342,9 +438,9 @@ end)
 N *= 1024
 
 BENCH("register new cleanup", function()
-    local cleanup = vide.cleanup
+    local cleanup = cleanup
 
-    vide.root(function()
+    root(function()
         local cleaner = function() end
 
         local callers = {}
@@ -368,7 +464,6 @@ do
     -- the purpose of the two following benchmarks is to measure the overhead of
     -- aggregate construction
     BENCH("set explicit mock vector2", function()
-        local create = vide.create
         local apply = require "src/apply"
         local Vector2 = require "test/mock".Vector2
 
@@ -384,7 +479,6 @@ do
     end)
 
     BENCH("set aggregate mock vector2", function()
-        local create = vide.create
         local apply = require "src/apply"
         local Vector2 = require "test/mock".Vector2
 
@@ -399,5 +493,48 @@ do
         end
     end)
 end
+
+-- innacurate due to no Vector3 in vanilla Luau
+-- mock vector is 200x slower than native vector 
+
+-- BENCH("spring update", function()
+--     local root, source, spring = vide.root, vide.source, vide.spring
+
+--     local src = source(0)
+
+--     root(function()
+--         for i = 1, N do
+--             spring(src)
+--         end
+
+--         START(N)
+
+--         src(1)
+
+--         return nil
+--     end)
+-- end)
+
+-- N /= 1024
+
+-- BENCH("spring step", function()
+--     local root, source, spring = vide.root, vide.source, vide.spring
+
+--     local src = source(0)
+
+--     root(function()
+--         for i = 1, N do
+--             spring(src)
+--         end
+
+--         src(1)
+
+--         START(N)
+
+--         vide.step(1/60)
+
+--         return nil
+--     end)
+-- end)
 
 return nil

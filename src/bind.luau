@@ -1,6 +1,7 @@
 if not game then script = require "test/relative-string" end
 
 local throw = require(script.Parent.throw)
+local trace = require(script.Parent.trace)
 local flags = require(script.Parent.flags)
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
@@ -9,34 +10,11 @@ local get_scope = graph.get_scope
 local evaluate_node = graph.evaluate_node
 local set_owner = graph.set_owner
 
--- todo: replace with throw's method
-local root do
-    local src = debug.info(1, "s")
-    root = string.sub(src, 1, #src - 5)
-end
-
-local function traceback(skips: number) -- ensures trace begins outside of any vide library file
-    local s = 1
-
-    repeat
-        s += 1
-        local path = debug.info(s, "s")
-
-        local found = not string.find(path, root)
-
-        if found then
-            skips -= 1
-        end
-    until found and skips < 0
-
-    return debug.traceback(nil, s)
-end
-
 function create_binding<T>(updater: (T) -> T, binding: T)
     if flags.strict then
         -- track bind creation trace
         local fn = updater
-        local bind_trace = traceback(0)
+        local bind_trace = debug.traceback(nil, trace()-1)
         updater = function(...)
             local ok, result = xpcall(fn, function(err: string)
                 return err

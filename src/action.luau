@@ -3,7 +3,7 @@ type Action = {
     callback: (Instance) -> ()
 }
 
-local ActionMT = {}
+local ActionMT = table.freeze {}
 
 local function is_action(v: any)
     return getmetatable(v) == ActionMT

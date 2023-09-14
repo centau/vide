@@ -40,3 +40,6 @@ the updating of the Text property anytime the count is changed.
 
 All observable changes to the user are considered to be side-effects of the
 reactive system.
+
+You should not update other sources using an effect. Improper usage can lead to
+unecessary updates and infinite loops.

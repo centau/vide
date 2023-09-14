@@ -28,8 +28,7 @@ type StartNode<T> = graph.StartNode<T>
 local create_node = graph.create_node
 local create_start_node = graph.create_start_node
 local get_scope = graph.get_scope
-local open_scope = graph.open_scope
-local close_scope = graph.close_scope
+local evaluate_node = graph.evaluate_node
 local update = graph.update
 local set_owner = graph.set_owner
 local track = graph.track
@@ -42,6 +41,8 @@ type Vec3 = Vector3
 local function Vec3(x: number?, y: number?, z: number?)
     return Vector3.new(x, y, z)
 end
+
+local ZERO = Vec3(0, 0, 0)
 
 type Animatable = number | CFrame | Color3 | UDim | UDim2 | Vector2 | Vector3
 
@@ -67,21 +68,20 @@ type Vec6ToType<T> = (Vec3, Vec3) -> T
 
 local type_to_vec6 = {
     number = function(v)
-        return Vec3(v, 0, 0), Vec3()
+        return Vec3(v, 0, 0), ZERO
     end :: TypeToVec6<number>,
 
     CFrame = function(v)
-        -- todo: proper rotation tween
         return v.Position, Vec3(v:ToEulerAnglesXYZ())
     end :: TypeToVec6<CFrame>,
 
     Color3 = function(v)
-        -- todo: hsv
-        return Vec3(v.R, v.G, v.B), Vec3()
+        -- todo: hsv, oklab?
+        return Vec3(v.R, v.G, v.B), ZERO
     end :: TypeToVec6<Color3>,
 
     UDim = function(v)
-        return Vec3(v.Scale, v.Offset, 0), Vec3()
+        return Vec3(v.Scale, v.Offset, 0), ZERO
     end :: TypeToVec6<UDim>,
     
     UDim2 = function(v)
@@ -89,11 +89,11 @@ local type_to_vec6 = {
     end :: TypeToVec6<UDim2>,
 
     Vector2 = function(v)
-        return Vec3(v.X, v.Y, 0), Vec3()
+        return Vec3(v.X, v.Y, 0), ZERO
     end :: TypeToVec6<Vector2>,
 
     Vector3 = function(v)
-        return v, Vec3()
+        return v, ZERO
     end :: TypeToVec6<Vector3>,
 
     Rect = function(v)
@@ -151,25 +151,11 @@ setmetatable(springs, { __mode = "v" })
 
 local function spring<T>(source: () -> T, period: number?, damping_ratio: number?): () -> T
     local owner = get_scope()
-    if not owner then throw("cannot derive in non-reactive scope") end
-    assert(owner)
-
-    local updater = create_node(false)
-    updater.effect = true :: any -- todo
-
-    set_owner(updater, owner)
-    open_scope(updater)
-
-    local initial_value = source()
-
-    close_scope()
-
-    local vtype = typeof(initial_value)
-    
-    local x1_123, x1_456 = type_to_vec6[vtype](initial_value)
+    if not owner then
+        throw("cannot derive in non-reactive scope")
+    end; assert(owner)
 
     -- https://en.wikipedia.org/wiki/Damping
-    -- todo: calculate damped freq at 10tau instead of natural freq
 
     local w_n = 2*math.pi / (period or 1)
     local z = damping_ratio or 1
@@ -182,26 +168,37 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
         k = k,
         c = c,
 
-        x0_123 = x1_123,
-        x1_123 = x1_123,
-        v_123 = Vec3(),
+        x0_123 = ZERO,
+        x1_123 = ZERO,
+        v_123 = ZERO,
 
-        x0_456 = x1_456,
-        x1_456 = x1_456,
-        v_456 = Vec3(),
+        x0_456 = ZERO,
+        x1_456 = ZERO,
+        v_456 = ZERO,
 
-        source_value = initial_value,
+        source_value = false :: any,
     }
     
-    local output = create_start_node(initial_value)
+    local output = create_start_node(false :: any)
 
-    updater.effect = function()
-        local v = source()
-        data.x1_123, data.x1_456 = type_to_vec6[typeof(v)](v)
-        data.source_value = v
+    local function updater_effect()
+        local value = source()
+        data.x1_123, data.x1_456 = type_to_vec6[typeof(value)](value)
+        data.source_value = value
         springs[data] = output -- todo: investigate why insertion is not O(1) at ~20k springs
-        return false
+        return value
     end
+
+    local updater = create_node(false :: any, updater_effect)
+
+    set_owner(updater, owner)
+    evaluate_node(updater)
+
+    -- set initial position to goal
+    data.x0_123, data.x0_456 = data.x1_123, data.x1_456
+
+    -- set output to goal
+    output.cache = data.source_value
 
     return function()
         track(output)

@@ -1,7 +1,5 @@
 if not game then script = require "test/relative-string" end
 
--- todo: more testing needed regarding `cleanup()` usage
-
 local throw = require(script.Parent.throw)
 local flags = require(script.Parent.flags)
 local graph = require(script.Parent.graph)
@@ -71,7 +69,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
             local cv = input_cache[i]
 
             if cv ~= v then
-                if cv == nil then
+                if cv == nil then -- create new scope and run transform
                     local scope = create_node(false, false)
                     scopes[i] = scope :: Node<any>
 
@@ -87,20 +85,22 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
                     
                     close_scope()
 
-                    if not ok then error(result, 0) end
+                    if not ok then
+                        close_scope() -- subowner scope
+                        error(result, 0)
+                    end
                     
                     input_nodes[i] = node
-                    input_cache[i] = v
                     output_cache[i] = result
-                else
+                else -- update source
                     input_nodes[i].cache = v
                     update(input_nodes[i])
-                    input_cache[i] = v
                 end
+
+                input_cache[i] = v
             end
         end
 
-        -- todo: handle early error
         close_scope()
 
         local output_array = table.create(#scopes)
@@ -117,7 +117,6 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
     end)
 
     evaluate_node(node)
-
 
     return function()
         track(node)
@@ -161,7 +160,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
 
             local cv = cur_input_cache[v]
             
-            if cv == nil then
+            if cv == nil then -- create new scope and run transform
                 local scope = create_node(false, false)
                 scopes[v] = scope :: Node<any>
 
@@ -177,20 +176,23 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
                 
                 close_scope()
 
-                if not ok then error(result, 0) end
+                if not ok then
+                    close_scope() -- subowner scope
+                    error(result, 0)
+                end
 
                 input_nodes[v] = node
                 output_cache[v] = result
-            else
+            else -- update source
                 if cv ~= i then
                     input_nodes[v].cache = i
                     update(input_nodes[v])
                 end
+
                 cur_input_cache[v] = nil
             end
         end
 
-        -- todo: handle early error
         close_scope()
 
         -- remove old values

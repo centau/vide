@@ -31,4 +31,4 @@ local function root<T>(fn: () -> T): (T, () -> ())
     end
 end
 
-return root
+return root :: (<T>(fn: () -> T) -> (T, () -> ())) & ((fn: () -> ()) -> (nil, () -> ()))

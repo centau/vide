@@ -9,8 +9,6 @@ local update = graph.update
 export type Source<T> = (() -> T) & ((T) -> T)
 
 local function source<T>(initial_value: T): Source<T>
-    --assert(get_scope())
-
     local node = create_start_node(initial_value)
 
     return function(...): T

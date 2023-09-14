@@ -16,10 +16,11 @@ export type Node<T> =  {
     [number]: Node<T>
 }
 
+-- reactive scope stack
 local scopes = { n = 0 } :: { [number]: Node<any>, n: number }
 
 -- runs a given callback in a context that Luau does not allow yielding in
-local check_for_yield: <T...>(fn: (T...) -> (boolean, string?), T...) -> () do
+local check_for_yield: <T...>(fn: (T...) -> (), T...) -> (boolean, string?) do
     local t = { __mode = "kv" }
     setmetatable(t, t)
 
@@ -38,10 +39,6 @@ local check_for_yield: <T...>(fn: (T...) -> (boolean, string?), T...) -> () do
             or err == "thread is not yieldable" then "yield occured"
             else err
     end
-end
-
-local function get_stack_scope(offset: number): Node<unknown>?
-    return scopes[scopes.n - offset]
 end
 
 local function get_scope(): Node<unknown>?
@@ -120,8 +117,18 @@ end
 local function evaluate_node<T>(node: Node<T>)
     local cur_value = node.cache
 
-    run_cleanups(node) -- todo: move in scope?
+    if flags.strict then
+        run_cleanups(node)
+        open_scope(node)
 
+        local ok, err = check_for_yield(node.effect :: (T) -> T, cur_value)
+        
+        close_scope()
+        
+        if not ok then throw(err :: string) end
+    end
+
+    run_cleanups(node) -- todo: move in scope?
     open_scope(node)
 
     local ok, new_value = pcall(node.effect :: (T) -> T, cur_value)
@@ -150,6 +157,7 @@ local function update<T>(node: StartNode<T>)
         table.clear(update_queue)
     end
 
+    -- unparent all children and queue for eval
     do
         local child = node[1]
         while child do -- todo: case where child in owner context
@@ -162,6 +170,7 @@ local function update<T>(node: StartNode<T>)
         end
     end
 
+    -- evaluate all queued children
     for i = n0 + 1, n do
         local child = update_queue[i]
         if not child.effect then continue end
@@ -178,28 +187,26 @@ end
 
 local function track<T>(node: StartNode<T>)
     local scope = get_scope()
-    if scope and scope.effect then -- todo
+    if scope and scope.effect then -- do not track nodes with no effect
         add_child(node, scope)
     end
 end
 
 local function create_node<T>(value: T, effect: false | (T) -> T): Node<T>
-    local node: Node<T> = {
+    return {
         cache = value,
         effect = effect,
-        cleanups = false :: false,
+        cleanups = false,
         parents = {},
     }
-
-    return node
-end
-
-local function get_children<T>(node: Node<T>): { Node<unknown> }
-    return { unpack(node) } :: { Node<any> }
 end
 
 local function create_start_node<T>(value: T): StartNode<T>
     return { cache = value }
+end
+
+local function get_children<T>(node: Node<T>): { Node<unknown> }
+    return { unpack(node) } :: { Node<any> }
 end
 
 return table.freeze {
@@ -207,7 +214,6 @@ return table.freeze {
     close_scope = close_scope,
     evaluate_node = evaluate_node,
     get_scope = get_scope,
-    get_stack_scope = get_stack_scope,
     add_cleanup = add_cleanup,
     set_owner = set_owner,
     destroy = destroy,
@@ -217,5 +223,6 @@ return table.freeze {
     add_child = add_child,
     create_node = create_node,
     create_start_node = create_start_node,
-    get_children = get_children
+    get_children = get_children,
+    scopes = scopes
 }

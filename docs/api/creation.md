@@ -2,6 +2,38 @@
 
 <br/>
 
+## mount()
+
+Runs a function and applies its result to a target instance.
+
+- **Type**
+  
+    ```lua
+    function mount<T>(component: () -> T, target: Instance?): () -> ()
+    ```
+
+- **Details**
+
+    The result of the function is applies to the target in the same way
+    properties are using `create()`.
+
+    The function is ran in a new reactive scope, just like
+    [root()](reactivity-core.md#root).
+
+    Returns a function that when called will destroy the reactive scope.
+
+- **Example**
+
+    ```lua
+    local function App()
+        return create "ScreenGui" {
+            create "TextLabel" { Text = "Vide" }
+        }
+    end
+
+    mount(App, game.StarterGui)
+    ```
+
 ## create()
 
 Creates a new UI element, applying any given properties.
@@ -28,19 +60,18 @@ Creates a new UI element, applying any given properties.
 
 - **Property setting rules**
 
-
     - If a table index is a string:
-      - If its value is a table then it will attempt to perform aggregate
-        initialization.
       - If its value is a function then it will either bind that property to
         the function or connect it if the property type is a `RBXScriptSignal`.
       - If the value is not a function then the property will be set to that
         value.
     - If a table index is a number:
-      - If its value is a table then that table will be recursively 
-      - processed just like the outer table.
-      - If its value is a function then it will parent and bind any instances
-        returned by that function as children.
+      - If its value is an action then that action will be queued to run after
+        properties are set.
+      - If its value is a table then that table will be recursively
+        processed just like the outer table.
+      - If its value is a function then it will bind the instances children to
+        that function.
       - If its value is an instance then it will be parented to the instance.
 
 - **Example**
@@ -54,7 +85,7 @@ Creates a new UI element, applying any given properties.
     }
     ```
 
-    A component using property nesting/grouping.
+    A component using property nesting.
 
     ```lua
     type Layout = {

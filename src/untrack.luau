@@ -7,17 +7,21 @@ local get_scope = graph.get_scope
 
 local function untrack<T>(source: () -> T): T
     local scope = get_scope()
-    if not scope then throw("cannot untrack  in non-reactive scope") end
-    assert(scope)
+    if not scope then
+        throw("cannot untrack in non-reactive scope")
+    end; assert(scope)
 
+    -- sources are only tracked if the node in scope has an effect
     local effect = scope.effect
     scope.effect = false
 
-    local v = source()
+    local ok, result = pcall(source)
 
     scope.effect = effect :: () -> ()
 
-    return v
+    if not ok then error(result, 0) end
+
+    return result
 end
 
 return untrack

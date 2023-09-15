@@ -5,7 +5,10 @@ Components are custom-made reusable pieces of UI made from other pieces of UI.
 By using components you can make your application more modular and better
 organized.
 
-```lua
+```lua [Button.luau]
+local vide = require(vide)
+local create = vide.create
+
 local function Button(props: {
     Position: UDim2,
     Text: string,
@@ -20,29 +23,44 @@ local function Button(props: {
         Activated = props.Activated
     }
 end
+
+return Button
 ```
 
-Above is a simple example of a button component with its background color set to
-a dark grey and with a fixed size.
+```lua [App.luau]
+local vide = require(vide)
+local mount = vide.mount
+local create = vide.create
+
+local Button = require(Button)
+
+local function App()
+    return create "ScreenGui" {
+        Button {
+            Position = UDim2.fromOffset(200, 200),
+            Text = "click me!",
+
+            Activated = function()
+                print "clicked"
+            end
+        }
+    }
+end
+
+mount(App, game.StarterGui)
+```
+
+Above is a simple example of a button component with a set color and size,
+being reused across files.
 
 A single parameter `props` is used to pass properties to the component.
-Creating instances of this button component is as simple as doing the below:
-
-```lua
-local button = Button {
-    Position = UDim2.new(),
-    Text = "Click me!",
-
-    Activated = function()
-        print "clicked"
-    end
-}
-```
 
 Components allow you to *encapsulate* behavior. You can only modify the
 component in ways that you allow in the component.
 
 This also promotes code reusability. Anytime you want a new button all you do
 is call `Button {}` instead of creating and setting every property each time.
+When changing the button in future, any changes to the button file will be
+reflected anywhere the button is used throughout your app.
 
 This can be extended to much more complicated UI.

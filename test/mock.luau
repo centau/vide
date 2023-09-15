@@ -113,6 +113,7 @@ local Instance = {} :: any do
     local function __newindex(userdata: userdata, property: string, value: unknown)
         local data = get_data(userdata)
         if property == "Name" then
+            if type(value) ~= "string" then error("name must be a string", 2) end
             data.name = value :: string
         elseif property == "Parent" then
             assert(value == nil or is_instance(value), "attempt to set non-instance as parent")

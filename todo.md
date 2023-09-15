@@ -1,23 +1,13 @@
 # todo
 
-- better error reporting and stack traces in strict mode
 - auto-enable of strict mode depending on compiler optimizaton level
-- investigate if weak table iteration can be invalidated
-- have derived sources/bindings track sources dynamically?
-  - solves case where sources are used in if-branching guarded by another
-    source
-  - significantly reduces performance
-- solution to component cleanup
-  - rely on `Instance.Destroying` event and manual destruction when cleanup is
-    needed?
-  - expand behavior of `vide.cleanup()` to detect garbage collection of
-    arbitrary values, not needing manual destruction
-    - look into SolidJS's reactive contexts
+- property binding optimization
+  - would no longer allow `cleanup()` usage in binding scopes
 - solution to nested reactivity, see: SolidJS stores
-- SolidJS control flow components
-  - Show
-  - Switch
-  - Dynamic
+- investigate performance of wide graphs
+- optimize child removal
+- implement from solid:
   - Portal
-- batch source updates
+  - batch
 - optimize `indexes()` double-diffing
+- define behavior of deriving a source within a derived source

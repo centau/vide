@@ -5,16 +5,20 @@
 
 if not game then script = require "test/relative-string" end
 
+local root = require(script.root)
+local mount = require(script.mount)
 local create = require(script.create)
 local apply = require(script.apply)
 local source = require(script.source)
-local watch = require(script.watch)
-local cleanup, clean_garbage = require(script.cleanup)()
+local effect = require(script.effect)
+local cleanup = require(script.cleanup)
 local untrack = require(script.untrack)
 local derive = require(script.derive)
+local switch = require(script.switch)
 local indexes, values = require(script.maps)()
 local spring, update_springs = require(script.spring)()
 local action = require(script.action)()
+local changed = require(script.changed)
 local throw = require(script.throw)
 local flags = require(script.flags)
 
@@ -30,13 +34,6 @@ local function step(dt: number)
 
     if game then
         debug.profileend()
-        debug.profilebegin("VIDE GARBAGE CLEANUP")
-    end
-
-    clean_garbage()
-
-    if game then
-        debug.profileend()
         debug.profileend()
     end
 end
@@ -47,10 +44,13 @@ end)
 
 local vide = {
     -- core
+    root = root,
+    mount = mount,
     create = create,
     source = source,
-    watch = watch,
+    effect = effect,
     derive = derive,
+    switch = switch,
     indexes = indexes,
     values = values,
 
@@ -63,6 +63,7 @@ local vide = {
 
     -- actions
     action = action,
+    changed = changed,
 
     -- flags
     strict = (nil :: any) :: boolean,

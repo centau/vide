@@ -114,6 +114,8 @@ local function destroy<T>(node: Node<T>)
     while node[1] do destroy(node[1]) end
 end
 
+local update_queue = {} :: { Node<any> }
+
 local function evaluate_node<T>(node: Node<T>)
     local cur_value = node.cache
 
@@ -136,6 +138,7 @@ local function evaluate_node<T>(node: Node<T>)
     close_scope()
 
     if not ok then
+        table.clear(update_queue)
         throw(`side-effect error from source update\n{new_value}`)
     end
 
@@ -144,18 +147,10 @@ local function evaluate_node<T>(node: Node<T>)
     return cur_value ~= new_value -- node has changed value
 end
 
-local update_queue = {} :: { Node<any> }
-
-local function update<T>(node: StartNode<T>)
+local function update_from<T>(node: StartNode<T>, n0: number)
     if not node[1] then return end
 
-    local n0 = #update_queue
-    local first_update = n0 == 0
     local n = n0
-
-    if first_update then
-        table.clear(update_queue)
-    end
 
     -- unparent all children and queue for eval
     do
@@ -176,13 +171,15 @@ local function update<T>(node: StartNode<T>)
         if not child.effect then continue end
 
         if evaluate_node(child) then
-            update(child)
+            update_from(child, n)
         end
-    end
 
-    if first_update then
-        table.clear(update_queue)
+        update_queue[i] = false :: any -- false instead of nil to avoid sparse
     end
+end
+
+local function update<T>(node: StartNode<T>)
+    update_from(node, 0)
 end
 
 local function track<T>(node: StartNode<T>)

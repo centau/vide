@@ -29,7 +29,7 @@ local function root<T...>(fn: (destroy: () -> ()) -> T...): T...
 
     if not result[1] then
         refs[node] = nil
-        throw(`mount error\n{result}`)
+        throw(`mount error\n{result[2]}`)
     end
 
     return unpack(result :: any, 2)

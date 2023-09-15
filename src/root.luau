@@ -10,25 +10,29 @@ local destroy = graph.destroy
 
 local refs = {}
 
-local function root<T>(fn: () -> T): (T, () -> ())
+local function root<T...>(fn: (destroy: () -> ()) -> T...): T...
     local node = create_node(false, false)
-
-    open_scope(node)
-
-    local ok, result = pcall(fn)
-
-    close_scope()
-
-    if not ok then
-        throw(`mount error\n{result}`)
-    end
 
     refs[node] = true -- prevent gc of root node
 
-    return result, function()
+    local destroy = function()
+        if not refs[node] then throw "root already destroyed" end
         refs[node] = nil
         destroy(node)
     end
+
+    open_scope(node)
+
+    local result = { pcall(fn, destroy) }
+
+    close_scope()
+
+    if not result[1] then
+        refs[node] = nil
+        throw(`mount error\n{result}`)
+    end
+
+    return unpack(result :: any, 2)
 end
 
-return root :: (<T>(fn: () -> T) -> (T, () -> ())) & ((fn: () -> ()) -> (nil, () -> ()))
+return root :: (<T...>(fn: (destroy: () -> ()) -> T...) -> T...) & ((fn: (destroy: () -> ()) -> ()) -> ())

@@ -24,7 +24,7 @@ end
 
 local function wrap_root(fn: () -> ())
     return function()
-        local _, destroy = vide.root(fn :: any)
+        local destroy = vide.mount(fn :: any)
         destroy()
     end
 end
@@ -289,6 +289,20 @@ TEST("mount()", function()
     CHECK(count == 1)
 end)
 
+TEST("root()", function()
+    local root = vide.root
+    local cleanup = vide.cleanup
+
+    local count = 0
+
+    root(function(destroy)
+        cleanup(function() count += 1 end)
+        destroy()
+    end)
+
+    CHECK(count == 1)
+end)
+
 TEST("source()", wrap_root(function()
     local source = vide.source
     local effect = vide.effect
@@ -357,7 +371,6 @@ TEST("source()", wrap_root(function()
 end))
 
 TEST("derive()", wrap_root(function()
-    local root = vide.root
     local source = vide.source
     local derive = vide.derive
     local effect = vide.effect
@@ -450,7 +463,7 @@ TEST("derive()", wrap_root(function()
         local count = 0
         local a = source(0)
 
-        local _, destroy = root(function()
+        local destroy = vide.mount(function()
 
             local _b = derive(function()
                 cleanup(function()
@@ -542,7 +555,6 @@ TEST("effect()", wrap_root(function()
 end))
 
 TEST("cleanup()", wrap_root(function()
-    local root = vide.root
     local source = vide.source
     local effect = vide.effect
     local cleanup = vide.cleanup
@@ -550,12 +562,10 @@ TEST("cleanup()", wrap_root(function()
     do CASE "root cleanup"
         local count = 0
 
-        local _, destroy = root(function()
+        local destroy = vide.mount(function()
             cleanup(function()
                 count += 1
             end)
-
-            return nil
         end)
 
         CHECK(count == 0)
@@ -606,7 +616,6 @@ TEST("cleanup()", wrap_root(function()
 end))
 
 TEST("create()", wrap_root(function()
-    local root = vide.root
     local create = vide.create
     local source = vide.source
     local cleanup = vide.cleanup
@@ -716,7 +725,7 @@ TEST("create()", wrap_root(function()
     do CASE "binding destroy"
         local count = 0
 
-        local _, destroy = root(function()
+        local destroy = vide.mount(function()
             local src = source(0)
 
             return create "TextLabel" {
@@ -782,7 +791,7 @@ TEST("create()", wrap_root(function()
     end
 
     do CASE "parent bound to source"
-        local wref, destroy = root(function()
+        local wref, destroy = vide.root(function(destroy)
             local frame = create "Frame" { Name = "Parent" }
             local parent = source(frame :: Frame?)
 
@@ -795,7 +804,7 @@ TEST("create()", wrap_root(function()
 
             parent(nil)
 
-            return wref
+            return wref, destroy
         end)
 
         gc()
@@ -1373,7 +1382,7 @@ TEST("untrack()", wrap_root(function()
 
         local input = source(0)
 
-        local output, destroy = root(function()
+        local output, destroy = root(function(destroy)
             local output = derive(function()
                 outer_count += 1
 
@@ -1390,7 +1399,7 @@ TEST("untrack()", wrap_root(function()
                 end)
             end)
 
-            return output
+            return output, destroy
         end)
 
         CHECK(outer_count == 1)
@@ -1503,13 +1512,13 @@ TEST("changed()", wrap_root(function()
     end
 
     do CASE "connection disconnected"
-        local text, destroy = root(function()
+        local text, destroy = root(function(destroy)
             local output = source(nil)
 
             return create "TextLabel" {
                 Text = "a",
                 changed("Text", output)
-            }
+            }, destroy
         end)
 
         destroy() -- changed() should of disconnect connection

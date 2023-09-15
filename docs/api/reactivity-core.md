@@ -9,7 +9,7 @@ Creates and runs a function in a new reactive scope.
 - **Type**
 
     ```lua
-    function root<T>(fn: () -> T): (T, () -> ())
+    function root<T...>(fn: (destroy: () -> ()) -> T...): T...
     ```
 
 - **Details**
@@ -19,8 +19,8 @@ Creates and runs a function in a new reactive scope.
 
     Returns the result of the given function.
 
-    Also returns a function to destroy the root, which will run any cleanups
-    and allow derived sources created to garbage collect.
+    A function to destroy the root is passed into the callback, which will run
+    any cleanups and allow derived sources created to garbage collect.
 
     ::: warning
     `fn()` cannot yield.

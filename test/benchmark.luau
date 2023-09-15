@@ -17,10 +17,10 @@ end
 local N = 2^18 -- 262144
 
 local function WRAP_BENCH(name: string, fn: () -> ())
-    local _, destroy = vide.root(function()
+    vide.root(function(destroy)
         BENCH(name, fn)
-    end)
-    destroy()
+        return destroy
+    end)()
 end
 
 TITLE "sources"

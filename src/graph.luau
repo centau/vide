@@ -106,6 +106,8 @@ local function destroy<T>(node: Node<T>)
     run_cleanups(node)
     unparent(node)
 
+    node.effect = false
+
     if node.parents.owner then
         remove_child(node.parents.owner, node)
         node.parents.owner = nil

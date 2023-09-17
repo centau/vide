@@ -1,4 +1,4 @@
-# Table Source
+# Control Flow
 
 Vide has specific functions for dealing with sources that store a table value.
 

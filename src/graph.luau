@@ -3,25 +3,24 @@ if not game then script = require "test/relative-string" end
 local throw = require(script.Parent.throw)
 local flags = require(script.Parent.flags)
 
-export type Node<T> = {
+export type StartNode<T> = {
     cache: T,
-    derive: () -> T,
-    effects:  { [(unknown) -> ()]: unknown }, -- weak values
-    children: { Node<T> } | false -- weak values
+    [number]: Node<T>
 }
 
--- flag used to detect when node reference capturing is active
-local reff = false
--- array of all nodes referenced since above flag was set
-local refs = {} :: { Node<unknown> }
+export type Node<T> =  {
+    cache: T,
+    effect:  ((T) -> T) | false,
+    cleanups: { () -> () } | false,
+    parents: { owner: StartNode<T>?, [number]: StartNode<T> },
+    [number]: Node<T>
+}
 
-local WEAK_VALUES = { __mode = "v" }
-local EVALUATION_ERR = "error while evaluating source:\n\n"
-
-setmetatable(refs :: any, WEAK_VALUES)
+-- reactive scope stack
+local scopes = { n = 0 } :: { [number]: Node<any>, n: number }
 
 -- runs a given callback in a context that Luau does not allow yielding in
-local check_for_yield: <T...>(fn: (T...) -> unknown, T...) -> () do
+local check_for_yield: <T...>(fn: (T...) -> (), T...) -> (boolean, string?) do
     local t = { __mode = "kv" }
     setmetatable(t, t)
 
@@ -32,149 +31,197 @@ local check_for_yield: <T...>(fn: (T...) -> unknown, T...) -> () do
             fn(unpack(args))
         end
 
-        local ok, err = pcall(function()
+        local ok, err: string? = pcall(function()
             local _ = -t
         end)
 
-        if not ok then
-            if err == "attempt to yield across metamethod/C-call boundary" or err == "thread is not yieldable" then
-                throw(EVALUATION_ERR .. "cannot yield when deriving node in watcher")
-            else
-                throw(EVALUATION_ERR .. err)
-            end
-        end
+        return ok, if err == "attempt to yield across metamethod/C-call boundary"
+            or err == "thread is not yieldable" then "yield occured"
+            else err
     end
 end
 
---[[
-
-Each node side-effect is registered with a corresponding weak key.
-This makes the lifetime of the side-effect tied to the key's.
-The main usecase of this is to tie a side-effect to an instance, while allowing
-the instance to be garbage collected even when the node still exists.
-
-The weak key is passed as an argument to its side-effect callback.
-
-]]
-
-local function set_effect<T>(node: Node<unknown>, fn: (T) -> (), key: T)
-    node.effects[fn :: () -> ()] = key
+local function get_scope(): Node<unknown>?
+    return scopes[scopes.n]
 end
 
-local function run_effects(node: Node<unknown>)
-    if flags.strict then -- run effects twice if strict
-        for effect, key in next, node.effects do
-            effect(key)
-            effect(key)
-        end
+local function add_child<T>(parent: StartNode<any>, child: Node<any>)
+    table.insert(parent, child)
+    table.insert(child.parents, parent)
+end
+
+local function set_owner(node: Node<any>, owner: Node<any>)
+    node.parents.owner = owner
+    table.insert(owner, node)
+end
+
+local function open_scope<T>(node: Node<T>)
+    local n = scopes.n + 1
+    scopes.n = n
+    scopes[n] = node
+end
+
+local function close_scope()
+    local n = scopes.n
+    scopes.n = n - 1
+    scopes[n] = nil
+end
+
+local function add_cleanup<T>(node: Node<T>, cleanup: () -> ())
+    if node.cleanups then
+        table.insert(node.cleanups, cleanup)
     else
-        for effect, key in next, node.effects do
-            effect(key)
+        node.cleanups = { cleanup }
+    end
+end
+
+local function run_cleanups<T>(node: Node<T>)
+    if node.cleanups then
+        for _, fn in next, node.cleanups do
+            local ok, err: string? = pcall(fn)
+            if not ok then throw(`cleanup error: {err}`) end
+        end
+        table.clear(node.cleanups)
+    end
+end
+
+local function remove_child<T>(parent: StartNode<T>, child: Node<T>)
+    local idx = table.find(parent, child)
+    assert(idx, "child not found")
+    local n = #parent
+    parent[idx] = parent[n]
+    parent[n] = nil
+end
+
+local function unparent<T>(node: Node<T>)
+    local parents = node.parents
+
+    for i, parent in ipairs(parents) do
+        remove_child(parent, node)
+        parents[i] = nil
+    end
+end
+
+local function destroy<T>(node: Node<T>)
+    run_cleanups(node)
+    unparent(node)
+
+    node.effect = false
+
+    if node.parents.owner then
+        remove_child(node.parents.owner, node)
+        node.parents.owner = nil
+    end
+
+    while node[1] do destroy(node[1]) end
+end
+
+local update_queue = {} :: { Node<any> }
+
+local function evaluate_node<T>(node: Node<T>)
+    local cur_value = node.cache
+
+    if flags.strict then
+        run_cleanups(node)
+        open_scope(node)
+
+        local ok, err = check_for_yield(node.effect :: (T) -> T, cur_value)
+        
+        close_scope()
+        
+        if not ok then throw(err :: string) end
+    end
+
+    run_cleanups(node) -- todo: move in scope?
+    open_scope(node)
+
+    local ok, new_value = pcall(node.effect :: (T) -> T, cur_value)
+
+    close_scope()
+
+    if not ok then
+        table.clear(update_queue)
+        throw(`side-effect error from source update\n{new_value}`)
+    end
+
+    node.cache = new_value
+
+    return cur_value ~= new_value -- node has changed value
+end
+
+local function update_from<T>(node: StartNode<T>, n0: number)
+    if not node[1] then return end
+
+    local n = n0
+
+    -- unparent all children and queue for eval
+    do
+        local child = node[1]
+        while child do -- todo: case where child in owner context
+            unparent(child)
+
+            n += 1
+            update_queue[n] = child
+
+            child = node[1]
         end
     end
-end
 
--- retrieves a node's cached value
--- add self to refs if ref capture flag is enabled
-local function get<T>(node: Node<T>): T
-    if reff then table.insert(refs, node) end
-    return node.cache
-end
+    -- evaluate all queued children
+    for i = n0 + 1, n do
+        local child = update_queue[i]
+        if not child.effect then continue end
 
--- links two nodes as parent-child
-local function set_child(parent: Node<unknown>, child: Node<unknown>)
-    if parent.children then
-        table.insert(parent.children, child)    
-    else
-        parent.children = { child }
-        setmetatable(parent.children :: any, WEAK_VALUES)
-    end
-end
-
--- runs node effects, recalculates descendants and runs descendant effects
-local function update(node: Node<unknown>)
-    run_effects(node)
-    if node.children then
-        local strict = flags.strict
-
-        for _, child in node.children do
-            if strict then check_for_yield(child.derive) end
-            child.cache = child.derive()
-            update(child)
+        if evaluate_node(child) then
+            update_from(child, n)
         end
+
+        update_queue[i] = false :: any -- false instead of nil to avoid sparse
     end
 end
 
--- sets a node's cached value and updates all descendants
-local function set<T>(node: Node<T>, value: T)
-    node.cache = value
-    update(node)
+local function update<T>(node: StartNode<T>)
+    update_from(node, 0)
 end
 
--- links two nodes as parent-child with a function to compute a new value for child
-local function link<T>(parent: Node<unknown>, child: Node<T>, derive: () -> T)
-    child.derive = derive
-    set_child(parent, child)
-end
-
--- detect what nodes were referenced in the given callback and returns them in an array
-local function capture<T, U>(fn: (U?) -> T, arg: U?): ({ Node<unknown> }, T)
-    if reff then throw("recursive capture detected") end
-
-    if flags.strict then check_for_yield(fn, arg) end
-
-    table.clear(refs)
-    reff = true
-
-    local ok: boolean, result: T|string
-    
-    if arg == nil then
-        ok, result = pcall(fn)
-    else
-        ok, result = pcall(fn, arg)
+local function track<T>(node: StartNode<T>)
+    local scope = get_scope()
+    if scope and scope.effect then -- do not track nodes with no effect
+        add_child(node, scope)
     end
-
-    reff = false
-
-    if not ok then throw(EVALUATION_ERR .. result :: string) end
-
-    return refs, result :: T
 end
 
--- captures and links any detected nodes
-local function capture_and_link<T>(child: Node<T>, fn: () -> T): T
-    local nodes, value = capture(fn, nil)
-
-    child.derive = fn
-    for _, parent: Node<unknown> in next, nodes do
-        set_child(parent, child)
-    end
-
-    return value :: T
-end
-
-local function create<T>(value: T): (Node<T>, () -> T)
-    local node = {
+local function create_node<T>(value: T, effect: false | (T) -> T): Node<T>
+    return {
         cache = value,
-        derive  = function() return nil :: any end,
-        effects = setmetatable({}, WEAK_VALUES) :: any,
-        children = false :: false
+        effect = effect,
+        cleanups = false,
+        parents = {},
     }
+end
 
-    local function read_node_value()
-        return get(node)
-    end
+local function create_start_node<T>(value: T): StartNode<T>
+    return { cache = value }
+end
 
-    return node, read_node_value
+local function get_children<T>(node: Node<T>): { Node<unknown> }
+    return { unpack(node) } :: { Node<any> }
 end
 
 return table.freeze {
-    set_effect = set_effect,
-    get = get,
-    set = set,
-    link = link,
-    capture = capture,
-    capture_and_link = capture_and_link,
-    create = create :: (<T>(value: T) -> (Node<T>, () -> T)) & (<T>() -> (Node<T>, () -> T)),
-    refs = refs
+    open_scope = open_scope,
+    close_scope = close_scope,
+    evaluate_node = evaluate_node,
+    get_scope = get_scope,
+    add_cleanup = add_cleanup,
+    set_owner = set_owner,
+    destroy = destroy,
+    run_cleanups = run_cleanups,
+    track = track,
+    update = update,
+    add_child = add_child,
+    create_node = create_node,
+    create_start_node = create_start_node,
+    get_children = get_children,
+    scopes = scopes
 }

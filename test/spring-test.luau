@@ -37,12 +37,12 @@ local function main()
 
     local source = vide.source
     local spring = vide.spring
-    local watch = vide.watch
+    local effect = vide.effect
 
     local value = source(MAX)
     local sprung = spring(value, 1, 0.3)
 
-    watch(function()
+    effect(function()
         local v = sprung()
         local fv = math.floor(v)
         local reset = "\27[H\27[2J" -- ANSI clear terminal
@@ -65,7 +65,7 @@ local function main()
     until false
 end
 
-main()
+vide.root(main)
 
 
 

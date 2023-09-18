@@ -15,7 +15,7 @@ local close_scope = graph.close_scope
 
 type Map<K, V> = { [K]: V }
 
-local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () -> U?
+local function switch<T, U>(source: () -> T): (map: Map<T, () -> U>) -> () -> U?
     local owner = get_owning_scope()
 
     return function(map)

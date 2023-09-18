@@ -464,7 +464,6 @@ TEST("derive()", wrap_root(function()
         local a = source(0)
 
         local destroy = vide.mount(function()
-
             local _b = derive(function()
                 cleanup(function()
                     count += 1

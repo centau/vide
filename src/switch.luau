@@ -9,19 +9,16 @@ local evaluate_node = graph.evaluate_node
 local set_owner = graph.set_owner
 local track = graph.track
 local destroy = graph.destroy
-local get_scope = graph.get_scope
+local get_owning_scope = graph.get_owning_scope
 local open_scope = graph.open_scope
 local close_scope = graph.close_scope
 
 type Map<K, V> = { [K]: V }
 
 local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () -> U?
-    return function(map)
-        local owner = get_scope()
-        if not owner then
-            throw("cannot switch in non-reactive scope")
-        end; assert(owner)
+    local owner = get_owning_scope()
 
+    return function(map)
         local last_scope: Node<false>?
         local last_component: (() -> U)?
 

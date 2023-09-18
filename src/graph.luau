@@ -45,6 +45,17 @@ local function get_scope(): Node<unknown>?
     return scopes[scopes.n]
 end
 
+local function get_owning_scope(): Node<unknown>
+    local scope = get_scope()
+    if not scope then
+        local caller_name = debug.info(2, "n")
+        return throw(`cannot use {caller_name}() in non-reactive scope, must be used within a root() or mount() callback`)
+    elseif scope.effect then
+        throw("owning scope is not stable; are you trying to derive a new source from within a side-effect?")
+    end
+    return scope
+end
+
 local function add_child<T>(parent: StartNode<any>, child: Node<any>)
     table.insert(parent, child)
     table.insert(child.parents, parent)
@@ -149,6 +160,7 @@ local function evaluate_node<T>(node: Node<T>)
     return cur_value ~= new_value -- node has changed value
 end
 
+-- todo: case where owner is set from an untrack call within an effectful node, children clearing
 local function update_from<T>(node: StartNode<T>, n0: number)
     if not node[1] then return end
 
@@ -169,7 +181,7 @@ local function update_from<T>(node: StartNode<T>, n0: number)
 
     -- evaluate all queued children
     for i = n0 + 1, n do
-        local child = update_queue[i]
+        local child = update_queue[i] -- todo: error: index boolean
         if not child.effect then continue end
 
         if evaluate_node(child) then
@@ -213,6 +225,7 @@ return table.freeze {
     close_scope = close_scope,
     evaluate_node = evaluate_node,
     get_scope = get_scope,
+    get_owning_scope = get_owning_scope,
     add_cleanup = add_cleanup,
     set_owner = set_owner,
     destroy = destroy,

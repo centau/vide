@@ -1,12 +1,11 @@
 if not game then script = require "test/relative-string" end
 
-local throw = require(script.Parent.throw)
 local trace = require(script.Parent.trace)
 local flags = require(script.Parent.flags)
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
 local create_node = graph.create_node
-local get_scope = graph.get_scope
+local get_owning_scope = graph.get_owning_scope
 local evaluate_node = graph.evaluate_node
 local set_owner = graph.set_owner
 
@@ -33,10 +32,7 @@ function create_binding<T>(updater: (T) -> T, binding: T)
     end
 
     
-    local owner = get_scope()
-    if not owner then
-        throw("cannot bind property in non-reactive scope")
-    end; assert(owner)
+    local owner = get_owning_scope()
     
     local node = create_node(binding, updater)
 

@@ -7,8 +7,8 @@ local function step(): number
     local FPS = 60
     local DT = 1/FPS
 
-    repeat until os.clock() - program_time >= DT
-    program_time += DT
+    repeat until os.clock() - program_time >= DT*10
+    program_time += DT*10
     return DT
 end
 
@@ -40,7 +40,7 @@ local function main()
     local effect = vide.effect
 
     local value = source(MAX)
-    local sprung, data = (spring :: any)(value, 1, 19.16)
+    local sprung, data = (spring :: any)(value, 1, 19.6)
 
     effect(function()
         local v = sprung()
@@ -49,7 +49,9 @@ local function main()
         local offset = string.rep("\n", MAX - fv + OFFSET)
         local bar = testkit.color.gray(remainder_to_block(v - fv) .. "\n" .. string.rep(BLOCK .. "\n", fv))
         local num = "\n" .. v
-        print(reset .. offset .. bar .. num)
+        local test = "\n" .. (data.a or 0)
+        local test2 = "\n" .. (data.b or 0)
+        print(reset .. offset .. bar .. num .. test .. test2)
     end)
     
     local T = 1.5

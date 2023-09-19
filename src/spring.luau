@@ -224,7 +224,7 @@ local function step_springs(dt: number)
         local ff_123 = u_123*-c
         local ff_456 = u_456*-c
 
-
+        data.a, data.b = fs_123.X, ff_123.X
         --assert(math.abs(fs_123.X) >= (math.abs(ff_123.X)), "damping exceeds restoring")
 
         -- calculate acceleration step

@@ -127,7 +127,7 @@ local function destroy<T>(node: Node<T>)
     while node[1] do destroy(node[1]) end
 end
 
-local update_queue = {} :: { Node<any> }
+local update_queue = { n = 0 } :: { n: number, [number]: Node<any> }
 
 local function evaluate_node<T>(node: Node<T>)
     local cur_value = node.cache
@@ -152,6 +152,7 @@ local function evaluate_node<T>(node: Node<T>)
 
     if not ok then
         table.clear(update_queue)
+        update_queue.n = 0
         throw(`side-effect error from source update\n{new_value}`)
     end
 
@@ -160,7 +161,6 @@ local function evaluate_node<T>(node: Node<T>)
     return cur_value ~= new_value -- node has changed value
 end
 
--- todo: case where owner is set from an untrack call within an effectful node, children clearing
 local function update_from<T>(node: StartNode<T>, n0: number)
     if not node[1] then return end
 
@@ -168,20 +168,32 @@ local function update_from<T>(node: StartNode<T>, n0: number)
 
     -- unparent all children and queue for eval
     do
-        local child = node[1]
-        while child do -- todo: case where child in owner context
+        local i = 1
+        local child = node[i]
+        while child do
             unparent(child)
 
             n += 1
             update_queue[n] = child
 
-            child = node[1]
+            local next_child = node[i]
+
+            -- children who have this parent as an owner will not be unparented
+            -- if such a child is encountered then skip it
+            if next_child == child then
+                i += 1
+                next_child = node[i]
+            end
+
+            child = next_child
         end
     end
 
+    update_queue.n = n
+
     -- evaluate all queued children
     for i = n0 + 1, n do
-        local child = update_queue[i] -- todo: error: index boolean
+        local child = update_queue[i]
         if not child.effect then continue end
 
         if evaluate_node(child) then
@@ -190,10 +202,12 @@ local function update_from<T>(node: StartNode<T>, n0: number)
 
         update_queue[i] = false :: any -- false instead of nil to avoid sparse
     end
+
+    update_queue.n = n0
 end
 
 local function update<T>(node: StartNode<T>)
-    update_from(node, 0)
+    update_from(node, update_queue.n)
 end
 
 local function track<T>(node: StartNode<T>)

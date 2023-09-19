@@ -253,6 +253,47 @@ TEST("graph", function()
         gc()
         CHECK(not wref[1])
     end
+
+    do CASE "recursive update"
+        --[[
+
+        A -> B + C
+        D -> E + F
+
+        B updates D
+
+        depth=1
+        B, C
+        ^
+
+        depth=2
+        E, F
+        ^
+
+        depth=2
+        _, F
+           ^
+
+        depth=1
+        _, _   <- attempt to update nothing
+           ^        
+
+        ]]
+
+        local a, b, c, d, e, f = node(), node(), node(), node(), node(), node()
+
+        function b.effect(x)
+            update(d)
+            return not x
+        end
+
+        add_child(a, b); add_child(a, c)
+        add_child(d, e); add_child(d, f)
+
+        update(a)
+
+        CHECK(true)
+    end
 end)
 
 TEST("mount()", function()
@@ -375,6 +416,7 @@ TEST("derive()", wrap_root(function()
     local derive = vide.derive
     local effect = vide.effect
     local cleanup = vide.cleanup
+    local untrack = vide.untrack
 
     do CASE "derive new value on source change"
         local a = source(1)
@@ -478,6 +520,39 @@ TEST("derive()", wrap_root(function()
         CHECK(count == 1)
         destroy()
         CHECK(count == 2)
+    end
+
+    do CASE "child with parent as owner not lost"
+        local num = source(0)
+
+        local cleaned = {}
+
+        local destroy = vide.mount(function()
+            local owner = derive(function()
+                local i = num()
+
+                return untrack(function()
+                    return derive(function()
+                        cleanup(function()
+                            cleaned[i] = true
+                        end)
+                        return i
+                    end)
+                end)
+            end)
+
+            local child1 = owner()
+            num(1)
+            local child2 = owner()
+
+            CHECK(child1() == 0)
+            CHECK(child2() == 1)
+        end)
+
+        destroy()
+        
+        CHECK(cleaned[0])
+        CHECK(cleaned[1])
     end
 
     do CASE "garbage collection"

@@ -1031,6 +1031,7 @@ end))
 TEST("indexes()", wrap_root(function()
     local create = vide.create
     local source = vide.source
+    local effect = vide.effect
     local indexes = vide.indexes
     local cleanup = vide.cleanup
 
@@ -1165,6 +1166,42 @@ TEST("indexes()", wrap_root(function()
         local n1 = scopes.n
 
         CHECK(n0 == n1)
+    end
+
+    -- practical example based on the graph - recursive update test
+    do CASE "recursive update"
+        local items = source { 1 }
+
+        local updated = table.create(100, 0)
+
+        local elements = indexes(items, function(item)
+            effect(function()
+                item()
+                updated[1] += 1    
+            end)
+
+            effect(function()
+                item()
+                updated[2] += 1    
+            end)
+        end)
+
+        effect(function()
+            items()
+            updated[3] += 1
+        end)
+
+        effect(function()
+            items()
+            updated[4] += 1
+        end)
+
+        items { 2 }
+
+        CHECK(updated[1] == 2)
+        CHECK(updated[2] == 2)
+        CHECK(updated[3] == 2)
+        CHECK(updated[4] == 2)
     end
 end))
 

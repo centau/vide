@@ -200,7 +200,7 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
     return function()
         track(output)
         return output.cache
-    end
+    end, data
 end
 
 local function step_springs(dt: number)
@@ -223,6 +223,9 @@ local function step_springs(dt: number)
         -- calculate friction force
         local ff_123 = u_123*-c
         local ff_456 = u_456*-c
+
+
+        --assert(math.abs(fs_123.X) >= (math.abs(ff_123.X)), "damping exceeds restoring")
 
         -- calculate acceleration step
         local dv_123 = (fs_123 + ff_123)*dt

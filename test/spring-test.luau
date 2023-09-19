@@ -40,7 +40,7 @@ local function main()
     local effect = vide.effect
 
     local value = source(MAX)
-    local sprung = spring(value, 1, 0.3)
+    local sprung, data = (spring :: any)(value, 1, 19.16)
 
     effect(function()
         local v = sprung()
@@ -48,14 +48,15 @@ local function main()
         local reset = "\27[H\27[2J" -- ANSI clear terminal
         local offset = string.rep("\n", MAX - fv + OFFSET)
         local bar = testkit.color.gray(remainder_to_block(v - fv) .. "\n" .. string.rep(BLOCK .. "\n", fv))
-        print(reset .. offset .. bar)
+        local num = "\n" .. v
+        print(reset .. offset .. bar .. num)
     end)
-
-    local elapsed = 0
+    
+    local T = 1.5
+    local elapsed = T/2
     repeat local dt = step()
         vide.step(dt)
 
-        local T = 3
         elapsed += dt
         while elapsed >= T do
             elapsed -= T

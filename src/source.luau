@@ -9,6 +9,10 @@ local update = graph.update
 export type Source<T> = (() -> T) & ((T) -> T)
 
 local function source<T>(initial_value: T): Source<T>
+    if type(initial_value) == "function" then
+        return initial_value
+    end
+
     local node = create_start_node(initial_value)
 
     return function(...): T
@@ -28,4 +32,4 @@ local function source<T>(initial_value: T): Source<T>
     end
 end
 
-return source :: (<T>(initial_value: T) -> Source<T>) & (<T>() -> Source<T>)
+return source :: (<T>(source: Source<T>) -> Source<T>) & (<T>(initial_value: T) -> Source<T>) & (<T>() -> Source<T>)

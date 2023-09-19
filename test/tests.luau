@@ -1174,7 +1174,7 @@ TEST("indexes()", wrap_root(function()
 
         local updated = table.create(100, 0)
 
-        local elements = indexes(items, function(item)
+        indexes(items, function(item)
             effect(function()
                 item()
                 updated[1] += 1    
@@ -1184,6 +1184,8 @@ TEST("indexes()", wrap_root(function()
                 item()
                 updated[2] += 1    
             end)
+
+            return {}
         end)
 
         effect(function()

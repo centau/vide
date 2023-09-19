@@ -359,6 +359,12 @@ TEST("source()", wrap_root(function()
         CHECK(src() == 2)
     end
 
+    do CASE "echo if value is a source"
+        local a = source(1)
+        local b = source(a)
+        CHECK(a == b)
+    end
+
     do CASE "does not update if same value"
         local src = source(1)
 

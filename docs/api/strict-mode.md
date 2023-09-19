@@ -16,8 +16,7 @@ Currently, strict mode will:
 3. Throw an error if yields occur where they are not allowed.
 4. Checks for `indexes()` and `values()` returning primitive values.
 5. Checks for duplicate nested properties at same depth.
-6. Better error reporting and stack traces.
-7. Checks for multiple `cleanup()` calls in the same function scope.
+6. Better error reporting and stack traces + creation traces of property bindings.
 
 By rerunning sources and effects, any side-effects are made more apparent.
 This also helps ensure that cleanups are being handled correctly.

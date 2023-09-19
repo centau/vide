@@ -16,11 +16,7 @@ worrying about manually updating UI instances.
 Some of the main focuses behind Vide's design choices:
 
 - Concise syntax to reduce verbosity as much as possible.
-- Reducing the amount of imports needed for usage by leveraging Luau's syntax
-  and semantics.
 - Being completely typecheckable.
-- Flexibility  with integrating other libraries and allowing users to use their
-  own patterns.
 - Independence from instance lifetimes.
 - A powerful reactive system that can update specific properties as a result of
   state changes, updates are immediate with no diffing needed.
@@ -36,7 +32,6 @@ specific part of your app, and can be reused if needed. These functions are
 called *components*.
 
 ```lua
-
 local function App()
     return create "ScreenGui" {
         create "TextLabel" { Text = "hi" }

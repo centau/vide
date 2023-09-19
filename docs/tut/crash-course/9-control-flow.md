@@ -52,6 +52,10 @@ Above is an example of using a switch to create a login menu. Each time
 `loggedIn` toggles, the current button will be destroyed, and a new button
 created, which the text to represent the current action, to log in or log out.
 
+The callbacks given to control flow functions are ran in a new reactive-scope,
+so any cleanups registered will be ran when the input is changed and a new
+output is created.
+
 Another control flow function, `indexes()`, is used to create elements from an
 input table.
 

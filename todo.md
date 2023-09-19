@@ -12,3 +12,4 @@
 - optimize `indexes()` double-diffing
 - define behavior of deriving a source within a derived source
 - review destruction of node under a root that has a child in another root
+- check in strict mode for forgetting to call constructor `create(class)`

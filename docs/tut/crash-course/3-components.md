@@ -6,7 +6,6 @@ By using components you can make your application more modular and better
 organized.
 
 ```lua [Button.luau]
-local vide = require(vide)
 local create = vide.create
 
 local function Button(props: {
@@ -28,7 +27,6 @@ return Button
 ```
 
 ```lua [App.luau]
-local vide = require(vide)
 local mount = vide.mount
 local create = vide.create
 
@@ -56,11 +54,11 @@ being reused across files.
 A single parameter `props` is used to pass properties to the component.
 
 Components allow you to *encapsulate* behavior. You can only modify the
-component in ways that you allow in the component.
+component in ways that you allow in the component, through the `props` parameter.
 
-This also promotes code reusability. Anytime you want a new button all you do
-is call `Button {}` instead of creating and setting every property each time.
-When changing the button in future, any changes to the button file will be
-reflected anywhere the button is used throughout your app.
+To create a new button all you must do is call the `Button` function, passing in
+values through props. This saves having to create and set every property each
+time. Also, when updating the button component in future, any changes to the
+button file will be seen anywhere the button is used in your app.
 
 This can be extended to much more complicated UI.

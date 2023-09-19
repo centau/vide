@@ -9,7 +9,6 @@ Luau allows us to omit parentheses `()` when calling functions with string or
 table literals which Vide takes advantage of for brevity.
 
 ```lua
-local vide = require(vide)
 local mount = vide.mount
 local create = vide.create
 
@@ -56,3 +55,9 @@ create "Frame" {
     UDim2 = { 0.5, 0, 0.5, 0 }
 }
 ```
+
+When creating an instance with no properties, it is important to not forget to
+actually call the constructor: `create "Frame" {}` and not `create "Frame"`.
+To be clear, `create "Frame"` returns a *function* which is a constructor for
+that class, not an instance of that class. This would result in you attempting
+to parent a function instead of an instance which is not the correct behavior.

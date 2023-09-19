@@ -77,7 +77,8 @@ be parented.
 
 ```lua
 type Children = {
-    Children = Array<Instance>
+    -- allows us to also optionally pass a source that returns an array of children instead
+    Children = Array<Instance> | () -> Array<Instance>
 }
 
 local function List(props: Children & Layout)
@@ -107,8 +108,8 @@ properties, this can be used to create overridable default properties.
 local function List(props: Children & Layout)
     return create "Frame" {
         props.Children,
-
         props.Layout,
+
         -- can be overriden by `props.Layout`
         AnchorPoint = Vector2.new(0.5, 0),
         Position = UDim2.fromScale(0.5, 0),

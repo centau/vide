@@ -59,6 +59,9 @@ local vide = {
     -- util
     cleanup = cleanup,
     untrack = untrack,
+    read = function<T>(value: T | () -> T): T
+        return if type(value) == "function" then value() else value
+    end,
 
     -- animations
     spring = spring,

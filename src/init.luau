@@ -91,28 +91,22 @@ local vide = {
     end
 }
 
-do
-    local set = false
-
-    setmetatable(vide :: any, {
-        __index = function(_, index: unknown): ()
-            if index == "strict" then
-                return flags.strict
-            else
-                throw(`{tostring(index)} is not a valid member of vide`)
-            end
-        end,
-
-        __newindex = function(_, index: unknown, value: unknown)
-            if index == "strict" then
-                if set then throw "strict mode has already been set" end
-                set = true
-                flags.strict = value :: boolean
-            else
-                throw(`{tostring(index)} is not a valid member of vide`)
-            end
+setmetatable(vide :: any, {
+    __index = function(_, index: unknown): ()
+        if index == "strict" then
+            return flags.strict
+        else
+            throw(`{tostring(index)} is not a valid member of vide`)
         end
-    })
-end
+    end,
+
+    __newindex = function(_, index: unknown, value: unknown)
+        if index == "strict" then
+            flags.strict = value :: boolean
+        else
+            throw(`{tostring(index)} is not a valid member of vide`)
+        end
+    end
+})
 
 return vide

@@ -9,6 +9,8 @@ local values = vide.values
 local cleanup = vide.cleanup
 local create = vide.create
 
+assert(not vide.strict)
+
 local function TITLE(name: string)
     print()
     print(testkit.color.white(name))

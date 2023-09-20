@@ -31,6 +31,8 @@ end
 
 local NIL = nil :: any
 
+vide.strict = false
+
 TEST("graph", function()
     local create_node = graph.create_node
     local track = graph.track
@@ -1643,6 +1645,8 @@ TEST("changed()", wrap_root(function()
         CHECK(not wref[1])
     end
 end))
+
+vide.strict = true
 
 TEST("strict", wrap_root(function()
     vide.strict = true

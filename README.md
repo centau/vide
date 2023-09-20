@@ -1,10 +1,8 @@
 <br>
 
 <div align="center">
-    <img style="float: right;margin-top:50px" src="docs/public/logo.svg" width="110" />
+    <img style="margin-top:50px" src="docs/public/full_logo.svg" width="600" />
 </div>
-
-<br>
 
 ### ⚠️ This library is in early stages of development with breaking changes being made often.
 

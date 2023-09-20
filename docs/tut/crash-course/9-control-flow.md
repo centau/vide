@@ -97,52 +97,61 @@ local function JoinMenu()
 end
 ```
 
-Above is an example of using a switch to create a join menu. Each time
-`joined` toggles, the current button will be destroyed, and a new button
-created, which the text to represent the current action, to join or leave.
+This example is equivalent to the previous one.
 
-The callbacks given to control flow functions are ran in a new reactive-scope,
-so any cleanups registered will be ran when the input is changed and a new
-output is created.
+The switch can map any value to any component.
 
-Another control flow function, `indexes()`, is used to create elements from an
-input table.
+```lua
+type ActiveMenu = "none" | "inventory" | "shop" | "settings"
+
+local menu = source "none"
+
+switch(menu) {
+    inventory = InventoryMenu,
+    shop = ShopMenu.
+    settings = SettingsMenu
+}
+```
+
+## indexes()
 
 Often, you will have a table of values that will be displayed in a similar
 manner. Rather than manually looping over each value to generate a corresponding
-UI element, `indexes()` can autmatically run a transform function for each
-index and value, generating a UI element.
+UI element, `indexes()` allows you to create an instance for each table index,
+to display the value at that index.
 
 ```lua
 local todoList = {
-    "Finish the crash course",
-    "Star vide's GitHub"
+    "finish the crash course",
+    "star vide's GitHub"
 }
 
-local elements = indexes(todoList, function(todo, i)
-    return create "TextLabel" {
-        Text = function()
-            return i .. ": " .. todo()
-        end,
+local function TodoList(props: { list: () -> Array<string> })
+    return create "Frame" {
+        create "UIListLayout" {},
 
-        LayoutOrder = i
-    }
-end)
+        indexes(todoList, function(todo, i)
+            return create "TextLabel" {
+                Text = function()
+                    return i .. ": " .. todo()
+                end,
 
-mount(function()
-    return create "ScreenGui" {
-        create "UIListLayout" {}, elements
+                LayoutOrder = i
+            }
+        end)
     }
-end, game.StarterGui)
+end
+
+TodoList { list = todoList }
 ```
 
 For each unique index in the passed table, the transform function will be called
 with 1. a source containing the value of the index, 2. the index itself.
 
 When the value at an index is changed, the function is not reran. Instead, the
-given source is updated instead.
-
-`indexes()` is said to map each *index* in a table to a UI element, each index
-has a single corresponding element.
+given source for that index is updated.
 
 An element is only destroyed if the value of an index is set to `nil`.
+
+Together, these control flow functions cover the majority of cases where you
+need to dynamically create and destroy parts of your UI.

@@ -118,6 +118,10 @@ end
 
 -- applies table of nested properties to an instance using full vide semantics
 local function apply<T>(instance: T & Instance, properties: { [unknown]: unknown }): T
+    if not properties then
+        throw("no properties given, did you forget to call the constructor returned by create()?")
+    end
+
     -- queue parent assignment if any for last
     local parent: unknown = properties.Parent 
     if parent then properties.Parent = nil end

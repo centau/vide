@@ -16,7 +16,6 @@ export default defineConfig({
             { text: "Home", link: "/" },
             { text: "Tutorials", link: "/tut/crash-course/1-introduction" },
             { text: "API", link: "/api/reactivity-core"},
-            { text: "GitHub", link: "https://github.com/centau/vide" }
         ],
 
         sidebar: {
@@ -59,10 +58,10 @@ export default defineConfig({
                     ]
                 }
             ],
-        }
+        },
 
-        // socialLinks: [
-        //     { icon: "github", link: "https://github.com/centau/vide" }
-        // ]
+        socialLinks: [
+            { icon: "github", link: "https://github.com/centau/vide" }
+        ]
     }
 })

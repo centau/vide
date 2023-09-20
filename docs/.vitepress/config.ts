@@ -53,17 +53,9 @@ export default defineConfig({
                     ]
                 },
                 {
-                    text: "Control Flow WIP",
+                    text: "Advanced Reactivity",
                     items: [
-                        { text: "switch", link: "/tut/control-flow/switch.md" },
-                        { text: "indexes", link: "/tut/control-flow/indexes.md" },
-                        { text: "values", link: "/tut/control-flow/values.md" },
-                    ]
-                },
-                {
-                    text: "Advanced Reactivity WIP",
-                    items: [
-                        { text: "reactive-scopes", link: "/tut/reactive-scoping.md"}
+                        { text: "Reactive Scopes", link: "/tut/advanced/reactive-scoping.md"}
                     ]
                 }
             ],

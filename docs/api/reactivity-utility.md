@@ -24,20 +24,6 @@ Runs a callback anytime a reactive scope is re-ran.
     end)
     ```
 
-    ```lua
-    local data = source(1)
-
-    derive(function()
-        local label = create "TextLabel" { Text = data() }
-
-        cleanup(function()
-            label:Destroy()
-        end)
-
-        return label
-    end)
-    ```
-
 ## untrack()
 
 Runs a given function where any sources read will not track its reactive scope.
@@ -68,6 +54,16 @@ Runs a given function where any sources read will not track its reactive scope.
     print(sum()) -- 0
     a(1)
     print(sum()) -- 2
+    ```
+
+## read()
+
+Utility used to read a value that is either a primitive or a source.
+
+- **Type**
+
+    ```lua
+    function read<T>(value: T | () -> T): T
     ```
 
 --------------------------------------------------------------------------------

@@ -2,9 +2,33 @@
 
 <br/>
 
+## show()
+
+Shows one of two components depending on an input source.
+
+- **Type**
+
+    ```lua
+    function show<T>(source: () -> unknown, component: () -> T): () -> T?
+    function show<T, U>(source: () -> unknown, component: () -> T, fallback: () -> U): () -> T | U
+    ```
+
+- **Details**
+
+    Returns a source holding an instance of the currently shown component.
+
+    When the input source changes from a falsey to a truthy value, the
+    component will be reran under a new reactive scope. If it changes from a
+    truthy to falsey value, the reactive scope the component was created in will
+    be destroyed, and the returned source will output `nil`, or a fallback
+    component if given.
+
+    The fallback component is also ran under a new reactive scope, and destroyed
+    when the input source switches back to truthy.
+
 ## switch()
 
-Changes object based on a source and a mapping table.
+Shows one of a set of components depending on an input source and a mapping table.
 
 - **Type**
 
@@ -14,12 +38,14 @@ Changes object based on a source and a mapping table.
 
 - **Details**
 
-    The mapped function is ran in a new reactive scope that is destroyed when
-    the source changes and maps to a different function.
+    Returns a source holding an instance of the currently shown component.
 
-    ::: warning
-    Mapped functions cannot yield.
-    :::
+    When the input source changes, the new value will be used to lookup a given
+    mapping table to get a component, which will be ran under a new reactive
+    scope. If the input source changes, the reactive scope the component was
+    created in will be destroyed, and a new component created under a new
+    reactive scope. If no component is found for an input value, the switch will
+    output `nil`.
 
 - **Example**
 
@@ -51,23 +77,25 @@ Maps each index in a table source to an object.
 
 - **Details**
 
+    Returns a source holding an array of instances currently shown.
+
+    When the input source changes, each *index* in the new table is compared with
+    the last input table.
+
+    - For any new index, the `transform` function is ran under a new reactive
+      scope to produce a new instance.
+    - For any removed index, the reactive scope for that index is destroyed.
+    - Unchanged indexes are untouched.
+
     The transform function is called only ever *once* for each index in the
-    source table. The first argument is a source containing the index's value
-    and the second argument is just the index.
+    source table.
 
-    Anytime a new index is added, the transform function will be called again
-    for that new index.
+    1. First argument is a *source containing the index's value*.
+    2. Second argument is the *index itself*.
 
-    Anytime an existing index value changes, the transform function is not rerun,
-    instead the source value for that index will update, causing anything
+    Anytime an existing index's value changes, the transform function is not
+    rerun, instead the source value for that index will update, causing anything
     depending on it to update too.
-
-    Returns a state containing an array of all objects returned by the
-    transform.
-
-    ::: warning
-    `transform()` cannot yield.
-    :::
 
 - **Example**
 
@@ -85,14 +113,12 @@ Maps each index in a table source to an object.
     local displays = indexes(items, function(item, i)
         return ItemDisplay {
             Name = function()
-                return item().name
+                return i .. ": " .. item().name
             end,
 
             Image = function()
                 return "rbxassetid://" .. item().icon
             end,
-
-            LayoutOrder = i
         }
     end)
     ```
@@ -111,28 +137,31 @@ Maps each value in a table source to an object.
 
 - **Details**
 
-    The transform function is called only ever *once* for each value in the
-    source table. The first argument is the index's value and
-    the second argument is a source containing the index.
+    Returns a source holding an array of instances currently shown.
 
-    Anytime a new value is added, the transform function will be called again
-    for that new value.
+    When the input source changes, each *value* in the new table is compared with
+    the last input table. Similar to `indexes()` but for values instead of indexes.
+
+    - For any new value, the `transform` function is ran under a new reactive
+      scope to produce a new instance.
+    - For any removed value, the reactive scope for that value is destroyed.
+    - Unchanged values are untouched.
+
+    The transform function is only ever called *once* for each value in the
+    source table.
+
+    1. First argument is the *value itself*.
+    2. Second argument is a *source containing the value's index*.
 
     Anytime an existing value's index changes, the transform function is not
     rerun, instead the source index for that value will update, causing anything
     depending on it to update too.
 
-    Returns a state containing an array of all objects returned by the
-    transform.
-
     ::: warning
-    `transform()` cannot yield.
-    :::
-
-    ::: warning
-    Having primitive values in the source table can cause unexpected behavior,
-    as duplicate primitives can result in multiple index sources being bound
-    to the same UI element.
+    Having primitive values in the input source table can cause unexpected
+    behavior, as duplicate values can result in multiple tranforms being ran for
+    a single value, meaning there can be multiple source indexes bound to the
+    same UI element. Strict mode has checks for this.
     :::
 
 - **Example**
@@ -150,11 +179,11 @@ Maps each value in a table source to an object.
 
     local displays = values(items, function(item, i)
         return ItemDisplay {
-            Name = item.Name
+            Name = function()
+                return i() .. ": " .. item.Name
+            end
 
             Image = "rbxassetid://" .. item.icon,
-
-            LayoutOrder = i
         }
     end)
     ```
@@ -181,6 +210,9 @@ Maps each value in a table source to an object.
 
     In most cases, both functions will appear to have the same behavior.
     The main difference is performance, picking the right function to use can
-    result in less property updates and less re-renders.
+    result in less property updates and less re-renders. One case to note is
+    that `values()` works nicely when animating re-ordering of instances, since
+    the value is not destroyed when indexes are changed, and the source index
+    can easily be put through a spring.
 
 --------------------------------------------------------------------------------

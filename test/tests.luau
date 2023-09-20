@@ -920,6 +920,22 @@ TEST("create()", wrap_root(function()
     end
 end))
 
+TEST("show()", wrap_root(function()
+    -- uses switch() internally, more extensive testing of scoping not needed
+    local source = vide.source
+    local show = vide.show
+
+    local value = source("truey" :: unknown)
+    local function one() return 1 end
+    local function two() return 2 end
+
+    local output = show(value, one, two)
+
+    CHECK(output() == 1)
+    value(nil)
+    CHECK(output() == 2)
+end))
+
 TEST("switch()", wrap_root(function()
     local source = vide.source
     local switch = vide.switch
@@ -1643,6 +1659,34 @@ TEST("changed()", wrap_root(function()
         text = NIL
         gc()
         CHECK(not wref[1])
+    end
+end))
+
+TEST("read()", wrap_root(function()
+    local source = vide.source
+    local effect = vide.effect
+    local read = vide.read :: any -- todo
+
+    do CASE "read primitive"
+        CHECK(read(1) == 1)
+    end
+
+    do CASE "read source"
+        local src = source(1) :: () -> number
+        CHECK(read(src) == 1)
+    end
+
+    do CASE "track source"
+        local src = source(0)
+
+        local count = 0
+        effect(function()
+            read(src)
+            count += 1
+        end)
+
+        src(1)
+        CHECK(count == 2)
     end
 end))
 

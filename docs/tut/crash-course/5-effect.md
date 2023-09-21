@@ -1,7 +1,7 @@
 # Effect
 
 Effects are functions that are ran in response to source updates. They are
-alled effects because they cause *side-effects* when reacting to source updates.
+called effects because they cause *side-effects* when reacting to source updates.
 
 Effects are created using `effect()`.
 

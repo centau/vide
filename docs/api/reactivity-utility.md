@@ -2,7 +2,7 @@
 
 ## cleanup()
 
-Runs a callback anytime a reactive scope is re-ran.
+Runs a callback anytime a reactive scope is reran or destroyed.
 
 - **Type**
 
@@ -26,7 +26,8 @@ Runs a callback anytime a reactive scope is re-ran.
 
 ## untrack()
 
-Runs a given function where any sources read will not track its reactive scope.
+Runs a given function where any sources read will not be tracked by a reactive
+scope.
 
 - **Type**
 
@@ -58,7 +59,8 @@ Runs a given function where any sources read will not track its reactive scope.
 
 ## read()
 
-Utility used to read a value that is either a primitive or a source.
+Utility used to read a value that is either a primitive or a source. Sources
+read can still be tracked inside a reactive-scope.
 
 - **Type**
 

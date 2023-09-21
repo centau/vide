@@ -1,4 +1,4 @@
-# Effect
+# Effects
 
 Effects are functions that are ran in response to source updates. They are
 called effects because they cause *side-effects* when reacting to source updates.
@@ -20,9 +20,9 @@ count(1)
 -- "count: 1" printed
 ```
 
-The callback given to `effect()` is ran in a *reactive-scope*. Any source read
+The callback given to `effect()` is ran in a *reactive scope*. Any source read
 from inside a reactive scope will be tracked, so that if any of those sources
-update, the effect will be re-ran too.
+update, the effect will be reran too.
 
 The callback is first ran immediately inside the `effect()` call to initially
 figure out what sources are being used.
@@ -56,8 +56,25 @@ All observable changes to the user are considered to be side-effects of pure
 computations.
 
 Sources, derived sources, and effects form what is called a *reactive graph*.
-In the above example a graph `count -> doubled -> effect` is formed. Anywhere
+In the above example, the following graph is formed. Anywhere
 an update occures, everything further down the graph is updated.
+
+```mermaid
+%%{init: {
+    "theme": "base",
+    "themeVariables": {
+        "primaryColor": "#1B1B1F",
+        "primaryTextColor": "#fff",
+        "primaryBorderColor": "#1B1B1F",
+        "lineColor": "#79B8FF",
+        "tertiaryColor": "#161618",
+        "tertiaryBorderColor": "#161618"
+    }
+}}%%
+
+flowchart LR
+    count --> doubled --> effect
+```
 
 You should not update other sources using an effect. Improper usage can lead to
 a cyclic loop in the graph, causing an infinite loop when it tries to update.

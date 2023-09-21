@@ -1,7 +1,8 @@
-import { defineConfig } from "vitepress"
+//import { defineConfig } from "vitepress"
+import { withMermaid } from "vitepress-plugin-mermaid";
 
 // https://vitepress.dev/reference/site-config
-export default defineConfig({
+export default withMermaid({
     title: "Vide",
     titleTemplate: ":title - A reactive UI library for Luau",
     description: "A reactive UI library for Luau.",

@@ -4,7 +4,8 @@
 
 ## mount()
 
-Runs a function and applies its result to a target instance.
+Runs a function in a new reactive scope and optionally applies its result to a
+target instance.
 
 - **Type**
   
@@ -14,7 +15,7 @@ Runs a function and applies its result to a target instance.
 
 - **Details**
 
-    The result of the function is applies to the target in the same way
+    The result of the function is applied to a target in the same way
     properties are using `create()`.
 
     The function is ran in a new reactive scope, just like
@@ -60,19 +61,16 @@ Creates a new UI element, applying any given properties.
 
 - **Property setting rules**
 
-    - If a table index is a string:
-      - If its value is a function then it will either bind that property to
-        the function or connect it if the property type is a `RBXScriptSignal`.
-      - If the value is not a function then the property will be set to that
-        value.
-    - If a table index is a number:
-      - If its value is an action then that action will be queued to run after
-        properties are set.
-      - If its value is a table then that table will be recursively
-        processed just like the outer table.
-      - If its value is a function then it will bind the instances children to
-        that function.
-      - If its value is an instance then it will be parented to the instance.
+    - **index is string:**
+      - **value is function:**
+        - **property is event:** connect function as callback
+        - **property is not event:** create effect to update property
+      - **value is not function:** set property to value
+    - **index is number:**
+      - **value is action:** run action
+      - **value is table:** recurse table
+      - **value is functon:** create effect to update children
+      - **value is instance:** set instance as child
 
 - **Example**
 
@@ -138,8 +136,13 @@ instances.
     ```lua
     local function changed(property: string, callback: (new) -> ())
         return action(function(instance)
-            instance:GetPropertyChangedSignal("property"):Connect(function()
+            local con - instance:GetPropertyChangedSignal(property):Connect(function()
                 callback(instance[property])
+            end)
+
+            -- disconnect on reactive scope destruction to allow gc of instance
+            cleanup(function()
+                con:Disconnect()
             end)
         end)
     end

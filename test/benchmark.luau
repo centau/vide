@@ -16,18 +16,19 @@ local function TITLE(name: string)
     print(testkit.color.white(name))
 end
 
-local N = 2^18 -- 262144
-
-local function WRAP_BENCH(name: string, fn: () -> ())
+local function ROOT_BENCH(name: string, fn: () -> ())
     vide.root(function(destroy)
         BENCH(name, fn)
         return destroy
     end)()
 end
 
+local N = 2^18 -- 262144
+
+
 TITLE "sources"
 
-WRAP_BENCH("create source", function()
+BENCH("create source", function()
     local cache = table.create(N)
 
     for i = 1, START(N) do
@@ -35,7 +36,7 @@ WRAP_BENCH("create source", function()
     end
 end)
 
-WRAP_BENCH("get value", function()
+BENCH("get value", function()
     local src = source(1)
 
     for i = 1, START(N) do
@@ -43,7 +44,7 @@ WRAP_BENCH("get value", function()
     end
 end)
 
-WRAP_BENCH("set value", function()
+BENCH("set value", function()
     local src = source(1)
 
     for i = 1, START(N) do
@@ -51,7 +52,7 @@ WRAP_BENCH("set value", function()
     end
 end)
 
-WRAP_BENCH("derive 1 source", function()
+ROOT_BENCH("derive 1 source", function()
     local cache = table.create(N)
     local src = source(1)
 
@@ -62,7 +63,7 @@ WRAP_BENCH("derive 1 source", function()
     end
 end)
 
-WRAP_BENCH("derive 4 sources", function()
+ROOT_BENCH("derive 4 sources", function()
     local cache = table.create(N)
     local src = vide.source(1)
     local src2 = vide.source(2)
@@ -78,7 +79,7 @@ end)
 
 TITLE "graphs"
 
-WRAP_BENCH("update 1->1 graph", function()
+ROOT_BENCH("update 1->1 graph", function()
     local src = source(1)
 
     local _derived = derive(function() return src() end)
@@ -88,7 +89,7 @@ WRAP_BENCH("update 1->1 graph", function()
     end
 end)
 
-WRAP_BENCH("update 1->1 graph with cleanup", function()
+ROOT_BENCH("update 1->1 graph with cleanup", function()
     local src = source(1)
 
     derive(function()
@@ -101,7 +102,7 @@ WRAP_BENCH("update 1->1 graph with cleanup", function()
     end
 end)
 
-WRAP_BENCH("update 1->1000 graph", function()
+ROOT_BENCH("update 1->1000 graph", function()
     local src = source(-1)
 
     for i = 1, 1000 do
@@ -115,7 +116,7 @@ WRAP_BENCH("update 1->1000 graph", function()
     end
 end)
 
-WRAP_BENCH("update 1->1->1->1...1000 graph", function()
+ROOT_BENCH("update 1->1->1->1...1000 graph", function()
     local src = source(-1)
 
     local last = src
@@ -132,7 +133,7 @@ WRAP_BENCH("update 1->1->1->1...1000 graph", function()
 end)
 
 -- todo: repeat with batching
-WRAP_BENCH("update 1000->1 graph", function()
+ROOT_BENCH("update 1000->1 graph", function()
     local srcs = {}
     for i = 1, 1000 do
         srcs[i] = source(0)
@@ -153,7 +154,7 @@ WRAP_BENCH("update 1000->1 graph", function()
 end)
 
 -- todo: optimize, repeat with batching
-WRAP_BENCH("update 1000x 1->1 common extern. graph", function()
+ROOT_BENCH("update 1000x 1->1 common extern. graph", function()
     local ext = source(-1)
 
     local srcs = {}
@@ -173,7 +174,7 @@ end)
 
 TITLE "property apply"
 
-WRAP_BENCH("apply 0 properties", function()
+ROOT_BENCH("apply 0 properties", function()
     local apply = require "src/apply"
     local instance = create("Frame") {}
 
@@ -182,7 +183,7 @@ WRAP_BENCH("apply 0 properties", function()
     end
 end)
 
-WRAP_BENCH("apply 8 properties", function()
+ROOT_BENCH("apply 8 properties", function()
     local apply = require "src/apply"
     local instance = create("Frame") {}
 
@@ -200,7 +201,7 @@ WRAP_BENCH("apply 8 properties", function()
     end
 end)
 
-WRAP_BENCH("bind property", function()
+ROOT_BENCH("bind property", function()
     local apply = require "src/apply"
 
     local instance = create("Frame") {}
@@ -215,7 +216,7 @@ WRAP_BENCH("bind property", function()
     return nil
 end)
 
-WRAP_BENCH("update binding", function()
+ROOT_BENCH("update binding", function()
     local apply = require "src/apply"
 
     local instance = create("Frame") {}
@@ -232,11 +233,29 @@ WRAP_BENCH("update binding", function()
     return nil
 end)
 
+TITLE "switch()"
+
+ROOT_BENCH("switch()", function()
+    local M = 2^8
+
+    local map = {}
+    for i = 1, M do
+        map[i] = function() return i end
+    end
+
+    local input = source(0)
+    vide.switch(input)(map)
+
+    for i = 1, START(N) do
+        input(bit32.band(i, M - 1) + 1) -- i % m + 1
+    end
+end)
+
 TITLE "indexes()"
 
 N /= 1024
 
-WRAP_BENCH("indexes() all new", function()
+ROOT_BENCH("indexes() all new", function()
     local data = {}
 
     for i = 1, N do
@@ -254,7 +273,7 @@ WRAP_BENCH("indexes() all new", function()
     return nil
 end)
 
-WRAP_BENCH("indexes() no change", function()
+ROOT_BENCH("indexes() no change", function()
     local data = {}
 
     for i = 1, N do
@@ -274,7 +293,7 @@ WRAP_BENCH("indexes() no change", function()
     return nil
 end)
 
-WRAP_BENCH("indexes() all change", function()
+ROOT_BENCH("indexes() all change", function()
     local data = {}
 
     for i = 1, N do
@@ -298,7 +317,7 @@ WRAP_BENCH("indexes() all change", function()
     src(data)
 end)
 
-WRAP_BENCH("indexes() all remove", function()
+ROOT_BENCH("indexes() all remove", function()
     local data = {}
 
     for i = 1, N do
@@ -322,7 +341,7 @@ end)
 
 TITLE "values()"
 
-WRAP_BENCH("values() all new", function()
+ROOT_BENCH("values() all new", function()
     local data = {}
 
     for i = 1, N do
@@ -340,7 +359,7 @@ WRAP_BENCH("values() all new", function()
     return nil
 end)
 
-WRAP_BENCH("values() no change", function()
+ROOT_BENCH("values() no change", function()
     local data = {}
 
     for i = 1, N do
@@ -360,7 +379,7 @@ WRAP_BENCH("values() no change", function()
     src(data)
 end)
 
-WRAP_BENCH("values() all change", function()
+ROOT_BENCH("values() all change", function()
     local data = {}
 
     for i = 1, N do
@@ -385,7 +404,7 @@ WRAP_BENCH("values() all change", function()
     src(data)
 end)
 
-WRAP_BENCH("values() all remove", function()
+ROOT_BENCH("values() all remove", function()
     local data = {}
 
     for i = 1, N do
@@ -409,7 +428,7 @@ N *= 1024
 
 TITLE "cleanup"
 
-WRAP_BENCH("register new cleanup", function()
+ROOT_BENCH("register new cleanup", function()
     local cleanup = cleanup
 
     local cleaner = function() end
@@ -433,7 +452,7 @@ TITLE "aggregate"
 do
     -- the purpose of the two following benchmarks is to measure the overhead of
     -- aggregate construction
-    WRAP_BENCH("set explicit mock vector2", function()
+    ROOT_BENCH("set explicit mock vector2", function()
         local apply = require "src/apply"
         local Vector2 = require "test/mock".Vector2
 
@@ -448,7 +467,7 @@ do
         end
     end)
 
-    WRAP_BENCH("set aggregate mock vector2", function()
+    ROOT_BENCH("set aggregate mock vector2", function()
         local apply = require "src/apply"
         local Vector2 = require "test/mock".Vector2
 
@@ -467,7 +486,7 @@ end
 -- innacurate due to no Vector3 in vanilla Luau
 -- mock vector is 200x slower than native vector 
 
--- WRAP_BENCH("spring update", function()
+-- ROOT_BENCH("spring update", function()
 --     local root, source, spring = vide.root, vide.source, vide.spring
 
 --     local src = source(0)
@@ -487,7 +506,7 @@ end
 
 -- N /= 1024
 
--- WRAP_BENCH("spring step", function()
+-- ROOT_BENCH("spring step", function()
 --     local root, source, spring = vide.root, vide.source, vide.spring
 
 --     local src = source(0)

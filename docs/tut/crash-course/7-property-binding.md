@@ -3,7 +3,8 @@
 Explicitly creating effects to update properties can become verbose when there
 are a lot of properties to update. Vide provides a way to *implicitly* create
 an effect to update properties on source update. This is also known as
-*property binding*, as a property is binded to reflect some data.
+*property binding*, since changes to a source will automatically update the
+property.
 
 ```lua
 local create = vide.create
@@ -29,7 +30,7 @@ Instead of explicitly creating an effect, assigning a (non-event) property
 a function will implicitly create a side-effect to update that property anytime
 a dependent source is updated.
 
-Just like effects, the function is ran immediately in a reactive-scope to set
+Just like effects, the function is ran immediately in a reactive scope to set
 the property initially and determine what sources are being depended on.
 
 This allows you as the programmer to not need to manually update UI as the state

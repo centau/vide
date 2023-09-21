@@ -60,7 +60,7 @@ scope.
 ## read()
 
 Utility used to read a value that is either a primitive or a source. Sources
-read can still be tracked inside a reactive-scope.
+read can still be tracked inside a reactive scope.
 
 - **Type**
 

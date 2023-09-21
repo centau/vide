@@ -1,4 +1,4 @@
-# Source
+# Sources
 
 *Sources* in Vide are special objects that store a single value. They are the
 core of reactivity in Vide. Each source represents a source of data, and they

@@ -1,4 +1,4 @@
-# Stateful Component
+# Stateful Components
 
 A stateful component is a component that stores and displays some data.
 

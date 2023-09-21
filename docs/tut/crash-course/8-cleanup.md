@@ -43,6 +43,6 @@ covered next.
 
 On a related note: the reason why `mount()` is used to create your app, is so
 that any top-level components that need to be cleaned up, can be cleaned up
-when the app is later unmounted, since `mount()` runs in a reactive-scope to
+when the app is later unmounted, since `mount()` runs in a reactive scope to
 track `cleanup()` calls. Vide's entire reactive system is independent from the
 life-time of instances; instances are just a side-effect of the reactive system.

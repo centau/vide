@@ -10,10 +10,14 @@ export type StartNode<T> = {
 
 export type Node<T> =  {
     cache: T,
-    effect:  ((T) -> T) | "owner" | "untracked",
+    effect:  ((T) -> T) | false,
     cleanups: { () -> () } | false,
-    parents: { owner: StartNode<T>?, [number]: StartNode<T> },
-    [number]: Node<T>
+
+    owned: { Node<T> } | false,
+    owner: Node<T> | false,
+
+    parents: { StartNode<T> },
+    [number]: Node<T> -- children
 }
 
 -- reactive scope stack
@@ -50,7 +54,7 @@ local function get_owning_scope(): Node<unknown>
     if not scope then
         local caller_name = debug.info(2, "n")
         return throw(`cannot use {caller_name}() in non-reactive scope, must be used within a root() or mount() callback`)
-    elseif scope.effect ~= "owner" then
+    elseif scope.effect then
         throw("reactive scope is not an owning scope; new effects cannot be created in side-effects")
     end
     return scope
@@ -62,8 +66,12 @@ local function add_child<T>(parent: StartNode<any>, child: Node<any>)
 end
 
 local function set_owner(node: Node<any>, owner: Node<any>)
-    node.parents.owner = owner
-    table.insert(owner, node)
+    node.owner = owner
+    if owner.owned then
+        table.insert(owner.owned, node)
+    else
+        owner.owned = { node }
+    end
 end
 
 local function open_scope<T>(node: Node<T>)
@@ -96,18 +104,29 @@ local function run_cleanups<T>(node: Node<T>)
     end
 end
 
+local function find_and_swap_pop<T>(t: { T }, v: T)
+    local idx = table.find(t, v)
+    assert(idx, "value not found")
+    local n = #t
+    t[idx] = t[n]
+    t[n] = nil
+end
+
 local function remove_child<T>(parent: StartNode<T>, child: Node<T>)
-    local idx = table.find(parent, child)
-    assert(idx, "child not found")
-    local n = #parent
-    parent[idx] = parent[n]
-    parent[n] = nil
+    find_and_swap_pop(parent, child)
+end
+
+local function remove_owner<T>(node: Node<T>)
+    local owner = node.owner :: Node<T>
+    if node.owner and owner.owned then
+        find_and_swap_pop(owner.owned, node)
+    end
 end
 
 local function unparent<T>(node: Node<T>)
     local parents = node.parents
 
-    for i, parent in ipairs(parents) do
+    for i, parent in next, parents do
         remove_child(parent, node)
         parents[i] = nil
     end
@@ -116,13 +135,19 @@ end
 local function destroy<T>(node: Node<T>)
     run_cleanups(node)
     unparent(node)
+    remove_owner(node)
 
-    if node.parents.owner then
-        remove_child(node.parents.owner, node)
-        node.parents.owner = nil
+    if node.owned then
+        local owned = node.owned
+        while owned[1] do destroy(owned[1]) end
     end
-
     while node[1] do destroy(node[1]) end
+end
+
+local function destroy_owned<T>(node: Node<T>)
+    if node.owned then
+        while node.owned[1] do destroy(node.owned[1]) end
+    end
 end
 
 local update_queue = { n = 0 } :: { n: number, [number]: Node<any> }
@@ -132,6 +157,8 @@ local function evaluate_node<T>(node: Node<T>)
 
     if flags.strict then
         run_cleanups(node)
+        destroy_owned(node)
+
         open_scope(node)
 
         local ok, err = check_for_yield(node.effect :: (T) -> T, cur_value)
@@ -141,7 +168,9 @@ local function evaluate_node<T>(node: Node<T>)
         if not ok then throw(err :: string) end
     end
 
-    run_cleanups(node) -- todo: move in scope?
+    run_cleanups(node)
+    destroy_owned(node)
+
     open_scope(node)
 
     local ok, new_value = pcall(node.effect :: (T) -> T, cur_value)
@@ -204,11 +233,15 @@ local function track<T>(node: StartNode<T>)
     end
 end
 
-local function create_node<T>(value: T, effect: "owner" | (T) -> T): Node<T>
+local function create_node<T>(value: T, effect: false | (T) -> T): Node<T>
     return {
         cache = value,
         effect = effect,
         cleanups = false,
+
+        owner = false,
+        owned = false,
+
         parents = {},
     }
 end

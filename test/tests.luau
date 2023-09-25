@@ -51,7 +51,7 @@ TEST("graph", function()
     end
 
     local function scope()
-        return create_node(false, "owner")
+        return create_node(false, false)
     end
 
     local function cleanup(fn: () -> ())
@@ -257,10 +257,10 @@ TEST("graph", function()
     
         do
             local c = get_children(root)
-            CHECK(#c == 3)
-            CHECK(table.find(c, items_updated))
-            CHECK(table.find(c, scope1 :: Node<any>))
-            CHECK(table.find(c, scope2 :: Node<any>))
+            CHECK(#c == 0)
+            -- CHECK(table.find(c, items_updated))
+            -- CHECK(table.find(c, scope1 :: Node<any>))
+            -- CHECK(table.find(c, scope2 :: Node<any>))
         end
 
         do
@@ -272,19 +272,19 @@ TEST("graph", function()
 
         do
             local c = get_children(scope1)
-            CHECK(#c == 1)
-            CHECK(table.find(c, bind1))
+            CHECK(#c == 0)
+            --CHECK(table.find(c, bind1))
         end
 
         do
             local c = get_children(scope2)
-            CHECK(#c == 1)
-            CHECK(table.find(c, bind2))
+            CHECK(#c == 0)
+            --CHECK(table.find(c, bind2))
         end
 
         -- destroy
 
-        CHECK(table.find(get_children(root), scope1 :: Node<any>))
+        --CHECK(table.find(get_children(root), scope1 :: Node<any>))
 
         destroy(scope1)
         CHECK(cleaned.scope1)
@@ -293,7 +293,7 @@ TEST("graph", function()
         bind1 = NIL
         bind2 = NIL
         gc()
-        CHECK(#get_children(root) == 2)
+        CHECK(#get_children(root) == 0)
         CHECK(#get_children(selected) == 1)
     end
 
@@ -1519,7 +1519,10 @@ end))
 TEST("untrack()", wrap_root(function()
     local source = vide.source
     local effect = vide.effect
+    local derive = vide.derive
     local untrack = vide.untrack
+    local cleanup = vide.cleanup
+    local root = vide.root
 
     do CASE "does not register dependency"
         local a = source(0)
@@ -1567,69 +1570,56 @@ TEST("untrack()", wrap_root(function()
         CHECK(count == 2)
     end
 
-    -- do CASE "outer scope"
-    --     local outer_count = 0
-    --     local inner_count = 0
-    --     local cleaned_count = 0
+    do CASE "outer scope"
+        local outer_count = 0
+        local inner_count = 0
+        local cleaned_count = 0
 
-    --     local input = source(0)
+        local input = source(0)
 
-    --     local output, destroy = root(function(destroy)
-    --         local output = derive(function()
-    --             outer_count += 1
+        local output, destroy = root(function(destroy)
+            local output = derive(function()
+                outer_count += 1
 
-    --             return untrack(function()
-    --                 return derive(function()
-    --                     inner_count += 1
+                return untrack(function()
+                    return derive(function()
+                        inner_count += 1
     
-    --                     cleanup(function()
-    --                         cleaned_count += 1
-    --                     end)
+                        cleanup(function()
+                            cleaned_count += 1
+                        end)
     
-    --                     return tostring(input())
-    --                 end)
-    --             end)
-    --         end)
-
-    --         return output, destroy
-    --     end)
-
-    --     CHECK(outer_count == 1)
-    --     CHECK(inner_count == 1)
-    --     CHECK(cleaned_count == 0)
-
-    --     local output2 = output()
-
-    --     CHECK(output2() == "0")
-
-    --     input(1)
-
-    --     CHECK(outer_count == 1)
-    --     CHECK(inner_count == 2)
-    --     CHECK(cleaned_count == 1)
-
-    --     local output3 = output()
-    --     CHECK(output2() == "1")
-    --     CHECK(output3() == "1")
-
-    --     CHECK(output2 == output3)
-
-    --     destroy()
-
-    --     CHECK(cleaned_count == 2)
-    -- end
-
-    do CASE "cannot create effect within untrack()"
-        local ok = pcall(function()
-            effect(function()
-                untrack(function()
-                    effect(function() end)
-                    return  nil
+                        return tostring(input())
+                    end)
                 end)
             end)
+
+            return output, destroy
         end)
 
-        CHECK(not ok)
+        CHECK(outer_count == 1)
+        CHECK(inner_count == 1)
+        CHECK(cleaned_count == 0)
+
+        local output2 = output()
+
+        CHECK(output2() == "0")
+
+        input(1)
+
+        CHECK(outer_count == 1)
+        CHECK(inner_count == 2)
+        CHECK(cleaned_count == 1)
+
+        local output3 = output()
+        CHECK(output2() == "1")
+        CHECK(output3() == "1")
+
+        CHECK(output2 == output3)
+
+        destroy()
+
+        CHECK(cleaned_count == 2)
     end
 end))
 
@@ -1765,48 +1755,6 @@ TEST("read()", wrap_root(function()
 end))
 
 TEST("nested effects cases", function()
-    -- local vide = require "src/init"
-    -- local source = vide.source
-    -- local effect = vide.effect
-    -- local untrack = vide.untrack
-    -- local cleanup = vide.cleanup
-    -- local root = vide.root
-
-    -- local ran = 0
-    -- local cleaned = 0
-
-    -- local function Count()
-    --     local count = source(0)
-
-    --     effect(function()
-    --         count()
-    --         ran += 1
-    --         cleanup(function() cleaned += 1 end)
-    --     end)
-
-    --     return nil
-    -- end
-
-    -- local function App(destroy)
-    --     local name = source "a"
-
-    --     effect(function()
-    --         name()
-    --         untrack(Count)
-    --     end)
-
-    --     CHECK(ran == 1)
-    --     CHECK(cleaned == 0)
-
-    --     name "b"
-
-    --     CHECK(ran == 2)
-    --     CHECK(cleaned == 1)
-    --     print(cleaned)
-    -- end
-
-    -- root(App)
-
     local vide = require "src/init"
     local source = vide.source
     local effect = vide.effect
@@ -1839,13 +1787,19 @@ TEST("nested effects cases", function()
 
         CHECK(ran == 1)
         CHECK(cleaned == 0)
+
+        name "b"
+
+        CHECK(ran == 2)
+        CHECK(cleaned == 1)
+
+        destroy()
+
+        CHECK(ran == 2)
+        CHECK(cleaned == 2)
     end
 
-    local ok = pcall(function()
-        root(App)
-    end)
-
-    CHECK(not ok)
+    root(App)
 end)
 
 vide.strict = true

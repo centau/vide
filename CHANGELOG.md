@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Changed
+
+- Reactive scopes created within reactive scopes are now destroyed on rerun.
+
 ---
 
 ## [0.1.0] - 2023-09-20

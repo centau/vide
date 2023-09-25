@@ -38,7 +38,7 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
                 throw("map must map a value to a function")
             end
 
-            local new_scope = create_node(false, "owner")
+            local new_scope = create_node(false, false)
             last_scope = new_scope :: Node<any>
             
             set_owner(new_scope, owner)

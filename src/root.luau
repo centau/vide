@@ -11,7 +11,7 @@ local destroy = graph.destroy
 local refs = {}
 
 local function root<T...>(fn: (destroy: () -> ()) -> T...): T...
-    local node = create_node(false, false)
+    local node = create_node(false, "owner")
 
     refs[node] = true -- prevent gc of root node
 

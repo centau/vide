@@ -13,7 +13,7 @@ local function untrack<T>(source: () -> T): T
 
     -- sources are only tracked if the node in scope has an effect
     local effect = scope.effect
-    scope.effect = false
+    scope.effect = "untracked"
 
     local ok, result = pcall(source)
 

@@ -30,7 +30,7 @@ end
 local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI, K) -> VO): () -> { VO }
     local owner = get_owning_scope()
 
-    local subowner = create_node(false, false)
+    local subowner = create_node(false, "owner")
     set_owner(subowner, owner)
 
     local input_cache = {} :: Map<K, VI>
@@ -67,7 +67,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
             if cv ~= v then
                 if cv == nil then -- create new scope and run transform
-                    local scope = create_node(false, false)
+                    local scope = create_node(false, "owner")
                     scopes[i] = scope :: Node<any>
 
                     local node = create_start_node(v)
@@ -112,6 +112,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
     local node = create_node(false :: any, function()
         return update_children(input())
     end)
+    set_owner(node, owner)
 
     evaluate_node(node)
 
@@ -124,7 +125,7 @@ end
 local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> K) -> VO): () -> { VO }
     local owner = get_owning_scope()
 
-    local subowner = create_node(false, false)
+    local subowner = create_node(false, "owner")
     set_owner(subowner, owner)
     
     local cur_input_cache_up = {} :: Map<VI, K>
@@ -155,7 +156,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
             local cv = cur_input_cache[v]
             
             if cv == nil then -- create new scope and run transform
-                local scope = create_node(false, false)
+                local scope = create_node(false, "owner")
                 scopes[v] = scope :: Node<any>
 
                 local node = create_start_node(i)
@@ -214,6 +215,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
     local node = create_node(false :: any, function()
         return update_children(input())
     end)
+    set_owner(node, owner)
 
     evaluate_node(node)
 

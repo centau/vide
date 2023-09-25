@@ -10,7 +10,7 @@ export type StartNode<T> = {
 
 export type Node<T> =  {
     cache: T,
-    effect:  ((T) -> T) | false,
+    effect:  ((T) -> T) | "owner" | "untracked",
     cleanups: { () -> () } | false,
     parents: { owner: StartNode<T>?, [number]: StartNode<T> },
     [number]: Node<T>
@@ -50,8 +50,8 @@ local function get_owning_scope(): Node<unknown>
     if not scope then
         local caller_name = debug.info(2, "n")
         return throw(`cannot use {caller_name}() in non-reactive scope, must be used within a root() or mount() callback`)
-    elseif scope.effect then
-        throw("owning scope is not stable; are you trying to derive a new source from within a side-effect?")
+    elseif scope.effect ~= "owner" then
+        throw("reactive scope is not an owning scope; new effects cannot be created in side-effects")
     end
     return scope
 end
@@ -117,8 +117,6 @@ local function destroy<T>(node: Node<T>)
     run_cleanups(node)
     unparent(node)
 
-    node.effect = false
-
     if node.parents.owner then
         remove_child(node.parents.owner, node)
         node.parents.owner = nil
@@ -168,24 +166,13 @@ local function update_from<T>(node: StartNode<T>, n0: number)
 
     -- unparent all children and queue for eval
     do
-        local i = 1
-        local child = node[i]
+        local child = node[1]
         while child do
+            --assert(child.parents.owner)
             unparent(child)
-
             n += 1
             update_queue[n] = child
-
-            local next_child = node[i]
-
-            -- children who have this parent as an owner will not be unparented
-            -- if such a child is encountered then skip it
-            if next_child == child then
-                i += 1
-                next_child = node[i]
-            end
-
-            child = next_child
+            child = node[1]
         end
     end
 
@@ -194,7 +181,7 @@ local function update_from<T>(node: StartNode<T>, n0: number)
     -- evaluate all queued children
     for i = n0 + 1, n do
         local child = update_queue[i]
-        if not child.effect then continue end
+        assert(type(child.effect) == "function")
 
         if evaluate_node(child) then
             update_from(child, n)
@@ -212,12 +199,12 @@ end
 
 local function track<T>(node: StartNode<T>)
     local scope = get_scope()
-    if scope and scope.effect then -- do not track nodes with no effect
+    if scope and type(scope.effect) == "function" then -- do not track nodes with no effect
         add_child(node, scope)
     end
 end
 
-local function create_node<T>(value: T, effect: false | (T) -> T): Node<T>
+local function create_node<T>(value: T, effect: "owner" | (T) -> T): Node<T>
     return {
         cache = value,
         effect = effect,

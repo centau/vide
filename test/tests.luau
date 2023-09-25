@@ -41,6 +41,7 @@ TEST("graph", function()
     local get_scope = graph.get_scope
     local open_scope = graph.open_scope
     local close_scope = graph.close_scope
+    local set_owner = graph.set_owner
     local get_children = graph.get_children
     local add_cleanup = graph.add_cleanup
     local destroy = graph.destroy
@@ -50,7 +51,7 @@ TEST("graph", function()
     end
 
     local function scope()
-        return create_node(false, false)
+        return create_node(false, "owner")
     end
 
     local function cleanup(fn: () -> ())
@@ -75,9 +76,13 @@ TEST("graph", function()
     end
 
     do CASE "rerun linked nodes"
+        local root = node()
         local a = node()
         local b = node()
         local c = node()
+
+        set_owner(b, root)
+        set_owner(c, root)
 
         local count = 0
 
@@ -104,7 +109,14 @@ TEST("graph", function()
     end
 
     do CASE "diamond graph"
+        -- a -> b -> d
+        --   -> c
+        local root = node()
         local a, b, c, d = node(), node(), node(), node()
+
+        set_owner(b, root)
+        set_owner(c, root)
+        set_owner(d, root)
 
         local b_cnt, c_cnt, d_cnt = 0, 0, 0
         function b.effect(x) b_cnt += 1; return not x end
@@ -122,8 +134,44 @@ TEST("graph", function()
         CHECK(d_cnt == 1)
     end
 
+    do CASE "diamond graph 2"
+        -- todo: include cached value from parent nodes to confirm update order
+        -- a -> b -> c -> e
+        --   -> d
+        local root = node()
+        local a, b, c, d, e = node(), node(), node(), node(), node()
+
+        set_owner(b, root)
+        set_owner(c, root)
+        set_owner(d, root)
+        set_owner(e, root)
+
+        local b_cnt, c_cnt, d_cnt, e_cnt = 0, 0, 0, 0
+        function b.effect(x) b_cnt += 1; return not x end
+        function c.effect(x) c_cnt += 1; return not x end
+        function d.effect(x) d_cnt += 1; return not x end
+        function e.effect(x) e_cnt += 1; return not x end
+
+        open_scope(b); track(a); close_scope()
+        open_scope(c); track(b); close_scope()
+        open_scope(d); track(a); close_scope()
+        open_scope(e); track(c); track(d); close_scope()
+
+        update(a)
+
+        CHECK(b_cnt == 1)
+        CHECK(c_cnt == 1)
+        CHECK(d_cnt == 1)
+        CHECK(e_cnt == 1)
+    end
+
     do CASE "duplicate child on rerun"
+        local root = node()
         local a, b, c = node(), node(), node()
+
+        set_owner(a, root)
+        set_owner(b, root)
+        set_owner(c, root)
 
         function c.effect(x)
             track(a)
@@ -131,7 +179,7 @@ TEST("graph", function()
             return not x
         end
 
-        open_scope(c); assert(c.effect)(NIL); close_scope()
+        open_scope(c); assert(type(c.effect) == "function" and c.effect)(NIL); close_scope()
 
         update(a)
 
@@ -168,28 +216,28 @@ TEST("graph", function()
             items_updated = node()
             track(items_updated) -- should not
 
-            add_child(root, items_updated)
+            set_owner(items_updated, root)
             do open_scope(items_updated)
                 track(items)
 
                 do open_scope(root)
-                    add_child(root, scope1)
+                    set_owner(scope1, root)
                     do open_scope(scope1)
                         clean "scope1"
                         bind1 = node()
 
-                        add_child(scope1, bind1)
+                        set_owner(bind1, scope1)
                         do open_scope(bind1)
                             clean "bind1"
                             track(selected)
                         close_scope() end
                     close_scope() end
 
-                    add_child(root, scope2)
+                    set_owner(scope2, root)
                     do open_scope(scope2)
                         clean "scope2"
                         bind2 = node()
-                        add_child(scope2, bind2)
+                        set_owner(bind2, scope2)
                         do open_scope(bind2)
                             clean "bind2"
                             track(selected)
@@ -283,6 +331,14 @@ TEST("graph", function()
         ]]
 
         local a, b, c, d, e, f = node(), node(), node(), node(), node(), node()
+
+        local root = node()
+        set_owner(a, root)
+        set_owner(b, root)
+        set_owner(c, root)
+        set_owner(d, root)
+        set_owner(e, root)
+        set_owner(f, root)
 
         function b.effect(x)
             update(d)
@@ -418,7 +474,6 @@ TEST("derive()", wrap_root(function()
     local derive = vide.derive
     local effect = vide.effect
     local cleanup = vide.cleanup
-    local untrack = vide.untrack
 
     do CASE "derive new value on source change"
         local a = source(1)
@@ -524,38 +579,43 @@ TEST("derive()", wrap_root(function()
         CHECK(count == 2)
     end
 
-    do CASE "child with parent as owner not lost"
-        local num = source(0)
+    -- do CASE "behavior of effect within an effect"
+    --     local num = source(1)
 
-        local cleaned = {}
+    --     local ran = table.create(100, 0)
+    --     local cleaned = table.create(100, 0)
 
-        local destroy = vide.mount(function()
-            local owner = derive(function()
-                local i = num()
+    --     local destroy = vide.mount(function()
+    --         local owner = derive(function()
+    --             local i = num()
 
-                return untrack(function()
-                    return derive(function()
-                        cleanup(function()
-                            cleaned[i] = true
-                        end)
-                        return i
-                    end)
-                end)
-            end)
+    --             return untrack(function()
+    --                 return derive(function()
+    --                     ran[i] += 1
+    --                     cleanup(function()
+    --                         cleaned[i] += 1
+    --                     end)
+    --                     return i
+    --                 end)
+    --             end)
+    --         end)
 
-            local child1 = owner()
-            num(1)
-            local child2 = owner()
+    --         local child1 = owner()
+    --         num(2)
+    --         CHECK(cleaned[1] == 1)
+    --         local child2 = owner()
 
-            CHECK(child1() == 0)
-            CHECK(child2() == 1)
-        end)
+    --         CHECK(child1() == 1)
+    --         CHECK(child2() == 2)
+    --     end)
 
-        destroy()
+    --     destroy()
         
-        CHECK(cleaned[0])
-        CHECK(cleaned[1])
-    end
+    --     CHECK(ran[1] == 1)
+    --     CHECK(ran[2] == 1)
+    --     CHECK(cleaned[1] == 1)
+    --     CHECK(cleaned[2] == 1)
+    -- end
 
     do CASE "garbage collection"
         -- check that `b` does not allow gc of `a`        
@@ -1070,9 +1130,13 @@ TEST("indexes()", wrap_root(function()
 
         local count = table.create(3, 0)
 
-        local output = indexes(input, function(v, i)
-            count[i] += 1
-            return v
+        local output = vide.root(function()
+            local output = indexes(input, function(v, i)
+                count[i] += 1
+                return v
+            end)
+
+            return output
         end)
 
         input { 1, 2, 4 }
@@ -1453,11 +1517,8 @@ TEST("spring()", wrap_root(function()
 end))
 
 TEST("untrack()", wrap_root(function()
-    local root = vide.root
     local source = vide.source
-    local derive = vide.derive
     local effect = vide.effect
-    local cleanup = vide.cleanup
     local untrack = vide.untrack
 
     do CASE "does not register dependency"
@@ -1506,56 +1567,69 @@ TEST("untrack()", wrap_root(function()
         CHECK(count == 2)
     end
 
-    do CASE "outer scope"
-        local outer_count = 0
-        local inner_count = 0
-        local cleaned_count = 0
+    -- do CASE "outer scope"
+    --     local outer_count = 0
+    --     local inner_count = 0
+    --     local cleaned_count = 0
 
-        local input = source(0)
+    --     local input = source(0)
 
-        local output, destroy = root(function(destroy)
-            local output = derive(function()
-                outer_count += 1
+    --     local output, destroy = root(function(destroy)
+    --         local output = derive(function()
+    --             outer_count += 1
 
-                return untrack(function()
-                    return derive(function()
-                        inner_count += 1
+    --             return untrack(function()
+    --                 return derive(function()
+    --                     inner_count += 1
     
-                        cleanup(function()
-                            cleaned_count += 1
-                        end)
+    --                     cleanup(function()
+    --                         cleaned_count += 1
+    --                     end)
     
-                        return tostring(input())
-                    end)
+    --                     return tostring(input())
+    --                 end)
+    --             end)
+    --         end)
+
+    --         return output, destroy
+    --     end)
+
+    --     CHECK(outer_count == 1)
+    --     CHECK(inner_count == 1)
+    --     CHECK(cleaned_count == 0)
+
+    --     local output2 = output()
+
+    --     CHECK(output2() == "0")
+
+    --     input(1)
+
+    --     CHECK(outer_count == 1)
+    --     CHECK(inner_count == 2)
+    --     CHECK(cleaned_count == 1)
+
+    --     local output3 = output()
+    --     CHECK(output2() == "1")
+    --     CHECK(output3() == "1")
+
+    --     CHECK(output2 == output3)
+
+    --     destroy()
+
+    --     CHECK(cleaned_count == 2)
+    -- end
+
+    do CASE "cannot create effect within untrack()"
+        local ok = pcall(function()
+            effect(function()
+                untrack(function()
+                    effect(function() end)
+                    return  nil
                 end)
             end)
-
-            return output, destroy
         end)
 
-        CHECK(outer_count == 1)
-        CHECK(inner_count == 1)
-        CHECK(cleaned_count == 0)
-
-        local output2 = output()
-
-        CHECK(output2() == "0")
-
-        input(1)
-
-        CHECK(outer_count == 1)
-        CHECK(inner_count == 2)
-        CHECK(cleaned_count == 1)
-
-        local output3 = output()
-        CHECK(output2() == "1")
-        CHECK(output3() == "1")
-
-        CHECK(output2 == output3)
-
-        destroy()
-
-        CHECK(cleaned_count == 2)
+        CHECK(not ok)
     end
 end))
 
@@ -1689,6 +1763,90 @@ TEST("read()", wrap_root(function()
         CHECK(count == 2)
     end
 end))
+
+TEST("nested effects cases", function()
+    -- local vide = require "src/init"
+    -- local source = vide.source
+    -- local effect = vide.effect
+    -- local untrack = vide.untrack
+    -- local cleanup = vide.cleanup
+    -- local root = vide.root
+
+    -- local ran = 0
+    -- local cleaned = 0
+
+    -- local function Count()
+    --     local count = source(0)
+
+    --     effect(function()
+    --         count()
+    --         ran += 1
+    --         cleanup(function() cleaned += 1 end)
+    --     end)
+
+    --     return nil
+    -- end
+
+    -- local function App(destroy)
+    --     local name = source "a"
+
+    --     effect(function()
+    --         name()
+    --         untrack(Count)
+    --     end)
+
+    --     CHECK(ran == 1)
+    --     CHECK(cleaned == 0)
+
+    --     name "b"
+
+    --     CHECK(ran == 2)
+    --     CHECK(cleaned == 1)
+    --     print(cleaned)
+    -- end
+
+    -- root(App)
+
+    local vide = require "src/init"
+    local source = vide.source
+    local effect = vide.effect
+    local untrack = vide.untrack
+    local cleanup = vide.cleanup
+    local root = vide.root
+
+    local ran = 0
+    local cleaned = 0
+
+    local function Count()
+        local count = source(0)
+
+        effect(function()
+            count()
+            ran += 1
+            cleanup(function() cleaned += 1 end)
+        end)
+
+        return nil
+    end
+
+    local function App(destroy)
+        local name = source "a"
+
+        effect(function()
+            name()
+            untrack(Count)
+        end)
+
+        CHECK(ran == 1)
+        CHECK(cleaned == 0)
+    end
+
+    local ok = pcall(function()
+        root(App)
+    end)
+
+    CHECK(not ok)
+end)
 
 vide.strict = true
 

@@ -27,7 +27,7 @@ function Menu(props: {
     Size: UDim2
 })
     return Background {
-        Color = props.COlor,
+        Color = props.Color,
         AnchorPoint = props.AnchorPoint,
         Position = props.Position,
         Size = props.Size

@@ -36,8 +36,7 @@ count(1)
 print(text()) -- "count: 1"
 ```
 
-You may be wondering why we are using sources instead of plain variables to do
-this. The reason is that Vide has an entire reactive system based on sources.
-You can write functions to automatically run each time a source is updated. This
-can be to update properties, create new instances, print to the terminal, etc.
-How this is done will be covered next.
+Derived sources should be pure functions. This is where the same output is
+always produced for the same input. As well as making source updates more
+predictable, knowing that updates are pure allows Vide to use optimizations such
+as caching, to avoid updating derived sources if their inputs are the same.

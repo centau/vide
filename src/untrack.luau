@@ -1,6 +1,5 @@
 if not game then script = require "test/relative-string" end
 
-local throw = require(script.Parent.throw)
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
 local get_scope = graph.get_scope

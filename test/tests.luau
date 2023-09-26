@@ -691,6 +691,7 @@ TEST("effect()", wrap_root(function()
 end))
 
 TEST("cleanup()", wrap_root(function()
+    local root = vide.root
     local source = vide.source
     local effect = vide.effect
     local cleanup = vide.cleanup
@@ -748,6 +749,25 @@ TEST("cleanup()", wrap_root(function()
         CHECK(testkit.seq(queue, { 1, 2 }))
         src(3)
         CHECK(testkit.seq(queue, { 1, 2, 1, 2 }))
+    end
+
+    do CASE "cleanup objects"
+        local ran = {}
+
+        root(function(destroy)
+            effect(function()
+                cleanup { disconnect = function() ran.disconnect = true end }
+                cleanup { Disconnect = function() ran.Disconnect = true end }
+                cleanup { destroy = function() ran.destroy = true end }
+                cleanup { Destroy = function() ran.Destroy = true end }
+                destroy()
+            end)
+        end)
+
+        CHECK(ran.disconnect)
+        CHECK(ran.Disconnect)
+        CHECK(ran.destroy)
+        CHECK(ran.Destroy)
     end
 end))
 

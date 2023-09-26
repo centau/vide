@@ -981,19 +981,76 @@ TEST("create()", wrap_root(function()
 end))
 
 TEST("show()", wrap_root(function()
-    -- uses switch() internally, more extensive testing of scoping not needed
+    local untrack = vide.untrack
+    local cleanup = vide.cleanup
     local source = vide.source
+    local effect = vide.effect
     local show = vide.show
+    local root = vide.root
 
-    local value = source("truey" :: unknown)
-    local function one() return 1 end
-    local function two() return 2 end
+    do CASE "main"
+        -- uses switch() internally, more extensive testing of scoping not needed
+        local value = source("truey" :: unknown)
+        local function one() return 1 end
+        local function two() return 2 end
 
-    local output = show(value, one, two)
+        local output = show(value, one, two)
 
-    CHECK(output() == 1)
-    value(nil)
-    CHECK(output() == 2)
+        CHECK(output() == 1)
+        value(nil)
+        CHECK(output() == 2)
+    end
+
+    do CASE "alt"
+        local visible = vide.source(true)
+        local count = vide.source(0)
+
+        local outer = 0
+        local inner = 0
+        local destroyed = 0
+
+        root(function()
+            effect(function()
+                visible()
+                outer += 1
+
+                untrack(function()
+                    effect(function()
+                        count()
+
+                        inner += 1
+
+                        cleanup(function()
+                            destroyed += 1
+                        end)
+                    end)
+                    return nil
+                end)
+            end)
+        end)
+
+        CHECK(outer == 1)
+        CHECK(inner == 1)
+        CHECK(destroyed == 0)
+
+        count(count() + 1)
+        CHECK(outer == 1)
+        CHECK(inner == 2)
+        CHECK(destroyed == 1)
+
+        visible(false)
+        CHECK(outer == 2)
+        CHECK(inner == 3)
+        CHECK(destroyed == 2)
+
+        count(count() + 1)
+        CHECK(outer == 2)
+        CHECK(inner == 4)
+        CHECK(destroyed == 3)
+
+
+
+    end
 end))
 
 TEST("switch()", wrap_root(function()

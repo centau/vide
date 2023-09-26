@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - Reactive scopes created within reactive scopes are now destroyed on rerun.
+- `untrack()` can be called outside of reactive scopes.
 
 ---
 

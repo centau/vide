@@ -1067,9 +1067,6 @@ TEST("show()", wrap_root(function()
         CHECK(outer == 2)
         CHECK(inner == 4)
         CHECK(destroyed == 3)
-
-
-
     end
 end))
 
@@ -1180,6 +1177,22 @@ TEST("switch()", wrap_root(function()
         local n1 = scopes.n
 
         CHECK(n0 == n1)
+    end
+
+    do CASE "strict"
+        vide.strict = true
+
+        local input = source(0)
+        local output = switch(input) {
+            [0] = function() return 0 end,
+            [1] = function() return 1 end,
+        }
+
+        CHECK(output() == 0)
+        input(1)
+        CHECK(output() == 1)
+
+        vide.strict = false
     end
 end))
 
@@ -1363,6 +1376,21 @@ TEST("indexes()", wrap_root(function()
         CHECK(updated[2] == 2)
         CHECK(updated[3] == 2)
         CHECK(updated[4] == 2)
+    end
+
+    do CASE "strict"
+        vide.strict = true
+
+        local input = source{1}
+        local output = indexes(input, function(v)
+            return { v }
+        end)
+
+        CHECK(output()[1][1]() == 1)
+        input{2}
+        CHECK(output()[1][1]() == 2)
+
+        vide.strict = false
     end
 end))
 

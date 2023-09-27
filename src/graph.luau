@@ -23,26 +23,17 @@ export type Node<T> =  {
 -- reactive scope stack
 local scopes = { n = 0 } :: { [number]: Node<any>, n: number }
 
--- runs a given callback in a context that Luau does not allow yielding in
-local check_for_yield: <T...>(fn: (T...) -> (), T...) -> (boolean, string?) do
-    local t = { __mode = "kv" }
-    setmetatable(t, t)
+local function ycall<T, U>(fn: (T) -> U, arg: T): (boolean, string|U)
+    local thread = coroutine.create(pcall)
+    local resume_ok, run_ok, result = coroutine.resume(thread, fn, arg)
 
-    check_for_yield = function(fn, ...: any)
-        local args = { ... }
-
-        t.__unm = function(_)
-            fn(unpack(args))
-        end
-
-        local ok, err: string? = pcall(function()
-            local _ = -t
-        end)
-
-        return ok, if err == "attempt to yield across metamethod/C-call boundary"
-            or err == "thread is not yieldable" then "yield occured"
-            else err
+    assert(resume_ok)
+        
+    if coroutine.status(thread) ~= "dead" then
+        return false, "attempt to yield in reactive scope"
     end
+
+    return run_ok, result
 end
 
 local function get_scope(): Node<unknown>?
@@ -161,11 +152,13 @@ local function evaluate_node<T>(node: Node<T>)
 
         open_scope(node)
 
-        local ok, err = check_for_yield(node.effect :: (T) -> T, cur_value)
+        local ok, new_value = ycall(node.effect :: (T) -> T, cur_value)
         
         close_scope()
         
-        if not ok then throw(err :: string) end
+        if not ok then throw(new_value :: string) end
+
+        node.cache = new_value :: T
     end
 
     run_cleanups(node)
@@ -173,7 +166,7 @@ local function evaluate_node<T>(node: Node<T>)
 
     open_scope(node)
 
-    local ok, new_value = pcall(node.effect :: (T) -> T, cur_value)
+    local ok, new_value = pcall(node.effect :: (T) -> T, node.cache)
 
     close_scope()
 

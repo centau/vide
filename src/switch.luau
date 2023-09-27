@@ -53,7 +53,7 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
             return result
         end
 
-        local node = create_node(nil :: any, update)
+        local node = create_node(nil :: U?, update)
 
         set_owner(node, owner)
         evaluate_node(node)

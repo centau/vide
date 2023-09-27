@@ -15,11 +15,10 @@ worrying about manually updating UI instances.
 
 Some of the main focuses behind Vide's design choices:
 
-- Concise syntax to reduce verbosity as much as possible.
+- Concise syntax.
 - Being completely typecheckable.
 - Independence from instance lifetimes.
-- A powerful reactive system that can update specific properties as a result of
-  state changes, updates are immediate with no diffing needed.
+- Real reactivity.
 
 ## Structure Of A Vide App
 
@@ -33,8 +32,10 @@ called *components*.
 
 ```lua
 local function App()
-    return create "ScreenGui" {
-        create "TextLabel" { Text = "hi" }
+    return {
+        PlayerStats(),
+        Inventory(),
+        Settings()
     }
 end
 

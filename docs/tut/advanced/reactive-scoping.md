@@ -204,22 +204,23 @@ The above code produces a graph like so:
         "primaryBorderColor": "#1B1B1F",
         "lineColor": "#79B8FF",
         "tertiaryColor": "#161618",
-        "tertiaryBorderColor": "#fff"
+        "tertiaryBorderColor": "#1B1B1F"
     }
 }}%%
 
 flowchart LR
     subgraph root
+        direction LR
         show
 
-        subgraph subroot[show subroot]
+        subgraph subroot["show() subroot"]
             p1[prop binding]
         end
     end
 
     visible --> show
     count --> p1
-    show .-> subroot
+    show -.- subroot
 ```
 
 This can be recreated without the `show()` control-flow function, with the

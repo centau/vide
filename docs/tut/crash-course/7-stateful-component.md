@@ -30,6 +30,9 @@ end
 Above is an example of a counter component, that when clicked, will increment
 its internal count, and automatically update its text to reflect that count.
 
+Making a property update based on a source is also called *property
+binding*.
+
 Each instance of `Counter()` will maintain its own independent count, since the
 count source is created inside the scope of the component.
 

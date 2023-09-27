@@ -24,6 +24,9 @@ count(count() + 1) -- increment count by 1
 Sources can be *derived* by wrapping them in functions. A wrapped source
 effectively becomes a new source.
 
+Derived sources should be pure functions. This is where the same output is
+always produced for the same input no matter how many times it is reran.
+
 ```lua
 local count = source(0)
 
@@ -36,7 +39,8 @@ count(1)
 print(text()) -- "count: 1"
 ```
 
-Derived sources should be pure functions. This is where the same output is
-always produced for the same input. As well as making source updates more
-predictable, knowing that updates are pure allows Vide to use optimizations such
-as caching, to avoid updating derived sources if their inputs are the same.
+Sources on their own aren't very special, the above can be achieved with plain
+variables. The real use for sources become apparent when used in combination
+with Vide's *reactive scopes*. When a source is read from within a reactive
+scope, it can automatically rerun the scope that reads it when the source is
+updated in the future.

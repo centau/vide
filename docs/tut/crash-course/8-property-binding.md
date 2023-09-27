@@ -2,9 +2,7 @@
 
 Explicitly creating effects to update properties can become verbose when there
 are a lot of properties to update. Vide provides a way to *implicitly* create
-an effect to update properties on source update. This is also known as
-*property binding*, since changes to a source will automatically update the
-property.
+an effect to update properties on source update.
 
 ```lua
 local create = vide.create
@@ -40,7 +38,9 @@ that are updated.
 
 ## Children Binding
 
-Children can also be set in a similar manner.
+Children can also be set in a similar manner. Sources bound to properties can
+return an instance or an array of instances. Vide will automatically unparent
+removed instances and parent new instances.
 
 ```lua
 local items = source {

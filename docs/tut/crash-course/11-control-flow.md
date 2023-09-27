@@ -63,6 +63,37 @@ local function JoinMenu()
 end
 ```
 
+The reactive graph for the above example:
+
+```mermaid
+%%{init: {
+    "theme": "base",
+    "themeVariables": {
+        "primaryColor": "#1B1B1F",
+        "primaryTextColor": "#fff",
+        "primaryBorderColor": "#1B1B1F",
+        "lineColor": "#79B8FF",
+        "tertiaryColor": "#161618",
+        "tertiaryBorderColor": "#1C1C1F"
+    }
+}}%%
+
+flowchart
+
+subgraph root ["mount() scope"]
+    direction LR
+    joined --> show -.- subroot
+
+    subgraph subroot ["show() scope"]
+        direction LR
+        Button
+    end
+end
+```
+
+The dotted line indicates that the new reactive scope isn't actually connected
+to the `show` on the graph, it is only managed internally through code.
+
 ## switch()
 
 Similar to `show()`, `switch()`, also condtionally displays one instance at a
@@ -113,6 +144,34 @@ switch(menu) {
 }
 ```
 
+The reactive graph for the above example:
+
+```mermaid
+%%{init: {
+    "theme": "base",
+    "themeVariables": {
+        "primaryColor": "#1B1B1F",
+        "primaryTextColor": "#fff",
+        "primaryBorderColor": "#1B1B1F",
+        "lineColor": "#79B8FF",
+        "tertiaryColor": "#161618",
+        "tertiaryBorderColor": "#1C1C1F"
+    }
+}}%%
+
+flowchart
+
+subgraph root ["mount() scope"]
+    direction LR
+    joined --> show -.- subroot
+
+    subgraph subroot ["switch() scope"]
+        direction LR
+        Button
+    end
+end
+```
+
 ## indexes()
 
 Often, you will have a table of values that will be displayed in a similar
@@ -121,7 +180,7 @@ UI element, `indexes()` allows you to create an instance for each table index,
 to display the value at that index.
 
 ```lua
-local todoList = {
+local todoList = source {
     "finish the crash course",
     "star vide's GitHub"
 }
@@ -152,6 +211,39 @@ When the value at an index is changed, the function is not reran. Instead, the
 given source for that index is updated.
 
 An element is only destroyed if the value of an index is set to `nil`.
+
+The reactive graph for the above example:
+
+```mermaid
+%%{init: {
+    "theme": "base",
+    "themeVariables": {
+        "primaryColor": "#1B1B1F",
+        "primaryTextColor": "#fff",
+        "primaryBorderColor": "#1B1B1F",
+        "lineColor": "#79B8FF",
+        "tertiaryColor": "#161618",
+        "tertiaryBorderColor": "#1C1C1F"
+    }
+}}%%
+
+flowchart
+
+subgraph root ["mount() scope"]
+    direction LR
+    todoList --> indexes -.- subroot1 & subroot2
+
+    subgraph subroot1 ["indexes() scope 1"]
+        direction LR
+        value1[todo] --> prop1["prop binding"]
+    end
+
+    subgraph subroot2 ["indexes() scope 2"]
+        direction LR
+        value2[todo] --> prop2[prop binding]
+    end
+end
+```
 
 Together, these control flow functions cover the majority of cases where you
 need to dynamically create and destroy parts of your UI.

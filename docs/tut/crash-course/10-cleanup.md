@@ -41,8 +41,30 @@ when the timer component is destroyed, whether that is from unmounting the app
 or if it is dynamically created by a control-flow function, which will be
 covered next.
 
-On a related note: the reason why `mount()` is used to create your app, is so
-that any top-level components that need to be cleaned up, can be cleaned up
-when the app is later unmounted, since `mount()` runs in a reactive scope to
-track `cleanup()` calls. Vide's entire reactive system is independent from the
-life-time of instances; instances are just a side-effect of the reactive system.
+This is another reason why `mount()` is used at the top level of your app, so
+that any registered cleanups created by your app components can be ran when
+they are destroyed.
+
+The reactive graph for the above example:
+
+```mermaid
+%%{init: {
+    "theme": "base",
+    "themeVariables": {
+        "primaryColor": "#1B1B1F",
+        "primaryTextColor": "#fff",
+        "primaryBorderColor": "#1B1B1F",
+        "lineColor": "#79B8FF",
+        "tertiaryColor": "#161618",
+        "tertiaryBorderColor": "#161618"
+    }
+}}%%
+
+flowchart
+
+subgraph root
+    direction LR
+    cleanup([cleanup]) ~~~ count 
+    count --> bind[text binding]
+end
+```

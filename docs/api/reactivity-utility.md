@@ -8,6 +8,11 @@ Runs a callback anytime a reactive scope is reran or destroyed.
 
     ```lua
     function cleanup(callback: () -> ())
+    function cleanup(obj: Destroyable)
+    function cleanup(obj: Disconnectable)
+
+    type Destroyable = { destroy: () -> () }
+    type Disconnectable = { disconnect: () -> () }
     ```
 
 - **Example**

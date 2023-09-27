@@ -2019,6 +2019,22 @@ TEST("strict", wrap_root(function()
 
         CHECK(ok)
     end
+
+    do CASE "effect counter"
+        local src = source(true)
+
+        local count = 0
+
+        effect(function(x: number)
+            src()
+            count = x + 1
+            return count
+        end, count)
+
+        CHECK(count == 2)
+        src(not src())
+        CHECK(count == 4)
+    end
 end))
 
 local ok = FINISH()

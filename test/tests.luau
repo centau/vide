@@ -1806,7 +1806,7 @@ TEST("changed()", wrap_root(function()
             changed("Text", output)
         }
 
-        --CHECK(output() == "a")
+        CHECK(output() == "a")
         text.Text = "b"
         CHECK(output() == "b")
     end

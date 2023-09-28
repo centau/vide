@@ -154,3 +154,23 @@ instances.
         changed("Text", output)
     }
     ```
+
+## changed()
+
+A wrapper for `action()` to listen for property changes.
+
+- **Type**
+
+    ```lua
+    function changed(property: string, callback: (...unknown) -> ()): Action
+    ```
+
+- **Details**
+
+    Will run the given callback any time the property is changed, as well as
+    when the action is initially run.
+
+    The changed connection is disconnected when the reactive scope the action is
+    ran in is destroyed.
+
+    Runs with an action priority of 1.

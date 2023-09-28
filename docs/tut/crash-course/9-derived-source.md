@@ -60,16 +60,14 @@ effect(function()
 end)
 
 effect(function()
-    text() -- does not print
+    text() -- does not print, returns cached value
 end)
 ```
 
-Deriving a source in this manner is similar to creating an effect to update
-another source. You should never manually do this using an effect however,
-improper usage could accidently create infinite loops in the reactive graph.
-Always favour deriving when you need one source to update based on another.
-
 `derive()` must also be used within a root reactive scope, just like `effect()`.
+
+If the recalculated value is the same as the old value, the derived source will
+not rerun the effects using it.
 
 The reactive graph for the above example:
 
@@ -86,10 +84,15 @@ The reactive graph for the above example:
     }
 }}%%
 
-flowchart
+graph
 
 subgraph root
     direction LR
     count --> text --> effect1 & effect2
 end
 ```
+
+Deriving a source in this manner is similar to creating an effect to update
+another source. You should never manually do this using an effect however,
+improper usage could accidently create infinite loops in the reactive graph.
+Always favour deriving when you need one source to update based on another.

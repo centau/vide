@@ -5,6 +5,8 @@ Vide.
 
 Vide is heavily inspired by [Solid](https://www.solidjs.com/).
 
+This tutorial assumes familiarity with Luau and Roblox GUI.
+
 ## Why Vide?
 
 Creating UI is a slow and tedious process. The purpose of Vide is to make UI

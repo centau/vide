@@ -60,7 +60,7 @@ This code will produce a graph that looks like so:
     }
 }}%%
 
-flowchart
+graph
     subgraph root
         forename & surname --> name
         name --> effect
@@ -145,7 +145,7 @@ This code produces a graph like so:
     }
 }}%%
 
-flowchart LR
+graph LR
     subgraph root
         counters --> indexes
 
@@ -208,7 +208,7 @@ The above code produces a graph like so:
     }
 }}%%
 
-flowchart LR
+graph LR
     subgraph root
         direction LR
         show

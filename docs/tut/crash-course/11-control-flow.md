@@ -11,7 +11,7 @@ will update when the input source updates.
 Control flow functions are special, because they run their components in a new
 reactive scope, which can be destroyed independently of the reactive scope that
 called the control flow function itself. This means that parts of your app can
-be independently created then destroyed and cleaned.
+be independently created then destroyed.
 
 ## show()
 
@@ -78,21 +78,24 @@ The reactive graph for the above example:
     }
 }}%%
 
-flowchart
+graph
 
-subgraph root ["mount() scope"]
+subgraph root["mount() scope"]
     direction LR
     joined --> show -.- subroot
 
-    subgraph subroot ["show() scope"]
+    subgraph subroot["show() scope"]
         direction LR
         Button
     end
 end
 ```
 
-The dotted line indicates that the new reactive scope isn't actually connected
-to the `show` on the graph, it is only managed internally through code.
+`show()` will implicitly create an effect depending on `joined`, which can be
+seen as `show` on the graph. This effect manages, and can create or destroy
+a separate reactive scope seen as `show() scope` on the graph. The dotted line
+indicates that it isn't actually connected, only indirectly managed through
+code.
 
 ## switch()
 
@@ -135,11 +138,11 @@ The switch can map any value to any component.
 ```lua
 type ActiveMenu = "none" | "inventory" | "shop" | "settings"
 
-local menu = source "none"
+local menu = source "inventory"
 
 switch(menu) {
     inventory = InventoryMenu,
-    shop = ShopMenu.
+    shop = ShopMenu,
     settings = SettingsMenu
 }
 ```
@@ -159,25 +162,25 @@ The reactive graph for the above example:
     }
 }}%%
 
-flowchart
+graph
 
-subgraph root ["mount() scope"]
+subgraph root["mount() scope"]
     direction LR
-    joined --> show -.- subroot
+    menu --> switch -.- subroot
 
-    subgraph subroot ["switch() scope"]
+    subgraph subroot["switch() scope"]
         direction LR
-        Button
+        Menu
     end
 end
 ```
 
 ## indexes()
 
-Often, you will have a table of values that will be displayed in a similar
+Often, you will have a table of values with each value displayed in a similar
 manner. Rather than manually looping over each value to generate a corresponding
-UI element, `indexes()` allows you to create an instance for each table index,
-to display the value at that index.
+UI element, `indexes()` allows you to create elements for each table index, to
+display the value at that index.
 
 ```lua
 local todoList = source {
@@ -204,13 +207,22 @@ end
 TodoList { list = todoList }
 ```
 
-For each unique index in the passed table, the transform function will be called
-with 1. a source containing the value of the index, 2. the index itself.
+For each index in the given source table, the given function will be called
+with:
+
+1. a source containing the value of the index
+2. the index itself
 
 When the value at an index is changed, the function is not reran. Instead, the
 given source for that index is updated.
 
-An element is only destroyed if the value of an index is set to `nil`.
+Any time the input source table is updated, the given function will be ran for
+any newly added indexes, while any removed indexes (indexes now with a `nil`
+value), will have its corresponding reactive scope destroyed to clean up that
+element.
+
+`indexes()` is said to *map* each table index to a new UI element that can
+update to display the current value at that index.
 
 The reactive graph for the above example:
 
@@ -227,7 +239,7 @@ The reactive graph for the above example:
     }
 }}%%
 
-flowchart
+graph
 
 subgraph root ["mount() scope"]
     direction LR
@@ -245,5 +257,20 @@ subgraph root ["mount() scope"]
 end
 ```
 
+One thing to note regarding table sources, is that when you edit a table in a
+source, you must set that table again to actually update the source.
+
+```lua
+local src = source { 1, 2 }
+local data = src()
+table.insert(data, 3) -- no effects will run
+src(data) -- effects will run
+```
+
 Together, these control flow functions cover the majority of cases where you
 need to dynamically create and destroy parts of your UI.
+
+If you need to do something that these control flow functions cannot, you can
+always use `mount()` within an effect to dynamically create and destroy
+components on your own terms. Just remember to use `cleanup()` to unmount when
+the effect reruns.

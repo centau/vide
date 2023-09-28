@@ -21,12 +21,9 @@ count(1)
 -- "count: 1" printed
 ```
 
-The callback given to `effect()` is ran in a *reactive scope*. Any source read
-from inside a reactive scope will be tracked, so that if any of those sources
-update, the effect will be reran too.
-
-The callback is first ran immediately inside the `effect()` call to initially
-track sources used.
+The callback given to `effect()` is initially ran immediately in a
+*reactive scope*. Any source read from inside a reactive scope will be tracked,
+so that if any of those sources update, the effect will be reran too.
 
 Effects also work with derived sources, it doesn't matter how deeply nested
 inside a function a source is.
@@ -50,23 +47,5 @@ count(2)
 -- "doubled count: 4" printed
 ```
 
-The reactive graph for the above example:
-
-```mermaid
-%%{init: {
-    "theme": "base",
-    "themeVariables": {
-        "primaryColor": "#1B1B1F",
-        "primaryTextColor": "#fff",
-        "primaryBorderColor": "#1B1B1F",
-        "lineColor": "#79B8FF",
-        "tertiaryColor": "#161618",
-        "tertiaryBorderColor": "#fff"
-    }
-}}%%
-
-flowchart LR
-
-count --> effect
-
-```
+If a source is updated with the same value it already had, it will not rerun
+effects depending on it.

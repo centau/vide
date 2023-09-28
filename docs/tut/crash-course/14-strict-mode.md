@@ -5,9 +5,13 @@ be set with `vide.strict = true` once when you first require Vide. Strict mode
 will add extra safety checks and emit better error traces, particularly when
 errors occur in property bindings.
 
+Strict mode is automatically enabled when Vide is required in O0 or O1
+optimization (default studio level). You can `vide.strict = false` if you do not
+want this.
+
 Strict mode will run derived sources and effects twice each time they update.
-This is to help identify improper cleanup of side-effects and ensure that pure
-computations are actually pure.
+This is to help ensure that derived source computations are pure, and that any
+cleanups made in derived sources or effects are done correctly.
 
 ```lua
 local source = vide.source

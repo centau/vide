@@ -1,10 +1,9 @@
 # Sources
 
-*Sources* in Vide are special objects that store a single value. They are the
-core of reactivity in Vide. Each source represents a source of data, and they
-can be composed and derived to create new sources of data.
+Sources are special objects that store a single value. They are the core of
+Vide's reactivity. They are called sources because they act as sources of data.
 
-A source in Vide can be created using `source()`.
+A source can be created using `source()`.
 
 ```lua
 local source = vide.source

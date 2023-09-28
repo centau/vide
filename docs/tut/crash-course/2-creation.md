@@ -45,19 +45,10 @@ Assign a value to a string key to set a property, and assign a value to a
 number key to set a child. Events can be connected to by assigning a function
 to a string key.
 
-You can also use a shorthand to create datatypes instead of explicitly typing
-out the class name and constructor. The table will be unpacked into the `.new()`
-constructor of the property's type.
-
-```lua
-create "Frame" {
-    AnchorPoint = { 0.5, 1 },
-    UDim2 = { 0.5, 0, 0.5, 0 }
-}
-```
-
+::: warning
 When creating an instance with no properties, it is important to not forget to
 actually call the constructor: `create "Frame" {}` and not `create "Frame"`.
 To be clear, `create "Frame"` returns a *function* which is a constructor for
 that class, not an instance of that class. This would result in you attempting
-to parent a function instead of an instance which is not the correct behavior.
+to parent a function instead of an instance which is not correct.
+:::

@@ -22,8 +22,9 @@ Currently, strict mode will:
 6. Checks for duplicate nested properties at same depth.
 7. Better error reporting and stack traces + creation traces of property bindings.
 
-By rerunning sources and effects, any side-effects are made more apparent.
-This also helps ensure that cleanups are being handled correctly.
+By rerunning derived sources and effects twice each time they update,it helps
+ensure that derived source computations are pure, and that any
+cleanups made in derived sources or effects are done correctly.
 
 Accidental yielding within reactive scopes can break Vide's reactive graph,
 which strict mode can catch.

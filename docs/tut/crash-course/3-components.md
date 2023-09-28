@@ -1,9 +1,11 @@
 # Components
 
-Components are custom-made reusable pieces of UI made from other pieces of UI.
+A component is a function that creates and returns a piece of UI.
 
-By using components you can make your application more modular and better
-organized.
+This is a way to separate your app into small chunks that you can reuse and put
+together.
+
+::: code-group
 
 ```lua [Button.luau]
 local create = vide.create
@@ -15,11 +17,14 @@ local function Button(props: {
 })
     return create "TextButton" {
         BackgroundColor3 = Color3.fromRGB(50, 50, 50),
+        TextColor3 = Color3.fromRGB(255, 255, 255),
         Size = UDim2.fromOffset(200, 150),
 
         Position = props.Position,
         Text = props.Text,
-        Activated = props.Activated
+        Activated = props.Activated,
+
+        create "UICorner" {}
     }
 end
 
@@ -36,10 +41,17 @@ local function App()
     return create "ScreenGui" {
         Button {
             Position = UDim2.fromOffset(200, 200),
-            Text = "click me!",
-
+            Text = "back",
             Activated = function()
-                print "clicked"
+                print "go to previous page"
+            end
+        },
+
+        Button {
+            Position = UDim2.fromOffset(400, 200),
+            Text = "next",
+            Activated = function()
+                print "go to next page"
             end
         }
     }
@@ -48,8 +60,9 @@ end
 mount(App, game.StarterGui)
 ```
 
-Above is a simple example of a button component with a set color and size,
-being reused across files.
+:::
+
+Above is a simple example of a button component being used across files.
 
 A single parameter `props` is used to pass properties to the component.
 
@@ -57,8 +70,8 @@ Components allow you to *encapsulate* behavior. You can only modify the
 component in ways that you allow in the component, through the `props` parameter.
 
 To create a new button all you must do is call the `Button` function, passing in
-values through props. This saves having to create and set every property each
-time. Also, when updating the button component in future, any changes to the
-button file will be seen anywhere the button is used in your app.
+values. This saves having to create and set every property each time. Also, when
+updating the button component in future, any changes to the button file will be
+seen anywhere the button is used in your app.
 
 This can be extended to much more complicated UI.

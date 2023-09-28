@@ -20,6 +20,7 @@ local function Counter()
             count(count() + 1)
         end
     }
+end
 ```
 
 This example is equivalent to the example seen on the previous page.
@@ -32,15 +33,16 @@ Just like effects, the function is ran immediately in a reactive scope to set
 the property initially and determine what sources are being depended on.
 
 This allows you as the programmer to not need to manually update UI as the state
-of your program changes. You just define how the data maps to UI, and Vide's
-reactive system will automatically update any properties depending on sources
-that are updated.
+of your program changes. You just define how the data sources map to UI, and
+Vide's reactive system will automatically update any properties depending on
+those sources that were updated.
 
 ## Children Binding
 
-Children can also be set in a similar manner. Sources bound to properties can
-return an instance or an array of instances. Vide will automatically unparent
-removed instances and parent new instances.
+Children can also be set in a similar manner. A source passed as a child (passed
+with a number key instead of string key) can return an instance or an array of
+instances. Vide will automatically unparent removed instances and parent new
+instances when that source's stored instances change.
 
 ```lua
 local items = source {

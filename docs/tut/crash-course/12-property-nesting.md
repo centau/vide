@@ -77,7 +77,7 @@ be parented.
 
 ```lua
 type Children = {
-    -- allows us to also optionally pass a source that returns an array of children instead
+    -- also can optionally pass a source that returns an array of children too
     Children = Array<Instance> | () -> Array<Instance>
 }
 

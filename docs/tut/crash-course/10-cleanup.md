@@ -6,7 +6,7 @@ is used to register a cleanup callback for the next time the reactive scope
 it is called in re-runs.
 
 ```lua
-locla mount = vide.mount
+local mount = vide.mount
 local source = vide.source
 local cleanup = vide.cleanup
 
@@ -60,11 +60,11 @@ The reactive graph for the above example:
     }
 }}%%
 
-flowchart
+graph
 
-subgraph root
+subgraph mount
     direction LR
     cleanup([cleanup]) ~~~ count 
-    count --> bind[text binding]
+    count --> bind["effect (text binding)"]
 end
 ```

@@ -19,7 +19,7 @@ local function create_instance(class: string)
     end
 
     return function(properties: { [any]: unknown }): Instance
-        return apply(instance:Clone(), properties)    
+        return apply(instance, properties)    
     end  
 end; create_instance = memoize(create_instance) -- always return same constructor for given class
 

@@ -69,7 +69,7 @@ Creates a new UI element, applying any given properties.
     - **index is number:**
       - **value is action:** run action
       - **value is table:** recurse table
-      - **value is functon:** create effect to update children
+      - **value is function:** create effect to update children
       - **value is instance:** set instance as child
 
 - **Example**

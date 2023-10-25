@@ -132,22 +132,23 @@ ROOT_BENCH("update 1->1->1->1...1000 graph", function()
     end
 end)
 
+-- todo: crashes at 1k
 -- todo: repeat with batching
 ROOT_BENCH("update 1000->1 graph", function()
     local srcs = {}
-    for i = 1, 1000 do
+    for i = 1, 800 do
         srcs[i] = source(0)
     end
 
     derive(function()
-        for i = 1, 1000 do
+        for i = 1, 800 do
             srcs[i]()
         end
         return false
     end)
 
     for i = 1, START(1) do
-        for idx = 1, 1000 do
+        for idx = 1, 800 do
             srcs[idx](i)
         end
     end

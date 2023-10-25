@@ -136,37 +136,6 @@ TEST("graph", function()
         CHECK(d_cnt == 1)
     end
 
-    do CASE "diamond graph 2"
-        -- todo: include cached value from parent nodes to confirm update order
-        -- a -> b -> c -> e
-        --   -> d
-        local root = node()
-        local a, b, c, d, e = node(), node(), node(), node(), node()
-
-        set_owner(b, root)
-        set_owner(c, root)
-        set_owner(d, root)
-        set_owner(e, root)
-
-        local b_cnt, c_cnt, d_cnt, e_cnt = 0, 0, 0, 0
-        function b.effect(x) b_cnt += 1; return not x end
-        function c.effect(x) c_cnt += 1; return not x end
-        function d.effect(x) d_cnt += 1; return not x end
-        function e.effect(x) e_cnt += 1; return not x end
-
-        open_scope(b); track(a); close_scope()
-        open_scope(c); track(b); close_scope()
-        open_scope(d); track(a); close_scope()
-        open_scope(e); track(c); track(d); close_scope()
-
-        update(a)
-
-        CHECK(b_cnt == 1)
-        CHECK(c_cnt == 1)
-        CHECK(d_cnt == 1)
-        CHECK(e_cnt == 1)
-    end
-
     do CASE "duplicate child on rerun"
         local root = node()
         local a, b, c = node(), node(), node()

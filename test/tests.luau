@@ -1,5 +1,5 @@
 local testkit = require("test/testkit")
-local TEST, CASE, CHECK, FINISH = testkit.test()
+local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
 
 local mock = require "test/mock"
 local Instance, Signal = mock.Instance, mock.Signal
@@ -32,6 +32,8 @@ end
 local NIL = nil :: any
 
 vide.strict = false
+
+--SKIP "graph edge cases"
 
 TEST("graph", function()
     local create_node = graph.create_node
@@ -1907,7 +1909,85 @@ TEST("nested effects cases", function()
     root(App)
 end)
 
-vide.strict = true
+TEST("graph edge cases", wrap_root(function()
+    local source = vide.source
+    local derive = vide.derive
+    local effect = vide.effect
+
+    do CASE "diamond A,B,C,D"
+        --[[
+
+        a > b > d
+          > c >
+
+        ]]
+
+        local a = source(0)
+
+        local b = derive(function() return (a() % 2 == 0) and 1 or 0 end)
+        local c = derive(function() return a() * 2 end)
+        local d = derive(function() return b() + c() end)
+
+        local count = { b = 0, c = 0, d = 0 }
+        effect(function() b(); count.b += 1 end)
+        effect(function() c(); count.c += 1 end)
+        effect(function() d(); count.d += 1 end)
+
+        a(1)
+        CHECK(count.b == 2)
+        CHECK(count.c == 2)
+        CHECK(count.d == 2)
+        CHECK(d() == 2)
+
+        a(3)
+        CHECK(count.b == 2)
+        CHECK(count.c == 3)
+        CHECK(count.d == 3)
+        CHECK(d() == 6)
+    end
+
+    do CASE "diamond A,B,C,D,E"
+        --[[
+
+        a > b >   > e
+          > c > d >
+
+        ]]
+
+        local a = source(0)
+
+        local b = derive(function() print "ran b"; return (a() % 2 == 0) and 1 or 0 end)
+        local c = derive(function() print "ran c"; return a() * 2 end)
+        local d = derive(function() print "ran d"; return c() * 2 end)
+        local e = derive(function() print "ran e"; return b() + c() end)
+
+        local count = { b = 0, c = 0, d = 0, e = 0 }
+        effect(function() b(); count.b += 1 end)
+        effect(function() c(); count.c += 1 end)
+        effect(function() d(); count.d += 1 end)
+        effect(function() d(); count.e += 1 end)
+
+        a(1)
+
+        print(e())
+        CHECK(count.b == 2)
+        CHECK(count.c == 2)
+        CHECK(count.d == 2)
+        CHECK(count.e == 2)
+        CHECK(e() == 4) -- todo: solve e evaluating before d
+
+        a(3)
+        CHECK(count.b == 2)
+        CHECK(count.c == 3)
+        CHECK(count.d == 3)
+        CHECK(count.e == 3)
+        CHECK(e() == 12)
+    end
+
+    do CASE "repeated read"
+
+    end
+end))
 
 TEST("strict", wrap_root(function()
     vide.strict = true

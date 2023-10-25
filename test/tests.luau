@@ -1969,7 +1969,6 @@ TEST("graph edge cases", wrap_root(function()
 
         a(1)
 
-        print(e())
         CHECK(count.b == 2)
         CHECK(count.c == 2)
         CHECK(count.d == 2)
@@ -1985,7 +1984,15 @@ TEST("graph edge cases", wrap_root(function()
     end
 
     do CASE "repeated read"
+        local a = source(0)
+        local b = derive(function() return a() + a() end)
 
+        local count = 0
+        effect(function() b(); count += 1 end)
+
+        a(1)
+        CHECK(b() == 2)
+        CHECK(count == 2)
     end
 end))
 

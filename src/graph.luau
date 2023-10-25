@@ -181,44 +181,6 @@ local function evaluate_node<T>(node: Node<T>)
     return cur_value ~= new_value -- node has changed value
 end
 
--- local function update_from<T>(node: StartNode<T>, n0: number)
---     if not node[1] then return end
-
---     local n = n0
-
---     -- unparent all children and queue for eval
---     do
---         local child = node[1]
---         while child do
---             --assert(child.parents.owner)
---             unparent(child)
---             n += 1
---             update_queue[n] = child
---             child = node[1]
---         end
---     end
-
---     update_queue.n = n
-
---     -- evaluate all queued children
---     for i = n0 + 1, n do
---         local child = update_queue[i]
---         assert(type(child.effect) == "function")
-
---         if evaluate_node(child) then
---             update_from(child, n)
---         end
-
---         update_queue[i] = false :: any -- false instead of nil to avoid sparse
---     end
-
---     update_queue.n = n0
--- end
-
--- local function update<T>(node: StartNode<T>)
---     update_from(node, update_queue.n)
--- end
-
 local function queue_children<T>(node: StartNode<T>)
     local i = update_queue.n
     local child = node[1]

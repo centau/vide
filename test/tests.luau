@@ -1800,6 +1800,49 @@ TEST("changed()", wrap_root(function()
     end
 end))
 
+TEST("batch()", wrap_root(function()
+    local source = vide.source
+    local derive = vide.derive
+    local batch = vide.batch
+
+    do CASE "child evaluation halted"
+        local a = source(0)
+
+        local count = { b = 0, b2 = 0, c = 0 }
+
+        local b = derive(function()
+            count.b += 1
+            return a() + 1
+        end)
+
+        local b2 = derive(function()
+            count.b2 += 1
+            return a() + 2
+        end)
+
+        local c = derive(function()
+            count.c += 1
+            return b() + b2()
+        end)
+
+        batch(function()
+            a(1)
+            CHECK(count.b == 1)
+            CHECK(count.b2 == 1)
+            CHECK(count.c == 1)
+        end)
+
+        CHECK(count.b == 2)
+        CHECK(count.b2 == 2)
+        CHECK(count.c == 2)
+
+        CHECK(b() == 2)
+        CHECK(c() == 5)
+    end
+
+    -- todo: test batch call in recursive set
+end))
+
 TEST("read()", wrap_root(function()
     local source = vide.source
     local effect = vide.effect

@@ -11,9 +11,10 @@ local create = require(script.create)
 local apply = require(script.apply)
 local source = require(script.source)
 local effect = require(script.effect)
+local derive = require(script.derive)
 local cleanup = require(script.cleanup)
 local untrack = require(script.untrack)
-local derive = require(script.derive)
+local batch = require(script.batch)
 local switch = require(script.switch)
 local show = require(script.show)
 local indexes, values = require(script.maps)()
@@ -59,6 +60,7 @@ local vide = {
     -- util
     cleanup = cleanup,
     untrack = untrack,
+    batch = batch,
     read = function<T>(value: T | () -> T): T
         return if type(value) == "function" then value() else value
     end,

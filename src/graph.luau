@@ -193,9 +193,31 @@ local function queue_children<T>(node: StartNode<T>)
     update_queue.n = i
 end
 
+local function flush_update_queue()
+    -- todo: test with recursive batch sets
+    local n0 = 0
+
+    local i = n0 + 1
+    while i <= update_queue.n do
+        local node = update_queue[i]
+        --assert(node.effect)
+
+        if evaluate_node(node) then
+            queue_children(node)
+        end
+
+        update_queue[i] = false :: any
+        i += 1
+    end
+
+    update_queue.n = n0
+end
+
 local function update<T>(root: StartNode<T>)
     local n0 = update_queue.n
     queue_children(root)
+
+    if flags.batch then return end
 
     local i = n0 + 1
     while i <= update_queue.n do
@@ -257,5 +279,6 @@ return table.freeze {
     create_node = create_node,
     create_start_node = create_start_node,
     get_children = get_children,
+    flush_update_queue = flush_update_queue,
     scopes = scopes
 }

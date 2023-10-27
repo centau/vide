@@ -6,6 +6,7 @@ local source = vide.source
 local derive = vide.derive
 local indexes = vide.indexes
 local values = vide.values
+local batch = vide.batch
 local cleanup = vide.cleanup
 local create = vide.create
 
@@ -132,30 +133,51 @@ ROOT_BENCH("update 1->1->1->1...1000 graph", function()
     end
 end)
 
--- todo: crashes at 1k
--- todo: repeat with batching
-ROOT_BENCH("update 1000->1 graph", function()
+-- todo: why does it hang at 1k? it didn't before
+ROOT_BENCH("update 500->1 graph", function()
     local srcs = {}
-    for i = 1, 800 do
+    for i = 1, 500 do
         srcs[i] = source(0)
     end
 
     derive(function()
-        for i = 1, 800 do
+        for i = 1, 500 do
             srcs[i]()
         end
         return false
     end)
 
     for i = 1, START(1) do
-        for idx = 1, 800 do
+        for idx = 1, 500 do
             srcs[idx](i)
         end
     end
 end)
 
--- todo: optimize, repeat with batching
-ROOT_BENCH("update 1000x 1->1 common extern. graph", function()
+ROOT_BENCH("update 1000->1 graph (batched)", function()
+    local srcs = {}
+    for i = 1, 1000 do
+        srcs[i] = source(0)
+    end
+
+    derive(function()
+        for i = 1, 1000 do
+            srcs[i]()
+        end
+        return false
+    end)
+
+    for i = 1, START(1) do
+        batch(function()
+            for idx = 1, 1000 do
+                srcs[idx](i)
+            end
+        end)
+    end
+end)
+
+-- todo: optimize this case
+ROOT_BENCH("update 1000 1->1 common extern. graph", function()
     local ext = source(-1)
 
     local srcs = {}

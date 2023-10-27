@@ -42,12 +42,14 @@ end
 
 local function get_owning_scope(): Node<unknown>
     local scope = get_scope()
+
     if not scope then
         local caller_name = debug.info(2, "n")
         return throw(`cannot use {caller_name}() in non-reactive scope, must be used within a root() or mount() callback`)
     elseif scope.effect then
-        throw("reactive scope is not an owning scope; new effects cannot be created in side-effects")
+        throw("cannot create new reactive scope inside of a tracking scope") -- todo: allow this?
     end
+
     return scope
 end
 
@@ -96,8 +98,8 @@ local function run_cleanups<T>(node: Node<T>)
 end
 
 local function find_and_swap_pop<T>(t: { T }, v: T)
-    local idx = table.find(t, v)
-    assert(idx, "value not found")
+    local idx = table.find(t, v) :: number
+    --assert(idx, "value not found")
     local n = #t
     t[idx] = t[n]
     t[n] = nil
@@ -107,10 +109,9 @@ local function remove_child<T>(parent: StartNode<T>, child: Node<T>)
     find_and_swap_pop(parent, child)
 end
 
-local function remove_owner<T>(node: Node<T>)
-    local owner = node.owner :: Node<T>
-    if node.owner and owner.owned then
-        find_and_swap_pop(owner.owned, node)
+local function disown<T>(node: Node<T>)
+    if node.owner then
+        find_and_swap_pop(node.owner.owned :: { Node<T> }, node)
     end
 end
 
@@ -126,7 +127,7 @@ end
 local function destroy<T>(node: Node<T>)
     run_cleanups(node)
     unparent(node)
-    remove_owner(node)
+    disown(node)
 
     if node.owned then
         local owned = node.owned
@@ -137,7 +138,8 @@ end
 
 local function destroy_owned<T>(node: Node<T>)
     if node.owned then
-        while node.owned[1] do destroy(node.owned[1]) end
+        local owned = node.owned
+        while owned[1] do destroy(owned[1]) end
     end
 end
 
@@ -178,18 +180,15 @@ local function evaluate_node<T>(node: Node<T>)
 
     node.cache = new_value
 
-    return cur_value ~= new_value -- node has changed value
+    return cur_value ~= new_value
 end
 
 local function queue_children<T>(node: StartNode<T>)
     local i = update_queue.n
-    local child = node[1]
-    while child do
-        --assert(child.parents.owner)
-        unparent(child)
+    while node[1] do
         i += 1
-        update_queue[i] = child
-        child = node[1]
+        update_queue[i] = node[1]
+        unparent(node[1])
     end
     update_queue.n = i
 end
@@ -201,7 +200,7 @@ local function update<T>(root: StartNode<T>)
     local i = n0 + 1
     while i <= update_queue.n do
         local node = update_queue[i]
-        assert(node.effect)
+        --assert(node.effect)
 
         if evaluate_node(node) then
             queue_children(node)

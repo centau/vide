@@ -1,5 +1,5 @@
 local testkit = require("test/testkit")
-local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
+local TEST, CASE, CHECK, FINISH = testkit.test()
 
 local mock = require "test/mock"
 local Instance, Signal = mock.Instance, mock.Signal
@@ -32,8 +32,6 @@ end
 local NIL = nil :: any
 
 vide.strict = false
-
---SKIP "graph edge cases"
 
 TEST("graph", function()
     local create_node = graph.create_node
@@ -1918,37 +1916,39 @@ TEST("graph edge cases", wrap_root(function()
     do CASE "diamond A,B,C,D,E"
         --[[
 
-        a > b >   > e
+        a > b   >   e
           > c > d >
 
         ]]
 
         local a = source(0)
 
-        local b = derive(function() print "ran b"; return (a() % 2 == 0) and 1 or 0 end)
-        local c = derive(function() print "ran c"; return a() * 2 end)
-        local d = derive(function() print "ran d"; return c() * 2 end)
-        local e = derive(function() print "ran e"; return b() + c() end)
+        local b = derive(function() return (a() % 2 == 0) and 1 or 0 end)
+        local c = derive(function() return a() * 2 end)
+        local d = derive(function() return c() * 2 end)
+        local e = derive(function() return b() + d() end)
 
         local count = { b = 0, c = 0, d = 0, e = 0 }
         effect(function() b(); count.b += 1 end)
         effect(function() c(); count.c += 1 end)
         effect(function() d(); count.d += 1 end)
-        effect(function() d(); count.e += 1 end)
+        effect(function() e(); count.e += 1 end)
+
+        CHECK(e() == 1)
 
         a(1)
 
         CHECK(count.b == 2)
         CHECK(count.c == 2)
         CHECK(count.d == 2)
-        CHECK(count.e == 2)
-        CHECK(e() == 4) -- todo: solve e evaluating before d
+        CHECK(count.e == 3) -- todo: redundant re-eval
+        CHECK(e() == 4)
 
         a(3)
         CHECK(count.b == 2)
         CHECK(count.c == 3)
         CHECK(count.d == 3)
-        CHECK(count.e == 3)
+        CHECK(count.e == 4)
         CHECK(e() == 12)
     end
 

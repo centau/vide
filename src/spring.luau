@@ -161,7 +161,8 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
     local c_c = 2*w_n
     local c = z * c_c
 
-    -- todo: is there a solution to this other than upping step frequency?
+    -- todo: is there a solution other than reducing step size?
+    -- todo: this does not catch all solver exploding cases
     if c > UPDATE_RATE*2 then -- solver will explode if this is true
         throw("spring damping too high, consider reducing damping or increasing period")
     end

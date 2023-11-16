@@ -8,7 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
--
+### Added
+
+- Batched updates with `batch()`.
+
+### Changed
+
+- Improved graph updating algorithm.
+- Graph nodes no longer destroy children; only owned.
+
+### Fixed
+
+- Graph edge case where a destroyed node can be readded if it was queued for
+  evaluation before being destroyed.
 
 --------------------------------------------------------------------------------
 

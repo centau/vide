@@ -99,27 +99,16 @@ end
 
 local function find_and_swap_pop<T>(t: { T }, v: T)
     local idx = table.find(t, v) :: number
-    --assert(idx, "value not found")
     local n = #t
     t[idx] = t[n]
     t[n] = nil
-end
-
-local function remove_child<T>(parent: StartNode<T>, child: Node<T>)
-    find_and_swap_pop(parent, child)
-end
-
-local function disown<T>(node: Node<T>)
-    if node.owner then
-        find_and_swap_pop(node.owner.owned :: { Node<T> }, node)
-    end
 end
 
 local function unparent<T>(node: Node<T>)
     local parents = node.parents
 
     for i, parent in next, parents do
-        remove_child(parent, node)
+        find_and_swap_pop(parent, node)
         parents[i] = nil
     end
 end
@@ -127,13 +116,16 @@ end
 local function destroy<T>(node: Node<T>)
     run_cleanups(node)
     unparent(node)
-    disown(node)
+    
+    if node.owner then
+        find_and_swap_pop(node.owner.owned :: { Node<T> }, node)
+        node.owner = false
+    end
 
     if node.owned then
         local owned = node.owned
         while owned[1] do destroy(owned[1]) end
     end
-    while node[1] do destroy(node[1]) end
 end
 
 local function destroy_owned<T>(node: Node<T>)
@@ -202,7 +194,7 @@ local function flush_update_queue()
         local node = update_queue[i]
         --assert(node.effect)
 
-        if evaluate_node(node) then
+        if node.owner and evaluate_node(node) then
             queue_children(node)
         end
 
@@ -224,7 +216,8 @@ local function update<T>(root: StartNode<T>)
         local node = update_queue[i]
         --assert(node.effect)
 
-        if evaluate_node(node) then
+        -- check if node is still owned in case destroyed after queued
+        if node.owner and evaluate_node(node) then
             queue_children(node)
         end
 

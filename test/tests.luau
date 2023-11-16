@@ -1923,6 +1923,7 @@ TEST("graph edge cases", wrap_root(function()
     local source = vide.source
     local derive = vide.derive
     local effect = vide.effect
+    local root = vide.root
 
     do CASE "diamond A,B,C,D"
         --[[
@@ -2005,6 +2006,89 @@ TEST("graph edge cases", wrap_root(function()
         a(1)
         CHECK(b() == 2)
         CHECK(count == 2)
+    end
+
+    do CASE "do not destroy children"
+        local parent = source(0)   
+
+        local
+            destroy,
+            parent_to_destroy,
+            update_parent_to_destroy
+        = root(function(destroy)
+            local src = source(0)
+            return
+                destroy,
+                derive(function() return src() end),
+                src
+        end)
+
+        local count = 0
+
+        effect(function()
+            count += 1
+            parent()
+            parent_to_destroy()
+        end)
+
+        parent(parent() + 1)
+        CHECK(count == 2)
+        update_parent_to_destroy(1)
+        CHECK(count == 3)
+
+        destroy()
+        
+        update_parent_to_destroy(2)
+        CHECK(count == 3)
+        
+        parent(parent() + 1)
+        CHECK(count == 4)
+    end
+
+    do CASE "double destroy"
+        -- issue:
+        -- parent evaluates
+        -- child A queued
+        -- child B queued
+        -- child A destroys child B
+        -- child B reevaluates due to already being queued
+        -- parent destroys, destroys child B - uh oh
+
+        local
+            destroy_parent,
+            parent,
+            update_parent
+        = root(function(destroy)
+            local src = source(0)
+            return
+                destroy,
+                derive(function() return src() end),
+                src
+        end)
+
+        local destroy_child, _child_B = function() end, nil
+
+        local count_A = 0
+    
+        -- child_A
+        effect(function()
+            count_A += 1
+            parent()
+            destroy_child()
+        end)
+
+        local count_B = 0
+        destroy_child, _child_B = root(function(destroy)
+            return
+                destroy,
+                derive(function() count_B += 1; return parent() end)
+        end)
+
+        update_parent(parent() + 1)
+        CHECK(count_A == 2)
+        CHECK(count_B == 1) -- child B should not run again
+        destroy_parent() -- should not error
+        CHECK(true)
     end
 end))
 

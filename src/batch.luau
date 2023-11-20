@@ -11,13 +11,15 @@ local function batch(setter: () -> ())
 
     local ok, err: string? = pcall(setter)
 
-    flags.batch = false
-    
-    if not ok then throw(`error occured while batching updates: {err}`) end
-
-    if not already_batching then -- todo: flush anyways?
-        graph.flush_update_queue()
+    if not already_batching then
+        flags.batch = false
+        
+        if not already_batching then
+            graph.flush_update_queue()
+        end
     end
+
+    if not ok then throw(`error occured while batching updates: {err}`) end
 end
 
 return batch

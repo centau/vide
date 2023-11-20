@@ -73,4 +73,22 @@ read can still be tracked inside a reactive scope.
     function read<T>(value: T | () -> T): T
     ```
 
+## batch()
+
+Runs a given function where any source updates made within the function do not
+trigger effects until after the function runs.
+
+- **Type**
+
+    ```lua
+    function batch(fn: () -> ())
+    ```
+
+- **Details**
+
+    Improves performance when an effect depends on multiple sources, and those
+    sources need to be updated. Updating those sources inside a batch call will
+    only cause the effect to run once after the batch call ends instead of after
+    each time a source is updated.
+
 --------------------------------------------------------------------------------

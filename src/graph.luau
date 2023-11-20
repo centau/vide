@@ -185,8 +185,11 @@ local function queue_children<T>(node: StartNode<T>)
     update_queue.n = i
 end
 
+local _flushing = false
 local function flush_update_queue()
-    -- todo: test with recursive batch sets
+    assert(not flushing, "recursive queue flush occured") -- todo
+    _flushing = true
+
     local n0 = 0
 
     local i = n0 + 1
@@ -203,6 +206,8 @@ local function flush_update_queue()
     end
 
     update_queue.n = n0
+
+    _flushing = false
 end
 
 local function update<T>(root: StartNode<T>)

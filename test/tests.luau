@@ -1805,7 +1805,7 @@ TEST("batch()", wrap_root(function()
     local derive = vide.derive
     local batch = vide.batch
 
-    do CASE "child evaluation halted"
+    do CASE "evaluation deferred"
         local a = source(0)
 
         local count = { b = 0, b2 = 0, c = 0 }
@@ -1840,7 +1840,47 @@ TEST("batch()", wrap_root(function()
         CHECK(c() == 5)
     end
 
-    -- todo: test batch call in recursive set
+    do CASE "recursive call"
+        local a1 = source(0)
+        local a2 = source(0)
+        local a3 = source(0)
+
+        local count = { b1 = 0, b2 = 0, b3 = 0 }
+
+        local b1 = derive(function()
+            count.b1 += 1
+            return a1() + 1
+        end)
+
+        local b2 = derive(function()
+            count.b2 += 1
+            return a2() + 1
+        end)
+
+        local b3 = derive(function()
+            count.b3 += 1
+            return a3() + 1
+        end)
+
+        batch(function()
+            a1(1)
+            batch(function()
+                a2(2)
+            end)
+            a3(3)
+            CHECK(count.b1 == 1)
+            CHECK(count.b2 == 1)
+            CHECK(count.b3 == 1)
+        end)
+
+        CHECK(count.b1 == 2)
+        CHECK(count.b2 == 2)
+        CHECK(count.b3 == 2)
+
+        CHECK(b1() == 2)
+        CHECK(b2() == 3)
+        CHECK(b3() == 4)
+    end
 end))
 
 TEST("read()", wrap_root(function()

@@ -10,14 +10,14 @@ local function is_action(v: any)
 end
 
 local function action(callback: (Instance) -> (), priority: number?): Action
-    local t = {
+    local a = {
         priority = priority or 1,
         callback = callback
     }
 
-    setmetatable(t :: any, ActionMT)
+    setmetatable(a :: any, ActionMT)
 
-    return table.freeze(t)
+    return table.freeze(a)
 end
 
 return function()

@@ -5,7 +5,7 @@ local flags = require(script.Parent.flags)
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
 local create_node = graph.create_node
-local get_owning_scope = graph.get_owning_scope
+local assert_owning_scope = graph.assert_owning_scope
 local evaluate_node = graph.evaluate_node
 local set_owner = graph.set_owner
 
@@ -31,8 +31,7 @@ function create_binding<T>(updater: (T) -> T, binding: T)
         end
     end
 
-    
-    local owner = get_owning_scope()
+    local owner = assert_owning_scope()
     
     local node = create_node(binding, updater)
 

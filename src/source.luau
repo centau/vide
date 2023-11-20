@@ -6,7 +6,7 @@ local create_start_node = graph.create_start_node
 local track = graph.track
 local update = graph.update
 
-export type Source<T> = (() -> T) & ((T) -> T)
+export type Source<T> = (() -> T) & ((value: T) -> T)
 
 local function source<T>(initial_value: T): Source<T>
     local node = create_start_node(initial_value)

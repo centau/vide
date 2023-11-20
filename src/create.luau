@@ -5,41 +5,51 @@ local Instance = game and Instance or require "test/mock".Instance :: never
 local throw = require(script.Parent.throw)
 local defaults = require(script.Parent.defaults)
 local apply = require(script.Parent.apply)
-local memoize = require(script.Parent.memoize)
+
+local ctor_cache = {} :: { [string]: () -> Instance }
+
+setmetatable(ctor_cache :: any, {
+    __index = function(self, class)
+        local ok, instance: Instance = pcall(Instance.new, class :: any)
+        if not ok then throw(`invalid class name, could not create instance of class { class }`) end
+
+        local default: { [string]: unknown }? = defaults[class]
+        if default then
+            for i, v in next, default do
+                (instance :: any)[i] = v
+            end
+        end
+
+        local function ctor(properties: Props): Instance
+            return apply(instance:Clone(), properties)    
+        end  
+
+        self[class] = ctor
+        return ctor
+    end
+})
 
 local function create_instance(class: string)
-    local ok, instance: Instance = pcall(Instance.new, class :: any)
-    if not ok then throw(`invalid class name, could not create instance of class { class }`) end
-
-    local default: { [string]: unknown }? = defaults[class]
-    if default then
-        for i, v in next, default do
-            (instance :: any)[i] = v
-        end
-    end
-
-    return function(properties: { [any]: unknown }): Instance
-        return apply(instance:Clone(), properties)    
-    end  
-end; create_instance = memoize(create_instance) -- always return same constructor for given class
+    return ctor_cache[class]
+end
 
 local function clone_instance(instance: Instance)
-    return function(properties: { [any]: unknown }): Instance
+    return function(properties: Props): Instance
         local clone = instance:Clone()
-        if not clone then error("Attempt to clone a non-archivable instance", 3) end
+        if not clone then throw "attempt to clone a non-archivable instance" end
         return apply(clone, properties)
     end
 end
 
-local function create(class_or_instance: string|Instance)
+local function create(class_or_instance: string|Instance): (Props) -> Instance
     if type(class_or_instance) == "string" then
         return create_instance(class_or_instance)
     elseif typeof(class_or_instance) == "Instance" then
         return clone_instance(class_or_instance)
     else
-        throw("bad argument #1, expected string or instance, got "..typeof(class_or_instance))
+        throw("bad argument #1, expected string or instance, got " .. typeof(class_or_instance))
+        return nil :: never
     end
-    return nil :: never
 end
 
 type Props = { [any]: any }

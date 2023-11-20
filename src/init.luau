@@ -14,6 +14,7 @@ local effect = require(script.effect)
 local derive = require(script.derive)
 local cleanup = require(script.cleanup)
 local untrack = require(script.untrack)
+local read = require(script.read)
 local batch = require(script.batch)
 local switch = require(script.switch)
 local show = require(script.show)
@@ -60,10 +61,8 @@ local vide = {
     -- util
     cleanup = cleanup,
     untrack = untrack,
+    read = read,
     batch = batch,
-    read = function<T>(value: T | () -> T): T
-        return if type(value) == "function" then value() else value
-    end,
 
     -- animations
     spring = spring,

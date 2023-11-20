@@ -942,6 +942,33 @@ TEST("create()", wrap_root(function()
         CHECK(not wref[1])
     end
 
+    do CASE "recursive create"
+        local set_test_to_true = vide.action(function(self) (self :: any).test = true end)
+
+        local f2
+    
+        local to_apply = {
+            { a = 1 },
+            set_test_to_true,
+            b = function() f2 = create "Frame" { a = 2 } end,
+        } :: { [number|string]: unknown }
+
+        -- do -- confirm iteration order
+        --     local t = {}
+        --     for i in to_apply do
+        --         table.insert(t, i)
+        --     end
+        --     assert(t[1] == "a")
+        -- end
+
+        local f = create "Frame" (to_apply)
+
+        CHECK((f :: any).a == 1)
+        CHECK((f :: any).test == true )
+
+        CHECK((f2 :: any).a == 2)
+    end
+
     do CASE "garbage collection test"
         local wref
 

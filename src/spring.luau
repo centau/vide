@@ -27,7 +27,7 @@ type Node<T> = graph.Node<T>
 type StartNode<T> = graph.StartNode<T>
 local create_node = graph.create_node
 local create_start_node = graph.create_start_node
-local get_owning_scope = graph.get_owning_scope
+local assert_owning_scope = graph.assert_owning_scope
 local evaluate_node = graph.evaluate_node
 local update = graph.update
 local set_owner = graph.set_owner
@@ -150,7 +150,7 @@ local springs: { [SpringData<any>]: StartNode<any> } = {}
 setmetatable(springs, { __mode = "v" })
 
 local function spring<T>(source: () -> T, period: number?, damping_ratio: number?): () -> T
-    local owner = get_owning_scope()
+    local owner = assert_owning_scope()
 
     -- https://en.wikipedia.org/wiki/Damping
 

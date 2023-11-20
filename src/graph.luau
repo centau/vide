@@ -40,7 +40,7 @@ local function get_scope(): Node<unknown>?
     return scopes[scopes.n]
 end
 
-local function get_owning_scope(): Node<unknown>
+local function assert_owning_scope(): Node<unknown>
     local scope = get_scope()
 
     if not scope then
@@ -187,7 +187,7 @@ end
 
 local _flushing = false
 local function flush_update_queue()
-    assert(not flushing, "recursive queue flush occured") -- todo
+    assert(not _flushing, "recursive queue flush occured") -- todo
     _flushing = true
 
     local n0 = 0
@@ -266,7 +266,7 @@ return table.freeze {
     close_scope = close_scope,
     evaluate_node = evaluate_node,
     get_scope = get_scope,
-    get_owning_scope = get_owning_scope,
+    assert_owning_scope = assert_owning_scope,
     add_cleanup = add_cleanup,
     set_owner = set_owner,
     destroy = destroy,

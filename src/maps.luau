@@ -10,7 +10,7 @@ local create_start_node = graph.create_start_node
 local set_owner = graph.set_owner
 local track = graph.track
 local update = graph.update
-local get_owning_scope = graph.get_owning_scope
+local assert_owning_scope = graph.assert_owning_scope
 local open_scope = graph.open_scope
 local close_scope = graph.close_scope
 local evaluate_node = graph.evaluate_node
@@ -28,7 +28,7 @@ local function check_primitives(t: {})
 end
 
 local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI, K) -> VO): () -> { VO }
-    local owner = get_owning_scope()
+    local owner = assert_owning_scope()
 
     local subowner = create_node(false, false)
     set_owner(subowner, owner)
@@ -123,7 +123,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 end
 
 local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> K) -> VO): () -> { VO }
-    local owner = get_owning_scope()
+    local owner = assert_owning_scope()
 
     local subowner = create_node(false, false)
     set_owner(subowner, owner)

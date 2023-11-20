@@ -4,11 +4,11 @@ local graph = require(script.Parent.graph)
 local create_node = graph.create_node
 local set_owner = graph.set_owner
 local track = graph.track
-local get_owning_scope = graph.get_owning_scope
+local assert_owning_scope = graph.assert_owning_scope
 local evaluate_node = graph.evaluate_node
 
 local function derive<T>(source: () -> T): () -> T
-    local owner = get_owning_scope()
+    local owner = assert_owning_scope()
 
     local node = create_node(false :: any, source)
 

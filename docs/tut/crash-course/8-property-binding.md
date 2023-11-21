@@ -25,17 +25,17 @@ end
 
 This example is equivalent to the example seen on the previous page.
 
-Instead of explicitly creating an effect, assigning a (non-event) property
-a function will implicitly create a side-effect to update that property anytime
-a dependent source is updated.
+Instead of explicitly creating an effect, assigning a (non-event) property a
+function will implicitly create an effect to update that property anytime a
+source used within is updated.
 
 Just like effects, the function is ran immediately in a reactive scope to set
-the property initially and determine what sources are being depended on.
+the property initially and determine what sources are being used.
 
 This allows you as the programmer to not need to manually update UI as the state
-of your program changes. You just define how the data sources map to UI, and
-Vide's reactive system will automatically update any properties depending on
-those sources that were updated.
+of your program changes. You just define how data sources map to UI, and Vide's
+reactive system will automatically update any properties depending on those
+sources.
 
 ## Children Binding
 

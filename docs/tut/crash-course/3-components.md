@@ -1,8 +1,11 @@
 # Components
 
+Vide encourages separating different parts of your UI into functions called
+*components*.
+
 A component is a function that creates and returns a piece of UI.
 
-This is a way to separate your app into small chunks that you can reuse and put
+This is a way to separate your UI into small chunks that you can reuse and put
 together.
 
 ::: code-group
@@ -66,12 +69,15 @@ Above is a simple example of a button component being used across files.
 
 A single parameter `props` is used to pass properties to the component.
 
-Components allow you to *encapsulate* behavior. You can only modify the
-component in ways that you allow in the component, through the `props` parameter.
+You can only modify the component in ways that you allow in the component,
+through the `props` parameter.
 
 To create a new button all you must do is call the `Button` function, passing in
 values. This saves having to create and set every property each time. Also, when
 updating the button component in future, any changes to the button file will be
 seen anywhere the button is used in your app.
 
-This can be extended to much more complicated UI.
+The `mount()` function is used to set up Vide's reactivity system when creating
+your UI. It only needs to be called once at the top-level with the function that
+puts together your entire app. It also parents the returned instance to another
+a target instance for you.

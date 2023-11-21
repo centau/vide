@@ -9,36 +9,31 @@ Luau allows us to omit parentheses `()` when calling functions with string or
 table literals which Vide takes advantage of for brevity.
 
 ```lua
-local mount = vide.mount
 local create = vide.create
 
-local function App()
-    return create "ScreenGui" {
-        create "Frame" {
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            Position = UDim2.fromScale(0.5, 0.5),
-            Size = UDim2.fromScale(0.4, 0.7),
+return create "ScreenGui" {
+    create "Frame" {
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.fromScale(0.5, 0.5),
+        Size = UDim2.fromScale(0.4, 0.7),
 
-            create "TextLabel" {
-                Text = "hi"
-            },
+        create "TextLabel" {
+            Text = "hi"
+        },
 
-            create "TextLabel" {
-                Text = "bye"
-            },
+        create "TextLabel" {
+            Text = "bye"
+        },
 
-            create "TextButton" {
-                Text = "click me",
+        create "TextButton" {
+            Text = "click me",
 
-                Activated = function()
-                    print "clicked!"
-                end
-            }
+            Activated = function()
+                print "clicked!"
+            end
         }
     }
-end
-
-mount(App, game.StarterGui)
+}
 ```
 
 Assign a value to a string key to set a property, and assign a value to a

@@ -29,13 +29,10 @@ local text = function()
     return "count: " .. tostring(count())
 end
 
-effect(function()
-    text() -- prints "ran"
-end)
+effect(function() text() end)
+effect(function() text() end)
 
-effect(function()
-    text() -- prints "ran" again
-end)
+source(1) -- prints "ran" x2
 ```
 
 To avoid this, you can use `derive()` to derive a new source instead. This will
@@ -55,16 +52,13 @@ local text = derive(function()
     return "count: " .. tostring(count())
 end)
 
-effect(function()
-    text() -- prints "ran"
-end)
+effect(function() text() end)
+effect(function() text() end)
 
-effect(function()
-    text() -- does not print, returns cached value
-end)
+source(1) -- prints "ran" x1
 ```
 
-`derive()` must also be used within a root reactive scope, just like `effect()`.
+`derive()` must also be called within a reactive scope, just like `effect()`.
 
 If the recalculated value is the same as the old value, the derived source will
 not rerun the effects using it.

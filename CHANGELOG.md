@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 --------------------------------------------------------------------------------
 
-## Unreleased
+## [0.2.0] - 2023-11-22
 
 ### Added
 
@@ -15,12 +15,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - Improved graph updating algorithm.
-- Graph nodes no longer destroy children; only owned.
+- Graph nodes when destroyed no longer destroy children; only owned.
 
 ### Fixed
 
 - Graph edge case where a destroyed node can be readded if it was queued for
-  evaluation before being destroyed.
+  rerun before being destroyed.
+- Some properties not being applied when `create()` is used recursively.
 
 --------------------------------------------------------------------------------
 

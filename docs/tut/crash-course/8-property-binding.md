@@ -1,8 +1,7 @@
 # Property Binding
 
-Explicitly creating effects to update properties can become verbose when there
-are a lot of properties to update. Vide provides a way to *implicitly* create
-an effect to update properties on source update.
+Explicitly creating effects to update properties can be tedious. Vide provides a
+way to *implicitly* create an effect to update properties.
 
 ```lua
 local create = vide.create
@@ -12,12 +11,12 @@ local function Counter()
     local count = source(0)
 
     return create "TextButton" {
-        Text = function()
-            return "count: " .. count()
-        end,
-
         Activated = function()
             count(count() + 1)
+        end,
+
+        Text = function()
+            return "count: " .. count()
         end
     }
 end

@@ -58,7 +58,7 @@ export default withMermaid({
                 {
                     text: "Advanced Reactivity",
                     items: [
-                        { text: "Reactive Scopes", link: "/tut/advanced/reactive-scoping.md"}
+                        { text: "Nested Scopes", link: "/tut/advanced/nested-scoping.md"}
                     ]
                 }
             ],

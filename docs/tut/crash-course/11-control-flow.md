@@ -1,123 +1,57 @@
 # Control Flow
 
-Eventually you will need a way to dynamically create and destroy UI elements
+Eventually you may need a way to dynamically create and destroy UI elements
 resulting from source updates. Vide provides functions to help you do this,
 known as *control flow* functions.
 
 These functions return new sources, which hold the instances to be displayed.
-These sources can be assigned as children, meaning the displayed children
-will update when the input source updates.
 
-Control flow functions are special, because they run their components in a new
-reactive scope, which can be destroyed independently of the reactive scope that
-called the control flow function itself. This means that parts of your app can
-be independently created then destroyed.
-
-## show()
-
-The most basic control flow function is `show()`, which is used to conditionally
-show a component.
-
-```lua
-local source = vide.source
-local show = vide.show
-
-local function JoinMenu()
-    local joined = source(false)
-
-    local function JoinButton()
-        return Button {
-            Activated = function() joined(true) end
-        }
-    end
-
-    return create "Frame" {
-        show(function() return not joined() end, JoinButton)
-    }
-end
-```
-
-This will make a button to join if you have not joined already.
-
-You can also pass a third argument, a fallback to show if the condition is falsey.
-
-```lua
-local function JoinMenu()
-    local joined = source(false)
-
-    local function JoinButton()
-        return Button {
-            Activated = function() joined(true) end
-        }
-    end
-
-    local function LeaveButton()
-        return Button {
-            Activated = function() joined(false) end
-        }
-    end
-
-    return create "Frame" {
-        show(joined, LeaveButton, JoinButton)
-    }
-end
-```
-
-The reactive graph for the above example:
-
-```mermaid
-%%{init: {
-    "theme": "base",
-    "themeVariables": {
-        "primaryColor": "#1B1B1F",
-        "primaryTextColor": "#fff",
-        "primaryBorderColor": "#1B1B1F",
-        "lineColor": "#79B8FF",
-        "tertiaryColor": "#161618",
-        "tertiaryBorderColor": "#1C1C1F"
-    }
-}}%%
-
-graph
-
-subgraph root["mount() scope"]
-    direction LR
-    joined --> show -.- subroot
-
-    subgraph subroot["show() scope"]
-        direction LR
-        Button
-    end
-end
-```
-
-`show()` will implicitly create an effect depending on `joined`, which can be
-seen as `show` on the graph. This effect manages, and can create or destroy
-a separate reactive scope seen as `show() scope` on the graph. The dotted line
-indicates that it isn't actually connected, only indirectly managed through
-code.
+Control flow functions run their components in a new reactive scope, which can
+be destroyed independently of the reactive scope that called the control flow
+function. This means parts of your app can be independently created and
+destroyed.
 
 ## switch()
 
-Similar to `show()`, `switch()`, also condtionally displays one instance at a
-time. It is more flexible since it can show one of many components, based on a
-table used to map a source value to a component.
+`switch()` condtionally displays one instance at a time. It uses a table to map
+a source value to a component.
 
 ```lua
 local source = vide.source
 local switch = vide.switch
 
+local function Button(props: {
+    Text: string,
+    Activated: () -> ()
+})
+    local hovered = source(false)
+
+    return create "TextButton" {
+        Text = props.Text,
+        Activated = props.Activated,
+
+        TextColor3 = function()
+            return hovered() and Color3.new(1, 1, 1) or Color3.new(.7, .7, .7)
+        end,
+
+        MouseEnter = function() hovered(true) end,
+        MouseLeave = function() hovered(false) end
+    }
+end
+
 local function JoinMenu()
     local joined = source(false)
 
     local function JoinButton()
         return Button {
+            Text = "Join",
             Activated = function() joined(true) end
         }
     end
 
     local function LeaveButton()
         return Button {
+            Text = "Leave"
             Activated = function() joined(false) end
         }
     end
@@ -131,22 +65,6 @@ local function JoinMenu()
 end
 ```
 
-This example is equivalent to the previous one.
-
-The switch can map any value to any component.
-
-```lua
-type ActiveMenu = "none" | "inventory" | "shop" | "settings"
-
-local menu = source "inventory"
-
-switch(menu) {
-    inventory = InventoryMenu,
-    shop = ShopMenu,
-    settings = SettingsMenu
-}
-```
-
 The reactive graph for the above example:
 
 ```mermaid
@@ -164,23 +82,30 @@ The reactive graph for the above example:
 
 graph
 
-subgraph root["mount() scope"]
+subgraph root["root scope"]
     direction LR
-    menu --> switch -.- subroot
+    joined --> switch -.- subroot
 
-    subgraph subroot["switch() scope"]
+    subgraph subroot["switch scope"]
         direction LR
-        Menu
+        effect["TextColor3 effect"]
     end
 end
 ```
+
+A `switch()` call creates a new effect and a new scope as seen in the above
+graph. Whenever `menu` updates, it causes the `switch` effect to run, which
+will destroy and recreate the switch scope with the new component.
+
+This will also destroy the internal effect that the button uses to highlight
+itself when it is hovered, each time the switch is rerun.
 
 ## indexes()
 
 Often, you will have a table of values with each value displayed in a similar
 manner. Rather than manually looping over each value to generate a corresponding
-UI element, `indexes()` allows you to create elements for each table index, to
-display the value at that index.
+UI element, `indexes()` allows you to create elements each corresponding to a
+table index, to display the value at that index.
 
 ```lua
 local todoList = source {
@@ -222,7 +147,8 @@ value), will have its corresponding reactive scope destroyed to clean up that
 element.
 
 `indexes()` is said to *map* each table index to a new UI element that can
-update to display the current value at that index.
+update to display the current value at that index. Each table index is given a
+single corresponding UI element.
 
 The reactive graph for the above example:
 
@@ -241,16 +167,16 @@ The reactive graph for the above example:
 
 graph
 
-subgraph root ["mount() scope"]
+subgraph root ["root scope"]
     direction LR
     todoList --> indexes -.- subroot1 & subroot2
 
-    subgraph subroot1 ["indexes() scope 1"]
+    subgraph subroot1 ["indexes scope 1"]
         direction LR
         value1[todo] --> prop1["prop binding"]
     end
 
-    subgraph subroot2 ["indexes() scope 2"]
+    subgraph subroot2 ["indexes scope 2"]
         direction LR
         value2[todo] --> prop2[prop binding]
     end

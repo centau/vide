@@ -45,9 +45,9 @@ local function assert_owning_scope(): Node<unknown>
 
     if not scope then
         local caller_name = debug.info(2, "n")
-        return throw(`cannot use {caller_name}() in non-reactive scope, must be used within a root() or mount() callback`)
+        return throw(`cannot use {caller_name}() in a non-reactive scope`)
     elseif scope.effect then
-        throw("cannot create new reactive scope inside of a tracking scope") -- todo: allow this?
+        throw("cannot create new reactive scope in a tracking reactive scope")
     end
 
     return scope

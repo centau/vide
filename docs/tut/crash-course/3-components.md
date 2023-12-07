@@ -35,7 +35,6 @@ return Button
 ```
 
 ```lua [App.luau]
-local mount = vide.mount
 local create = vide.create
 
 local Button = require(Button)
@@ -60,7 +59,7 @@ local function App()
     }
 end
 
-mount(App, game.StarterGui)
+App().Parent = game.StarterGui
 ```
 
 :::
@@ -76,8 +75,3 @@ To create a new button all you must do is call the `Button` function, passing in
 values. This saves having to create and set every property each time. Also, when
 updating the button component in future, any changes to the button file will be
 seen anywhere the button is used in your app.
-
-The `mount()` function is used to set up Vide's reactivity system when creating
-your UI. It only needs to be called once at the top-level with the function that
-puts together your entire app. It also parents the returned instance to another
-a target instance for you.

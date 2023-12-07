@@ -6,7 +6,7 @@ Instances are created using `create()`.
 properties to assign when creating a new instance for that class.
 
 Luau allows us to omit parentheses `()` when calling functions with string or
-table literals which Vide takes advantage of for brevity.
+table literals which is recommended to use for brevity.
 
 ```lua
 local create = vide.create
@@ -44,6 +44,5 @@ to a string key.
 When creating an instance with no properties, it is important to not forget to
 actually call the constructor: `create "Frame" {}` and not `create "Frame"`.
 To be clear, `create "Frame"` returns a *function* which is a constructor for
-that class, not an instance of that class. This would result in you attempting
-to parent a function instead of an instance which is not correct.
+that class, not an instance of that class.
 :::

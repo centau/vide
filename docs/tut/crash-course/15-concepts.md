@@ -6,73 +6,64 @@ A summary of all the concepts covered during the crash course.
 
 A source of data.
 
-Stores a single value that can be updated by the user.
+Stores a single value that can be updated.
+
+Created with `source()`.
+
+# Derived Source
+
+A new source composed of other sources.
+
+Created with a plain function or with `derive()`.
 
 ## Effect
 
-Anything that happens in reponse to a source update.
+Anything that happens in response to a source update.
 
-Vide has built-in functions to create effects such as
-
-- `effect()` - runs arbitrary user code on source update
-- `derive()` - updates a derived source on source update
+Created with `effect()`.
 
 ## Reactive Scope
 
-A scope created by certain Vide functions where source updates can be tracked,
-and cleanups queued.
-
-When a source used inside a reactive scope is updated, the reactive scope will
-rerun.
-
-Reactive scopes are created by functions such as
+A scope created by certain functions such as:
 
 - `root()`
 - `effect()`
 - `derive()`
 
-## Owner
+Reactive scopes can:
 
-A reactive scope created within an outer reactive scope, is *owned* by the outer
-reactive scope.
+- track sources that are read from within.
+- rerun when a tracked source updates.
+- track new reactive scopes created from within.
 
-When a reactive scope is re-ran or destroyed, all reactive scopes owned by it
-are also destroyed.
+## Scope Owners
 
-Vide does not let you create reactive scopes without owners.
+A reactive scope created within another reactive scope is *owned* by the other
+reactive scope, with the exception of the reactive scope created by `root()`.
 
-## Root Reactive Scope
+When a reactive scope is rerun or destroyed, all reactive scopes owned by it are
+automatically destroyed.
 
-A top-level reactive scope. These scopes are an exception to the owner rule.
-
-Created by `root()`, which `mount()` uses internally.
-
-A root reactive scope can be created on its own. It allows other reactive scopes
-to be created with an owner.
-
-Root reactive scopes must be destroyed manually by the user, a function to do
-this is given by `root()`.
-
-A root reactive scope can be created within another reactive scope and it will
-not automatically be owned by that scope.
+`root()`, which `mount()` uses internally, creates a reactive scope with no
+owner, since it must be destroyed manually using a destructor
+returned.
 
 ## Cleanup
 
-Cleans up the result from an effect.
+Arbitrary code to run whenever a reactive scope is rerun or destroyed.
 
-Unneeded in most cases, a cleanup is arbitrary code that can be ran before
-a reactive scope is rerun or destroyed, so that the result from the previous
-run can be cleaned up. A cleanup can be queued by using `cleanup()` within
-a reactive scope.
+Queue a function to run using `cleanup()`.
 
 ## Tracking
 
-Reactive scopes are tracking by default, meaning sources read from within scope
-will be tracked.
+Sources read from within a reactive scope will be tracked. This can be disabled
+using `untrack()`, which will make reactive scopes temporarily ignore sources
+read.
 
-A reactive scope can be made temporarily non-tracking within `untrack()`, so
-that any source used will be ignored. The only function that creates a
-nontracking reactive scope by default is `root()`.
+The reactive scope created by `root()` is non-tracking by default.
+
+As a guard against misusage, a reactive scope cannot be created within a
+reactive scope, unless it is made non-tracking using `untrack()`.
 
 ## Reactive Graph
 

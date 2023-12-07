@@ -1,12 +1,16 @@
 # Root Reactive Scopes
 
-Any reactive scopes created, such as by `effect()`, must be done so within a
-"root" reactive scope. This is the main purpose of `mount()`, which you use
-once at the top level to create your UI.
+Reactive scopes cannot be created on their own - they must be created within
+another reactive scope so that it can be tracked and later destroyed when it is
+no longer needed.
 
-This is so that if you want to destroy your UI, it can stop any reactive scopes
-created within it, since reactive scopes track any reactive scopes created
-within them.
+This is the purpose of `mount()`, which creates an initial "root", or
+"top-level" reactive scope, which all other reactive scopes, such as
+ones created by `effect()`, can stem from.
+
+When this root reactive scope is destroyed, it will ensure all other reactive
+scopes created within it are also destroyed, ensuring everything is cleaned up
+properly.
 
 ```lua
 local source = vide.source
@@ -20,13 +24,15 @@ local function App()
     end)
 end
 
-vide.mount(App) -- works!
 
 App() -- will error since effect() was not called within a reactive scope
+
+vide.mount(App) -- works!
+
 ```
 
-Mounting returns a function that when called will destroy any reactive scopes
-created during the `mount()` call.
+Mounting returns a function that when called will destroy its reactive scope,
+along with any other reactive scopes created inside it.
 
 ```lua
 local unmount = mount(App)
@@ -68,7 +74,7 @@ memory. The effect being destroyed will remove this reference, allowing the
 instance to be garbage collected.
 
 You don't need to worry about ensuring all your effects are created within a
-root scope, since you should be creating all your UI and corresponding effects
-within a top-level `mount()` call that puts all your UI together. So it is safe
-to assume that any effect you create will be created under this top level scope.
-Vide will prevent you from accidently doing otherwise anyways.
+root reactive scope, since you should be creating all your UI and corresponding
+effects within a top-level `mount()` call that puts all your UI together. So it
+is safe to assume that any effect you create will be created under this top
+level scope. Vide will prevent you from accidently doing otherwise anyways.

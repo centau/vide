@@ -21,11 +21,11 @@ count(1)
 -- "count: 1" printed
 ```
 
-The callback given to `effect()` is initially ran immediately in a
-*reactive scope*. Any source read from inside a reactive scope will be tracked,
-so that if any of those sources update, the effect will be reran too.
+The callback given to `effect()` is ran immediately in a *reactive scope*. Any
+source read from inside a reactive scope will be tracked, so when any of those
+sources update, the effect will be reran too.
 
-Effects also work with derived sources, it doesn't matter how deeply nested
+Reactive scopes also track derived sources, it doesn't matter how deeply nested
 inside a function a source is.
 
 ```lua

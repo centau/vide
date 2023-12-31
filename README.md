@@ -16,6 +16,8 @@ Read the
 [crash course](https://centau.github.io/vide/tut/crash-course/1-introduction)
 for a quick introduction to the library.
 
+Join the [BOSS discord](https://discord.gg/443bJm5e9b) for further help.
+
 ## Code sample
 
 ```lua

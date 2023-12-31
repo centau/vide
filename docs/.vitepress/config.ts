@@ -65,7 +65,8 @@ export default withMermaid({
         },
 
         socialLinks: [
-            { icon: "github", link: "https://github.com/centau/vide" }
+            { icon: "github", link: "https://github.com/centau/vide" },
+            { icon: "discord", link: "https://discord.gg/443bJm5e9b" }
         ]
     }
 })

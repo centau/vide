@@ -33,6 +33,6 @@ As well as additional safety checks, Vide will dedicate extra resources to
 recording and better emitting stack traces where errors occur, particularly
 when binding properties to sources.
 
-It is recommend to develop UI with strict mode and to disable it when pushing to
+It is recommended to develop UI with strict mode and to disable it when pushing to
 production. In Roblox, production code compiles at O2 by default, so you don't
 need to worry about disabling strict mode unless you have manually enabled it.

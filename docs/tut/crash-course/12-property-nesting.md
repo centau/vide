@@ -27,7 +27,7 @@ function Menu(props: {
     Size: UDim2
 })
     return Background {
-        Color = props.COlor,
+        Color = props.Color,
         AnchorPoint = props.AnchorPoint,
         Position = props.Position,
         Size = props.Size
@@ -77,7 +77,8 @@ be parented.
 
 ```lua
 type Children = {
-    Children = Array<Instance>
+    -- also can optionally pass a source that returns an array of children too
+    Children = Array<Instance> | () -> Array<Instance>
 }
 
 local function List(props: Children & Layout)
@@ -107,8 +108,8 @@ properties, this can be used to create overridable default properties.
 local function List(props: Children & Layout)
     return create "Frame" {
         props.Children,
-
         props.Layout,
+
         -- can be overriden by `props.Layout`
         AnchorPoint = Vector2.new(0.5, 0),
         Position = UDim2.fromScale(0.5, 0),

@@ -12,6 +12,8 @@ local function changed<T>(property: string, callback: (T) -> ())
         cleanup(function()
             con:Disconnect()
         end)
+
+        callback((instance :: any)[property])
     end)
 end
 

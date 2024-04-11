@@ -6,53 +6,43 @@ Instances are created using `create()`.
 properties to assign when creating a new instance for that class.
 
 Luau allows us to omit parentheses `()` when calling functions with string or
-table literals which Vide takes advantage of for brevity.
+table literals which is recommended to use for brevity.
 
 ```lua
-local vide = require(vide)
-local mount = vide.mount
 local create = vide.create
 
-local function App()
-    return create "ScreenGui" {
-        create "Frame" {
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            Position = UDim2.fromScale(0.5, 0.5),
-            Size = UDim2.fromScale(0.4, 0.7),
+return create "ScreenGui" {
+    create "Frame" {
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.fromScale(0.5, 0.5),
+        Size = UDim2.fromScale(0.4, 0.7),
 
-            create "TextLabel" {
-                Text = "hi"
-            },
+        create "TextLabel" {
+            Text = "hi"
+        },
 
-            create "TextLabel" {
-                Text = "bye"
-            },
+        create "TextLabel" {
+            Text = "bye"
+        },
 
-            create "TextButton" {
-                Text = "click me",
+        create "TextButton" {
+            Text = "click me",
 
-                Activated = function()
-                    print "clicked!"
-                end
-            }
+            Activated = function()
+                print "clicked!"
+            end
         }
     }
-end
-
-mount(App, game.StarterGui)
+}
 ```
 
 Assign a value to a string key to set a property, and assign a value to a
 number key to set a child. Events can be connected to by assigning a function
 to a string key.
 
-You can also use a shorthand to create datatypes instead of explicitly typing
-out the class name and constructor. The table will be unpacked into the `.new()`
-constructor of the property's type.
-
-```lua
-create "Frame" {
-    AnchorPoint = { 0.5, 1 },
-    UDim2 = { 0.5, 0, 0.5, 0 }
-}
-```
+::: warning
+When creating an instance with no properties, it is important to not forget to
+actually call the constructor: `create "Frame" {}` and not `create "Frame"`.
+To be clear, `create "Frame"` returns a *function* which is a constructor for
+that class, not an instance of that class.
+:::

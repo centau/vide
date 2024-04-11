@@ -12,47 +12,44 @@ export type Node<T> =  {
     cache: T,
     effect:  ((T) -> T) | false,
     cleanups: { () -> () } | false,
-    parents: { owner: StartNode<T>?, [number]: StartNode<T> },
-    [number]: Node<T>
+
+    owned: { Node<T> } | false,
+    owner: Node<T> | false,
+
+    parents: { StartNode<T> },
+    [number]: Node<T> -- children
 }
 
 -- reactive scope stack
 local scopes = { n = 0 } :: { [number]: Node<any>, n: number }
 
--- runs a given callback in a context that Luau does not allow yielding in
-local check_for_yield: <T...>(fn: (T...) -> (), T...) -> (boolean, string?) do
-    local t = { __mode = "kv" }
-    setmetatable(t, t)
+local function ycall<T, U>(fn: (T) -> U, arg: T): (boolean, string|U)
+    local thread = coroutine.create(pcall)
+    local resume_ok, run_ok, result = coroutine.resume(thread, fn, arg)
 
-    check_for_yield = function(fn, ...: any)
-        local args = { ... }
-
-        t.__unm = function(_)
-            fn(unpack(args))
-        end
-
-        local ok, err: string? = pcall(function()
-            local _ = -t
-        end)
-
-        return ok, if err == "attempt to yield across metamethod/C-call boundary"
-            or err == "thread is not yieldable" then "yield occured"
-            else err
+    assert(resume_ok)
+        
+    if coroutine.status(thread) ~= "dead" then
+        return false, "attempt to yield in reactive scope"
     end
+
+    return run_ok, result
 end
 
 local function get_scope(): Node<unknown>?
     return scopes[scopes.n]
 end
 
-local function get_owning_scope(): Node<unknown>
+local function assert_owning_scope(): Node<unknown>
     local scope = get_scope()
+
     if not scope then
         local caller_name = debug.info(2, "n")
-        return throw(`cannot use {caller_name}() in non-reactive scope, must be used within a root() or mount() callback`)
+        return throw(`cannot use {caller_name}() in a non-reactive scope`)
     elseif scope.effect then
-        throw("owning scope is not stable; are you trying to derive a new source from within a side-effect?")
+        throw("cannot create new reactive scope in a tracking reactive scope")
     end
+
     return scope
 end
 
@@ -62,8 +59,12 @@ local function add_child<T>(parent: StartNode<any>, child: Node<any>)
 end
 
 local function set_owner(node: Node<any>, owner: Node<any>)
-    node.parents.owner = owner
-    table.insert(owner, node)
+    node.owner = owner
+    if owner.owned then
+        table.insert(owner.owned, node)
+    else
+        owner.owned = { node }
+    end
 end
 
 local function open_scope<T>(node: Node<T>)
@@ -96,19 +97,18 @@ local function run_cleanups<T>(node: Node<T>)
     end
 end
 
-local function remove_child<T>(parent: StartNode<T>, child: Node<T>)
-    local idx = table.find(parent, child)
-    assert(idx, "child not found")
-    local n = #parent
-    parent[idx] = parent[n]
-    parent[n] = nil
+local function find_and_swap_pop<T>(t: { T }, v: T)
+    local idx = table.find(t, v) :: number
+    local n = #t
+    t[idx] = t[n]
+    t[n] = nil
 end
 
 local function unparent<T>(node: Node<T>)
     local parents = node.parents
 
-    for i, parent in ipairs(parents) do
-        remove_child(parent, node)
+    for i, parent in next, parents do
+        find_and_swap_pop(parent, node)
         parents[i] = nil
     end
 end
@@ -116,84 +116,121 @@ end
 local function destroy<T>(node: Node<T>)
     run_cleanups(node)
     unparent(node)
-
-    node.effect = false
-
-    if node.parents.owner then
-        remove_child(node.parents.owner, node)
-        node.parents.owner = nil
+    
+    if node.owner then
+        find_and_swap_pop(node.owner.owned :: { Node<T> }, node)
+        node.owner = false
     end
 
-    while node[1] do destroy(node[1]) end
+    if node.owned then
+        local owned = node.owned
+        while owned[1] do destroy(owned[1]) end
+    end
 end
 
-local update_queue = {} :: { Node<any> }
+local function destroy_owned<T>(node: Node<T>)
+    if node.owned then
+        local owned = node.owned
+        while owned[1] do destroy(owned[1]) end
+    end
+end
+
+local update_queue = { n = 0 } :: { n: number, [number]: Node<any> }
 
 local function evaluate_node<T>(node: Node<T>)
     local cur_value = node.cache
 
     if flags.strict then
         run_cleanups(node)
+        destroy_owned(node)
+
         open_scope(node)
 
-        local ok, err = check_for_yield(node.effect :: (T) -> T, cur_value)
+        local ok, new_value = ycall(node.effect :: (T) -> T, cur_value)
         
         close_scope()
         
-        if not ok then throw(err :: string) end
+        if not ok then throw(new_value :: string) end
+
+        node.cache = new_value :: T
     end
 
-    run_cleanups(node) -- todo: move in scope?
+    run_cleanups(node)
+    destroy_owned(node)
+
     open_scope(node)
 
-    local ok, new_value = pcall(node.effect :: (T) -> T, cur_value)
+    local ok, new_value = pcall(node.effect :: (T) -> T, node.cache)
 
     close_scope()
 
     if not ok then
         table.clear(update_queue)
+        update_queue.n = 0
         throw(`side-effect error from source update\n{new_value}`)
     end
 
     node.cache = new_value
 
-    return cur_value ~= new_value -- node has changed value
+    return cur_value ~= new_value
 end
 
--- todo: case where owner is set from an untrack call within an effectful node, children clearing
-local function update_from<T>(node: StartNode<T>, n0: number)
-    if not node[1] then return end
+local function queue_children<T>(node: StartNode<T>)
+    local i = update_queue.n
+    while node[1] do
+        i += 1
+        update_queue[i] = node[1]
+        unparent(node[1])
+    end
+    update_queue.n = i
+end
 
-    local n = n0
+local _flushing = false
+local function flush_update_queue()
+    assert(not _flushing, "recursive queue flush occured") -- todo
+    _flushing = true
 
-    -- unparent all children and queue for eval
-    do
-        local child = node[1]
-        while child do -- todo: case where child in owner context
-            unparent(child)
+    local n0 = 0
 
-            n += 1
-            update_queue[n] = child
+    local i = n0 + 1
+    while i <= update_queue.n do
+        local node = update_queue[i]
+        --assert(node.effect)
 
-            child = node[1]
+        if node.owner and evaluate_node(node) then
+            queue_children(node)
         end
+
+        update_queue[i] = false :: any
+        i += 1
     end
 
-    -- evaluate all queued children
-    for i = n0 + 1, n do
-        local child = update_queue[i] -- todo: error: index boolean
-        if not child.effect then continue end
+    update_queue.n = n0
 
-        if evaluate_node(child) then
-            update_from(child, n)
+    _flushing = false
+end
+
+local function update<T>(root: StartNode<T>)
+    local n0 = update_queue.n
+    queue_children(root)
+
+    if flags.batch then return end
+
+    local i = n0 + 1
+    while i <= update_queue.n do
+        local node = update_queue[i]
+        --assert(node.effect)
+
+        -- check if node is still owned in case destroyed after queued
+        if node.owner and evaluate_node(node) then
+            queue_children(node)
         end
 
         update_queue[i] = false :: any -- false instead of nil to avoid sparse
+        i += 1
     end
-end
 
-local function update<T>(node: StartNode<T>)
-    update_from(node, 0)
+    update_queue.n = n0
 end
 
 local function track<T>(node: StartNode<T>)
@@ -208,6 +245,10 @@ local function create_node<T>(value: T, effect: false | (T) -> T): Node<T>
         cache = value,
         effect = effect,
         cleanups = false,
+
+        owner = false,
+        owned = false,
+
         parents = {},
     }
 end
@@ -225,7 +266,7 @@ return table.freeze {
     close_scope = close_scope,
     evaluate_node = evaluate_node,
     get_scope = get_scope,
-    get_owning_scope = get_owning_scope,
+    assert_owning_scope = assert_owning_scope,
     add_cleanup = add_cleanup,
     set_owner = set_owner,
     destroy = destroy,
@@ -236,5 +277,6 @@ return table.freeze {
     create_node = create_node,
     create_start_node = create_start_node,
     get_children = get_children,
+    flush_update_queue = flush_update_queue,
     scopes = scopes
 }

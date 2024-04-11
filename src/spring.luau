@@ -27,7 +27,7 @@ type Node<T> = graph.Node<T>
 type StartNode<T> = graph.StartNode<T>
 local create_node = graph.create_node
 local create_start_node = graph.create_start_node
-local get_owning_scope = graph.get_owning_scope
+local assert_owning_scope = graph.assert_owning_scope
 local evaluate_node = graph.evaluate_node
 local update = graph.update
 local set_owner = graph.set_owner
@@ -150,7 +150,7 @@ local springs: { [SpringData<any>]: StartNode<any> } = {}
 setmetatable(springs, { __mode = "v" })
 
 local function spring<T>(source: () -> T, period: number?, damping_ratio: number?): () -> T
-    local owner = get_owning_scope()
+    local owner = assert_owning_scope()
 
     -- https://en.wikipedia.org/wiki/Damping
 
@@ -160,6 +160,12 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
     local k = w_n^2
     local c_c = 2*w_n
     local c = z * c_c
+
+    -- todo: is there a solution other than reducing step size?
+    -- todo: this does not catch all solver exploding cases
+    if c > UPDATE_RATE*2 then -- solver will explode if this is true
+        throw("spring damping too high, consider reducing damping or increasing period")
+    end
 
     local data: SpringData<T> = {
         k = k,

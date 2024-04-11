@@ -2,6 +2,10 @@
 
 <br/>
 
+:::warning
+Yielding is not allowed in any reactive scope. Strict mode can check for this.
+:::
+
 ## root()
 
 Creates and runs a function in a new reactive scope.
@@ -14,17 +18,13 @@ Creates and runs a function in a new reactive scope.
 
 - **Details**
 
+    Returns the result of the given function.
+
     Creates a new root reactive scope, where creation and derivations of sources
     can be tracked and properly disposed of.
 
-    Returns the result of the given function.
-
     A function to destroy the root is passed into the callback, which will run
     any cleanups and allow derived sources created to garbage collect.
-
-    ::: warning
-    `fn()` cannot yield.
-    :::
 
 ## source()
 
@@ -44,6 +44,8 @@ Creates a new source with the given value.
     Reading from the source from within a reactive scope will cause changes
     to that source to be tracked and anything depending on it to update.
 
+    Sources can be created outside of reactive scopes.
+
 - **Example**
 
     ```lua
@@ -56,7 +58,7 @@ Creates a new source with the given value.
 
 ## effect()
 
-Runs a side-effect on source update.
+Runs a side-effect in a new reactive scope on source update.
 
 - **Type**
 
@@ -66,14 +68,10 @@ Runs a side-effect on source update.
 
 - **Details**
 
-    The callback is ran immediately.
-
     Any time a source referenced in the callback is changed, the callback will
     be reran.
 
-    ::: warning
-    `callback()` cannot yield.
-    :::
+    The callback is ran to initially ran on first call to find dependent sources.
 
 - **Example**
 
@@ -93,7 +91,7 @@ Runs a side-effect on source update.
 
 ## derive()
 
-Derives a new source from existing sources.
+Derives a new source in a new reactive scope from existing sources.
 
 - **Type**
 
@@ -109,12 +107,7 @@ Derives a new source from existing sources.
     Anytime its value is recalculated it is also cached, subsequent calls will
     retun this cached value until it recalculates again.
 
-    Takes a callback that is immediately run to determine what sources are being
-    referenced.
-
-    ::: warning
-    `source()` cannot yield.
-    :::
+    The callback is ran to initially ran on first call to find dependent sources.
 
 - **Example**
 

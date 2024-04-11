@@ -1,0 +1,19 @@
+[package]
+name = "centau/vide"
+description = "A reactive Luau library for creating UI. "
+license = "MIT"
+version = "0.2.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+include = ["default.project.json", "LICENSE", "src"]
+exclude = [
+    ".github",
+    "docs",
+	"test",
+	".gitattributes",
+	".gitignore",
+    ".luaurc",
+	"CHANGELOG.md",
+	"README.md",
+    "todo.md"
+]

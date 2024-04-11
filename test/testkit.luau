@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 -- testkit.luau
--- v0.7.1
+-- v0.7.2
 --------------------------------------------------------------------------------
 
 local color = {
@@ -323,7 +323,7 @@ end
 
 local function print2(v: unknown)
     type Buffer = { n: number, [number]: string }
-    type Cyclic = { [{}]: true }
+    type Cyclic = { n: number, [{}]: number }
 
     -- overkill concatenationless string buffer
     local function tos(value: any, stack: number, str: Buffer, cyclic: Cyclic)
@@ -347,16 +347,19 @@ local function print2(v: unknown)
         else -- is table
             local tabbed_indent = indent .. TAB
 
-            str.n += 1
-
             if cyclic[value] then
-                str[str.n] = color.gray "*cyclic reference*"
+                str.n += 1
+                str[str.n] = color.gray(`CYCLIC REF {cyclic[value]}`)
                 return
             else
-                cyclic[value] = true
+                cyclic.n += 1
+                cyclic[value] = cyclic.n
             end
 
-            str[str.n] = "{\n"
+            str.n += 3
+            str[str.n - 2] = "{ "
+            str[str.n - 1] = color.gray(tostring(cyclic[value]))
+            str[str.n - 0] = "\n"
 
             local i, v = next(value, nil)
             while v ~= nil do
@@ -393,7 +396,7 @@ local function print2(v: unknown)
     end
 
     local str = { n = 0 }
-    local cyclic = {}
+    local cyclic = { n = 0 }
     tos(v, 0, str, cyclic)
     print(table.concat(str))
 end
@@ -455,7 +458,7 @@ return {
         return BENCH, START
     end,
 
-    print2 = print2,
+    print = print2,
 
     seq = shallow_eq,
     deq = deep_eq,

@@ -9,14 +9,14 @@ local evaluate_node = graph.evaluate_node
 local set_owner = graph.set_owner
 local track = graph.track
 local destroy = graph.destroy
-local get_owning_scope = graph.get_owning_scope
+local assert_owning_scope = graph.assert_owning_scope
 local open_scope = graph.open_scope
 local close_scope = graph.close_scope
 
 type Map<K, V> = { [K]: V }
 
 local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () -> U?
-    local owner = get_owning_scope()
+    local owner = assert_owning_scope()
 
     return function(map)
         local last_scope: Node<false>?
@@ -35,7 +35,7 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
             if component == nil then return nil end
 
             if type(component) ~= "function" then
-                throw("map must map a value to a function")
+                throw "map must map a value to a function"
             end
 
             local new_scope = create_node(false, false)
@@ -53,7 +53,7 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
             return result
         end
 
-        local node = create_node(nil :: any, update)
+        local node = create_node(nil :: U?, update)
 
         set_owner(node, owner)
         evaluate_node(node)

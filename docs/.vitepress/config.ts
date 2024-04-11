@@ -1,7 +1,8 @@
-import { defineConfig } from "vitepress"
+//import { defineConfig } from "vitepress"
+import { withMermaid } from "vitepress-plugin-mermaid";
 
 // https://vitepress.dev/reference/site-config
-export default defineConfig({
+export default withMermaid({
     title: "Vide",
     titleTemplate: ":title - A reactive UI library for Luau",
     description: "A reactive UI library for Luau.",
@@ -16,7 +17,6 @@ export default defineConfig({
             { text: "Home", link: "/" },
             { text: "Tutorials", link: "/tut/crash-course/1-introduction" },
             { text: "API", link: "/api/reactivity-core"},
-            { text: "GitHub", link: "https://github.com/centau/vide" }
         ],
 
         sidebar: {
@@ -41,34 +41,31 @@ export default defineConfig({
                         { text: "Introduction", link: "/tut/crash-course/1-introduction" },
                         { text: "Element Creation", link: "/tut/crash-course/2-creation" },
                         { text: "Components", link: "/tut/crash-course/3-components" },
-                        { text: "Source", link: "/tut/crash-course/4-source" },
-                        { text: "Effect", link: "/tut/crash-course/5-effect" },
-                        { text: "Derived Source", link: "/tut/crash-course/6-derived-source" },
-                        { text: "Cleanup", link: "/tut/crash-course/7-cleanup" },
-                        { text: "Control Flow", link: "/tut/crash-course/8-control-flow" },
-                        { text: "Property Nesting", link: "/tut/crash-course/9-property-nesting" },
-                        { text: "Actions", link: "/tut/crash-course/10-actions" },
+                        { text: "Sources", link: "/tut/crash-course/4-source" },
+                        { text: "Effects", link: "/tut/crash-course/5-effect" },
+                        { text: "Root Scopes", link: "/tut/crash-course/6-root" },
+                        { text: "Stateful Components", link: "/tut/crash-course/7-stateful-component" },
+                        { text: "Property Binding", link: "/tut/crash-course/8-property-binding" },
+                        { text: "Derived Sources", link: "/tut/crash-course/9-derived-source" },
+                        { text: "Cleanup", link: "/tut/crash-course/10-cleanup" },
+                        { text: "Control Flow", link: "/tut/crash-course/11-control-flow" },
+                        { text: "Property Nesting", link: "/tut/crash-course/12-property-nesting" },
+                        { text: "Actions", link: "/tut/crash-course/13-actions" },
+                        { text: "Strict Mode", link: "/tut/crash-course/14-strict-mode" },
+                        { text: "Concepts Summary", link: "/tut/crash-course/15-concepts" }
                     ]
                 },
                 {
-                    text: "Control Flow WIP",
+                    text: "Advanced Reactivity",
                     items: [
-                        { text: "switch", link: "/tut/control-flow/switch.md" },
-                        { text: "indexes", link: "/tut/control-flow/indexes.md" },
-                        { text: "values", link: "/tut/control-flow/values.md" },
-                    ]
-                },
-                {
-                    text: "Advanced Reactivity WIP",
-                    items: [
-                        { text: "reactive-scopes", link: "/tut/reactive-scoping.md"}
+                        { text: "Nested Scopes", link: "/tut/advanced/nested-scoping.md"}
                     ]
                 }
             ],
-        }
+        },
 
-        // socialLinks: [
-        //     { icon: "github", link: "https://github.com/centau/vide" }
-        // ]
+        socialLinks: [
+            { icon: "github", link: "https://github.com/centau/vide" }
+        ]
     }
 })

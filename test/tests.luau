@@ -31,6 +31,8 @@ end
 
 local NIL = nil :: any
 
+vide.strict = false
+
 TEST("graph", function()
     local create_node = graph.create_node
     local track = graph.track
@@ -39,6 +41,7 @@ TEST("graph", function()
     local get_scope = graph.get_scope
     local open_scope = graph.open_scope
     local close_scope = graph.close_scope
+    local set_owner = graph.set_owner
     local get_children = graph.get_children
     local add_cleanup = graph.add_cleanup
     local destroy = graph.destroy
@@ -73,9 +76,13 @@ TEST("graph", function()
     end
 
     do CASE "rerun linked nodes"
+        local root = node()
         local a = node()
         local b = node()
         local c = node()
+
+        set_owner(b, root)
+        set_owner(c, root)
 
         local count = 0
 
@@ -102,7 +109,14 @@ TEST("graph", function()
     end
 
     do CASE "diamond graph"
+        -- a -> b -> d
+        --   -> c
+        local root = node()
         local a, b, c, d = node(), node(), node(), node()
+
+        set_owner(b, root)
+        set_owner(c, root)
+        set_owner(d, root)
 
         local b_cnt, c_cnt, d_cnt = 0, 0, 0
         function b.effect(x) b_cnt += 1; return not x end
@@ -121,7 +135,12 @@ TEST("graph", function()
     end
 
     do CASE "duplicate child on rerun"
+        local root = node()
         local a, b, c = node(), node(), node()
+
+        set_owner(a, root)
+        set_owner(b, root)
+        set_owner(c, root)
 
         function c.effect(x)
             track(a)
@@ -129,7 +148,7 @@ TEST("graph", function()
             return not x
         end
 
-        open_scope(c); assert(c.effect)(NIL); close_scope()
+        open_scope(c); assert(type(c.effect) == "function" and c.effect)(NIL); close_scope()
 
         update(a)
 
@@ -166,28 +185,28 @@ TEST("graph", function()
             items_updated = node()
             track(items_updated) -- should not
 
-            add_child(root, items_updated)
+            set_owner(items_updated, root)
             do open_scope(items_updated)
                 track(items)
 
                 do open_scope(root)
-                    add_child(root, scope1)
+                    set_owner(scope1, root)
                     do open_scope(scope1)
                         clean "scope1"
                         bind1 = node()
 
-                        add_child(scope1, bind1)
+                        set_owner(bind1, scope1)
                         do open_scope(bind1)
                             clean "bind1"
                             track(selected)
                         close_scope() end
                     close_scope() end
 
-                    add_child(root, scope2)
+                    set_owner(scope2, root)
                     do open_scope(scope2)
                         clean "scope2"
                         bind2 = node()
-                        add_child(scope2, bind2)
+                        set_owner(bind2, scope2)
                         do open_scope(bind2)
                             clean "bind2"
                             track(selected)
@@ -207,10 +226,10 @@ TEST("graph", function()
     
         do
             local c = get_children(root)
-            CHECK(#c == 3)
-            CHECK(table.find(c, items_updated))
-            CHECK(table.find(c, scope1 :: Node<any>))
-            CHECK(table.find(c, scope2 :: Node<any>))
+            CHECK(#c == 0)
+            -- CHECK(table.find(c, items_updated))
+            -- CHECK(table.find(c, scope1 :: Node<any>))
+            -- CHECK(table.find(c, scope2 :: Node<any>))
         end
 
         do
@@ -222,19 +241,19 @@ TEST("graph", function()
 
         do
             local c = get_children(scope1)
-            CHECK(#c == 1)
-            CHECK(table.find(c, bind1))
+            CHECK(#c == 0)
+            --CHECK(table.find(c, bind1))
         end
 
         do
             local c = get_children(scope2)
-            CHECK(#c == 1)
-            CHECK(table.find(c, bind2))
+            CHECK(#c == 0)
+            --CHECK(table.find(c, bind2))
         end
 
         -- destroy
 
-        CHECK(table.find(get_children(root), scope1 :: Node<any>))
+        --CHECK(table.find(get_children(root), scope1 :: Node<any>))
 
         destroy(scope1)
         CHECK(cleaned.scope1)
@@ -243,7 +262,7 @@ TEST("graph", function()
         bind1 = NIL
         bind2 = NIL
         gc()
-        CHECK(#get_children(root) == 2)
+        CHECK(#get_children(root) == 0)
         CHECK(#get_children(selected) == 1)
     end
 
@@ -252,6 +271,55 @@ TEST("graph", function()
         destroy(wref[1])
         gc()
         CHECK(not wref[1])
+    end
+
+    do CASE "recursive update"
+        --[[
+
+        A -> B + C
+        D -> E + F
+
+        B updates D
+
+        depth=1
+        B, C
+        ^
+
+        depth=2
+        E, F
+        ^
+
+        depth=2
+        _, F
+           ^
+
+        depth=1
+        _, _   <- attempt to update nothing
+           ^        
+
+        ]]
+
+        local a, b, c, d, e, f = node(), node(), node(), node(), node(), node()
+
+        local root = node()
+        set_owner(a, root)
+        set_owner(b, root)
+        set_owner(c, root)
+        set_owner(d, root)
+        set_owner(e, root)
+        set_owner(f, root)
+
+        function b.effect(x)
+            update(d)
+            return not x
+        end
+
+        add_child(a, b); add_child(a, c)
+        add_child(d, e); add_child(d, f)
+
+        update(a)
+
+        CHECK(true)
     end
 end)
 
@@ -480,6 +548,44 @@ TEST("derive()", wrap_root(function()
         CHECK(count == 2)
     end
 
+    -- do CASE "behavior of effect within an effect"
+    --     local num = source(1)
+
+    --     local ran = table.create(100, 0)
+    --     local cleaned = table.create(100, 0)
+
+    --     local destroy = vide.mount(function()
+    --         local owner = derive(function()
+    --             local i = num()
+
+    --             return untrack(function()
+    --                 return derive(function()
+    --                     ran[i] += 1
+    --                     cleanup(function()
+    --                         cleaned[i] += 1
+    --                     end)
+    --                     return i
+    --                 end)
+    --             end)
+    --         end)
+
+    --         local child1 = owner()
+    --         num(2)
+    --         CHECK(cleaned[1] == 1)
+    --         local child2 = owner()
+
+    --         CHECK(child1() == 1)
+    --         CHECK(child2() == 2)
+    --     end)
+
+    --     destroy()
+        
+    --     CHECK(ran[1] == 1)
+    --     CHECK(ran[2] == 1)
+    --     CHECK(cleaned[1] == 1)
+    --     CHECK(cleaned[2] == 1)
+    -- end
+
     do CASE "garbage collection"
         -- check that `b` does not allow gc of `a`        
         local a = source(1)
@@ -554,6 +660,7 @@ TEST("effect()", wrap_root(function()
 end))
 
 TEST("cleanup()", wrap_root(function()
+    local root = vide.root
     local source = vide.source
     local effect = vide.effect
     local cleanup = vide.cleanup
@@ -611,6 +718,25 @@ TEST("cleanup()", wrap_root(function()
         CHECK(testkit.seq(queue, { 1, 2 }))
         src(3)
         CHECK(testkit.seq(queue, { 1, 2, 1, 2 }))
+    end
+
+    do CASE "cleanup objects"
+        local ran = {}
+
+        root(function(destroy)
+            effect(function()
+                cleanup { disconnect = function() ran.disconnect = true end }
+                cleanup { Disconnect = function() ran.Disconnect = true end }
+                cleanup { destroy = function() ran.destroy = true end }
+                cleanup { Destroy = function() ran.Destroy = true end }
+                destroy()
+            end)
+        end)
+
+        CHECK(ran.disconnect)
+        CHECK(ran.Disconnect)
+        CHECK(ran.destroy)
+        CHECK(ran.Destroy)
     end
 end))
 
@@ -816,6 +942,33 @@ TEST("create()", wrap_root(function()
         CHECK(not wref[1])
     end
 
+    do CASE "recursive create"
+        local set_test_to_true = vide.action(function(self) (self :: any).test = true end)
+
+        local f2
+    
+        local to_apply = {
+            { a = 1 },
+            set_test_to_true,
+            b = function() f2 = create "Frame" { a = 2 } end,
+        } :: { [number|string]: unknown }
+
+        -- do -- confirm iteration order
+        --     local t = {}
+        --     for i in to_apply do
+        --         table.insert(t, i)
+        --     end
+        --     assert(t[1] == "a")
+        -- end
+
+        local f = create "Frame" (to_apply)
+
+        CHECK((f :: any).a == 1)
+        CHECK((f :: any).test == true )
+
+        CHECK((f2 :: any).a == 2)
+    end
+
     do CASE "garbage collection test"
         local wref
 
@@ -840,6 +993,76 @@ TEST("create()", wrap_root(function()
 
         gc()
         CHECK(wref.data and wref.proxy)
+    end
+end))
+
+TEST("show()", wrap_root(function()
+    local untrack = vide.untrack
+    local cleanup = vide.cleanup
+    local source = vide.source
+    local effect = vide.effect
+    local show = vide.show
+    local root = vide.root
+
+    do CASE "main"
+        -- uses switch() internally, more extensive testing of scoping not needed
+        local value = source("truey" :: unknown)
+        local function one() return 1 end
+        local function two() return 2 end
+
+        local output = show(value, one, two)
+
+        CHECK(output() == 1)
+        value(nil)
+        CHECK(output() == 2)
+    end
+
+    do CASE "alt"
+        local visible = vide.source(true)
+        local count = vide.source(0)
+
+        local outer = 0
+        local inner = 0
+        local destroyed = 0
+
+        root(function()
+            effect(function()
+                visible()
+                outer += 1
+
+                untrack(function()
+                    effect(function()
+                        count()
+
+                        inner += 1
+
+                        cleanup(function()
+                            destroyed += 1
+                        end)
+                    end)
+                    return nil
+                end)
+            end)
+        end)
+
+        CHECK(outer == 1)
+        CHECK(inner == 1)
+        CHECK(destroyed == 0)
+
+        count(count() + 1)
+        CHECK(outer == 1)
+        CHECK(inner == 2)
+        CHECK(destroyed == 1)
+
+        visible(false)
+        CHECK(outer == 2)
+        CHECK(inner == 3)
+        CHECK(destroyed == 2)
+
+        count(count() + 1)
+        CHECK(outer == 2)
+        CHECK(inner == 4)
+        CHECK(destroyed == 3)
     end
 end))
 
@@ -951,11 +1174,28 @@ TEST("switch()", wrap_root(function()
 
         CHECK(n0 == n1)
     end
+
+    do CASE "strict"
+        vide.strict = true
+
+        local input = source(0)
+        local output = switch(input) {
+            [0] = function() return 0 end,
+            [1] = function() return 1 end,
+        }
+
+        CHECK(output() == 0)
+        input(1)
+        CHECK(output() == 1)
+
+        vide.strict = false
+    end
 end))
 
 TEST("indexes()", wrap_root(function()
     local create = vide.create
     local source = vide.source
+    local effect = vide.effect
     local indexes = vide.indexes
     local cleanup = vide.cleanup
 
@@ -976,9 +1216,13 @@ TEST("indexes()", wrap_root(function()
 
         local count = table.create(3, 0)
 
-        local output = indexes(input, function(v, i)
-            count[i] += 1
-            return v
+        local output = vide.root(function()
+            local output = indexes(input, function(v, i)
+                count[i] += 1
+                return v
+            end)
+
+            return output
         end)
 
         input { 1, 2, 4 }
@@ -1090,6 +1334,59 @@ TEST("indexes()", wrap_root(function()
         local n1 = scopes.n
 
         CHECK(n0 == n1)
+    end
+
+    -- practical example based on the graph - recursive update test
+    do CASE "recursive update"
+        local items = source { 1 }
+
+        local updated = table.create(100, 0)
+
+        indexes(items, function(item)
+            effect(function()
+                item()
+                updated[1] += 1    
+            end)
+
+            effect(function()
+                item()
+                updated[2] += 1    
+            end)
+
+            return {}
+        end)
+
+        effect(function()
+            items()
+            updated[3] += 1
+        end)
+
+        effect(function()
+            items()
+            updated[4] += 1
+        end)
+
+        items { 2 }
+
+        CHECK(updated[1] == 2)
+        CHECK(updated[2] == 2)
+        CHECK(updated[3] == 2)
+        CHECK(updated[4] == 2)
+    end
+
+    do CASE "strict"
+        vide.strict = true
+
+        local input = source{1}
+        local output = indexes(input, function(v)
+            return { v }
+        end)
+
+        CHECK(output()[1][1]() == 1)
+        input{2}
+        CHECK(output()[1][1]() == 2)
+
+        vide.strict = false
     end
 end))
 
@@ -1321,12 +1618,12 @@ TEST("spring()", wrap_root(function()
 end))
 
 TEST("untrack()", wrap_root(function()
-    local root = vide.root
     local source = vide.source
-    local derive = vide.derive
     local effect = vide.effect
-    local cleanup = vide.cleanup
+    local derive = vide.derive
     local untrack = vide.untrack
+    local cleanup = vide.cleanup
+    local root = vide.root
 
     do CASE "does not register dependency"
         local a = source(0)
@@ -1505,7 +1802,7 @@ TEST("changed()", wrap_root(function()
             changed("Text", output)
         }
 
-        --CHECK(output() == "a")
+        CHECK(output() == "a")
         text.Text = "b"
         CHECK(output() == "b")
     end
@@ -1527,6 +1824,338 @@ TEST("changed()", wrap_root(function()
         text = NIL
         gc()
         CHECK(not wref[1])
+    end
+end))
+
+TEST("batch()", wrap_root(function()
+    local source = vide.source
+    local derive = vide.derive
+    local batch = vide.batch
+
+    do CASE "evaluation deferred"
+        local a = source(0)
+
+        local count = { b = 0, b2 = 0, c = 0 }
+
+        local b = derive(function()
+            count.b += 1
+            return a() + 1
+        end)
+
+        local b2 = derive(function()
+            count.b2 += 1
+            return a() + 2
+        end)
+
+        local c = derive(function()
+            count.c += 1
+            return b() + b2()
+        end)
+
+        batch(function()
+            a(1)
+            CHECK(count.b == 1)
+            CHECK(count.b2 == 1)
+            CHECK(count.c == 1)
+        end)
+
+        CHECK(count.b == 2)
+        CHECK(count.b2 == 2)
+        CHECK(count.c == 2)
+
+        CHECK(b() == 2)
+        CHECK(c() == 5)
+    end
+
+    do CASE "recursive call"
+        local a1 = source(0)
+        local a2 = source(0)
+        local a3 = source(0)
+
+        local count = { b1 = 0, b2 = 0, b3 = 0 }
+
+        local b1 = derive(function()
+            count.b1 += 1
+            return a1() + 1
+        end)
+
+        local b2 = derive(function()
+            count.b2 += 1
+            return a2() + 1
+        end)
+
+        local b3 = derive(function()
+            count.b3 += 1
+            return a3() + 1
+        end)
+
+        batch(function()
+            a1(1)
+            batch(function()
+                a2(2)
+            end)
+            a3(3)
+            CHECK(count.b1 == 1)
+            CHECK(count.b2 == 1)
+            CHECK(count.b3 == 1)
+        end)
+
+        CHECK(count.b1 == 2)
+        CHECK(count.b2 == 2)
+        CHECK(count.b3 == 2)
+
+        CHECK(b1() == 2)
+        CHECK(b2() == 3)
+        CHECK(b3() == 4)
+    end
+end))
+
+TEST("read()", wrap_root(function()
+    local source = vide.source
+    local effect = vide.effect
+    local read = vide.read :: any -- todo
+
+    do CASE "read primitive"
+        CHECK(read(1) == 1)
+    end
+
+    do CASE "read source"
+        local src = source(1) :: () -> number
+        CHECK(read(src) == 1)
+    end
+
+    do CASE "track source"
+        local src = source(0)
+
+        local count = 0
+        effect(function()
+            read(src)
+            count += 1
+        end)
+
+        src(1)
+        CHECK(count == 2)
+    end
+end))
+
+TEST("nested effects cases", function()
+    local vide = require "src/init"
+    local source = vide.source
+    local effect = vide.effect
+    local untrack = vide.untrack
+    local cleanup = vide.cleanup
+    local root = vide.root
+
+    local ran = 0
+    local cleaned = 0
+
+    local function Count()
+        local count = source(0)
+
+        effect(function()
+            count()
+            ran += 1
+            cleanup(function() cleaned += 1 end)
+        end)
+
+        return nil
+    end
+
+    local function App(destroy)
+        local name = source "a"
+
+        effect(function()
+            name()
+            untrack(Count)
+        end)
+
+        CHECK(ran == 1)
+        CHECK(cleaned == 0)
+
+        name "b"
+
+        CHECK(ran == 2)
+        CHECK(cleaned == 1)
+
+        destroy()
+
+        CHECK(ran == 2)
+        CHECK(cleaned == 2)
+    end
+
+    root(App)
+end)
+
+TEST("graph edge cases", wrap_root(function()
+    local source = vide.source
+    local derive = vide.derive
+    local effect = vide.effect
+    local root = vide.root
+
+    do CASE "diamond A,B,C,D"
+        --[[
+
+        a > b > d
+          > c >
+
+        ]]
+
+        local a = source(0)
+
+        local b = derive(function() return (a() % 2 == 0) and 1 or 0 end)
+        local c = derive(function() return a() * 2 end)
+        local d = derive(function() return b() + c() end)
+
+        local count = { b = 0, c = 0, d = 0 }
+        effect(function() b(); count.b += 1 end)
+        effect(function() c(); count.c += 1 end)
+        effect(function() d(); count.d += 1 end)
+
+        a(1)
+        CHECK(count.b == 2)
+        CHECK(count.c == 2)
+        CHECK(count.d == 2)
+        CHECK(d() == 2)
+
+        a(3)
+        CHECK(count.b == 2)
+        CHECK(count.c == 3)
+        CHECK(count.d == 3)
+        CHECK(d() == 6)
+    end
+
+    do CASE "diamond A,B,C,D,E"
+        --[[
+
+        a > b   >   e
+          > c > d >
+
+        ]]
+
+        local a = source(0)
+
+        local b = derive(function() return (a() % 2 == 0) and 1 or 0 end)
+        local c = derive(function() return a() * 2 end)
+        local d = derive(function() return c() * 2 end)
+        local e = derive(function() return b() + d() end)
+
+        local count = { b = 0, c = 0, d = 0, e = 0 }
+        effect(function() b(); count.b += 1 end)
+        effect(function() c(); count.c += 1 end)
+        effect(function() d(); count.d += 1 end)
+        effect(function() e(); count.e += 1 end)
+
+        CHECK(e() == 1)
+
+        a(1)
+
+        CHECK(count.b == 2)
+        CHECK(count.c == 2)
+        CHECK(count.d == 2)
+        CHECK(count.e == 3) -- todo: redundant re-eval
+        CHECK(e() == 4)
+
+        a(3)
+        CHECK(count.b == 2)
+        CHECK(count.c == 3)
+        CHECK(count.d == 3)
+        CHECK(count.e == 4)
+        CHECK(e() == 12)
+    end
+
+    do CASE "repeated read"
+        local a = source(0)
+        local b = derive(function() return a() + a() end)
+
+        local count = 0
+        effect(function() b(); count += 1 end)
+
+        a(1)
+        CHECK(b() == 2)
+        CHECK(count == 2)
+    end
+
+    do CASE "do not destroy children"
+        local parent = source(0)   
+
+        local
+            destroy,
+            parent_to_destroy,
+            update_parent_to_destroy
+        = root(function(destroy)
+            local src = source(0)
+            return
+                destroy,
+                derive(function() return src() end),
+                src
+        end)
+
+        local count = 0
+
+        effect(function()
+            count += 1
+            parent()
+            parent_to_destroy()
+        end)
+
+        parent(parent() + 1)
+        CHECK(count == 2)
+        update_parent_to_destroy(1)
+        CHECK(count == 3)
+
+        destroy()
+        
+        update_parent_to_destroy(2)
+        CHECK(count == 3)
+        
+        parent(parent() + 1)
+        CHECK(count == 4)
+    end
+
+    do CASE "double destroy"
+        -- issue:
+        -- parent evaluates
+        -- child A queued
+        -- child B queued
+        -- child A destroys child B
+        -- child B reevaluates due to already being queued
+        -- parent destroys, destroys child B - uh oh
+
+        local
+            destroy_parent,
+            parent,
+            update_parent
+        = root(function(destroy)
+            local src = source(0)
+            return
+                destroy,
+                derive(function() return src() end),
+                src
+        end)
+
+        local destroy_child, _child_B = function() end, nil
+
+        local count_A = 0
+    
+        -- child_A
+        effect(function()
+            count_A += 1
+            parent()
+            destroy_child()
+        end)
+
+        local count_B = 0
+        destroy_child, _child_B = root(function(destroy)
+            return
+                destroy,
+                derive(function() count_B += 1; return parent() end)
+        end)
+
+        update_parent(parent() + 1)
+        CHECK(count_A == 2)
+        CHECK(count_B == 1) -- child B should not run again
+        destroy_parent() -- should not error
+        CHECK(true)
     end
 end))
 
@@ -1639,6 +2268,22 @@ TEST("strict", wrap_root(function()
         end)
 
         CHECK(ok)
+    end
+
+    do CASE "effect counter"
+        local src = source(true)
+
+        local count = 0
+
+        effect(function(x: number)
+            src()
+            count = x + 1
+            return count
+        end, count)
+
+        CHECK(count == 2)
+        src(not src())
+        CHECK(count == 4)
     end
 end))
 

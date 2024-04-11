@@ -1,18 +1,13 @@
 <br>
 
 <div align="center">
-    <img style="float: right;margin-top:50px" src="docs/public/logo.svg" width="110" />
+    <img src="docs/public/full_logo.svg" width="600" />
 </div>
 
-<br>
-
-### ⚠️ This library is in early stages of development with breaking changes being made often.
-
-Vide is a reactive UI library.
+Vide is a reactive Luau UI library inspired by [Solid](https://www.solidjs.com/).
 
 - Fully Luau typecheckable
 - Declarative and concise syntax.
-- Minimal imports.
 - Reactively driven.
 
 ## Getting started
@@ -24,7 +19,6 @@ for a quick introduction to the library.
 ## Code sample
 
 ```lua
-local vide = require(path_to_vide)
 local create = vide.create
 local source = vide.source
 

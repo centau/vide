@@ -48,14 +48,14 @@ local function main()
         local reset = "\27[H\27[2J" -- ANSI clear terminal
         local offset = string.rep("\n", MAX - fv + OFFSET)
         local bar = testkit.color.gray(remainder_to_block(v - fv) .. "\n" .. string.rep(BLOCK .. "\n", fv))
-        print(reset .. offset .. bar)
+        print(reset .. offset .. bar .. "\n" .. v)
     end)
 
-    local elapsed = 0
+    local T = 3
+    local elapsed = T/1.2
     repeat local dt = step()
         vide.step(dt)
 
-        local T = 3
         elapsed += dt
         while elapsed >= T do
             elapsed -= T

@@ -6,6 +6,9 @@ Strict mode is library-wide and can get set by doing:
 vide.strict = true
 ```
 
+It is automatically enabled when Vide is first required and not running in O2
+optimization level.
+
 Strict mode is designed to help the development process by adding safety checks
 and identifying improper usage.
 
@@ -15,12 +18,13 @@ Currently, strict mode will:
 2. Run effects twice when a source updates.
 3. Throw an error if yields occur where they are not allowed.
 4. Checks for `indexes()` and `values()` returning primitive values.
-5. Checks for duplicate nested properties at same depth.
-6. Better error reporting and stack traces.
-7. Checks for multiple `cleanup()` calls in the same function scope.
+5. Checks for `values()` input having duplicate values.
+6. Checks for duplicate nested properties at same depth.
+7. Better error reporting and stack traces + creation traces of property bindings.
 
-By rerunning sources and effects, any side-effects are made more apparent.
-This also helps ensure that cleanups are being handled correctly.
+By rerunning derived sources and effects twice each time they update,it helps
+ensure that derived source computations are pure, and that any
+cleanups made in derived sources or effects are done correctly.
 
 Accidental yielding within reactive scopes can break Vide's reactive graph,
 which strict mode can catch.
@@ -29,5 +33,6 @@ As well as additional safety checks, Vide will dedicate extra resources to
 recording and better emitting stack traces where errors occur, particularly
 when binding properties to sources.
 
-It is recommend to develop UI with strict mode and to disable it when pushing to
-production.
+It is recommended to develop UI with strict mode and to disable it when pushing to
+production. In Roblox, production code compiles at O2 by default, so you don't
+need to worry about disabling strict mode unless you have manually enabled it.

@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 -- vide.luau
--- v0.1.0
+-- v0.2.0
 --------------------------------------------------------------------------------
 
 if not game then script = require "test/relative-string" end
@@ -11,10 +11,13 @@ local create = require(script.create)
 local apply = require(script.apply)
 local source = require(script.source)
 local effect = require(script.effect)
+local derive = require(script.derive)
 local cleanup = require(script.cleanup)
 local untrack = require(script.untrack)
-local derive = require(script.derive)
+local read = require(script.read)
+local batch = require(script.batch)
 local switch = require(script.switch)
+local show = require(script.show)
 local indexes, values = require(script.maps)()
 local spring, update_springs = require(script.spring)()
 local action = require(script.action)()
@@ -51,12 +54,15 @@ local vide = {
     effect = effect,
     derive = derive,
     switch = switch,
+    show = show,
     indexes = indexes,
     values = values,
 
     -- util
     cleanup = cleanup,
     untrack = untrack,
+    read = read,
+    batch = batch,
 
     -- animations
     spring = spring,
@@ -86,28 +92,22 @@ local vide = {
     end
 }
 
-do
-    local set = false
-
-    setmetatable(vide :: any, {
-        __index = function(_, index: unknown): ()
-            if index == "strict" then
-                return flags.strict
-            else
-                throw(`{tostring(index)} is not a valid member of vide`)
-            end
-        end,
-
-        __newindex = function(_, index: unknown, value: unknown)
-            if index == "strict" then
-                if set then throw "strict mode has already been set" end
-                set = true
-                flags.strict = value :: boolean
-            else
-                throw(`{tostring(index)} is not a valid member of vide`)
-            end
+setmetatable(vide :: any, {
+    __index = function(_, index: unknown): ()
+        if index == "strict" then
+            return flags.strict
+        else
+            throw(`{tostring(index)} is not a valid member of vide`)
         end
-    })
-end
+    end,
+
+    __newindex = function(_, index: unknown, value: unknown)
+        if index == "strict" then
+            flags.strict = value :: boolean
+        else
+            throw(`{tostring(index)} is not a valid member of vide`)
+        end
+    end
+})
 
 return vide

@@ -111,7 +111,7 @@ local vec6_to_type = {
     end :: Vec6ToType<CFrame>,
 
     Color3 = function(v)
-        return Color3.new(v.X, v.Y, v.Z)
+        return Color3.new(math.max(v.X, 0), math.max(v.Y, 0), math.max(v.Z, 0))
     end :: Vec6ToType<Color3>,
 
     UDim = function(v)

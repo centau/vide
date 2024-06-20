@@ -49,10 +49,9 @@ export default withMermaid({
                         { text: "Derived Sources", link: "/tut/crash-course/9-derived-source" },
                         { text: "Cleanup", link: "/tut/crash-course/10-cleanup" },
                         { text: "Control Flow", link: "/tut/crash-course/11-control-flow" },
-                        { text: "Property Nesting", link: "/tut/crash-course/12-property-nesting" },
-                        { text: "Actions", link: "/tut/crash-course/13-actions" },
-                        { text: "Strict Mode", link: "/tut/crash-course/14-strict-mode" },
-                        { text: "Concepts Summary", link: "/tut/crash-course/15-concepts" }
+                        { text: "Actions", link: "/tut/crash-course/12-actions" },
+                        { text: "Strict Mode", link: "/tut/crash-course/13-strict-mode" },
+                        { text: "Concepts Summary", link: "/tut/crash-course/14-concepts" }
                     ]
                 },
                 {

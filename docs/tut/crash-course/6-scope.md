@@ -1,25 +1,29 @@
 # Scopes
 
-Vide operates on the concept of scopes. Vide scopes come in two flavors:
-stable and reactive.
+Just like how a signal's connection may need to be disconnected, a source's
+effect also may need to be disconnected.
 
-The three main rules for scopes are:
+But the disconnecting of many signals and connections is tedious and verbose.
+Vide instead operates on the concept of scopes which provides a much cleaner
+API, given that you follow a few rules.
 
-- Stable scopes never rerun.
-- Reactive scopes will rerun on source updates.
-- A reactive scope cannot be created within another reactive scope.
+Scopes come in two flavors; stable and reactive.
 
-Reactive scopes cannot be created on their own - they must be created within
-a stable scope so that it can be tracked and later destroyed when it is
-no longer needed.
+- All scopes must be created within another scope with the exception of `root()`
+- Stable scopes never rerun
+- Reactive scopes can rerun
+- A reactive scope cannot be created within another reactive scope
 
-This is the purpose of `root()`, which creates an initial stable scope, which
-all other reactive scopes, such as ones created by `effect()`, can stem from.
+`effect()` creates a reactive scope.
+`root()` creates a stable scope.
 
-When this root reactive scope is destroyed, it will destroy any effects created
-within it, ensuring everything is cleaned up properly.
+Whenever a scope is destroyed, any scope created within that scope is also
+destroyed, and so on. This is why all scopes must be created within another
+scope, except `root()` which is used to create the initial scope that you can
+manually destroy.
 
 ```lua
+local root = vide.root
 local source = vide.source
 local effect = vide.effect
 
@@ -33,9 +37,9 @@ local function setup()
     return count
 end
 
-setup() -- will error since effect() was not called within a stable scope
+setup() -- will error since effect() tries to create a reactive scope outside of a stable scope
 
-local count = vide.root(setup) -- runs
+local count = root(setup) -- ok since effect() was called within a stable scope
 count(1) -- prints "1"
 ```
 
@@ -87,7 +91,7 @@ subgraph root
 end
 ```
 
-When the root reactive scope created by `root()` is destroyed, the `effect`
+When the stable `root()` is destroyed, the reactive `effect()`
 scope will also be destroyed since it was created within it.
 
 This is important because you may have an effect that updates the property of a
@@ -96,7 +100,6 @@ memory. The effect being destroyed will remove this reference, allowing the
 instance to be garbage collected.
 
 You don't need to worry about ensuring all your effects are created within a
-root reactive scope, since you should be creating all your UI and corresponding
-effects within a top-level `root()` call that puts all your UI together. So it
-is safe to assume that any effect you create will be created under this top
-level scope. Vide will prevent you from accidently doing otherwise anyways.
+stable scope, since you should be creating all your UI and effects within a
+single top-level `root()` call that puts all your UI together, making it safe to
+assume any effect created will be created under this stable scope.

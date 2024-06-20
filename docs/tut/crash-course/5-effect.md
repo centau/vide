@@ -1,8 +1,7 @@
 # Effects
 
 Effects are functions that are ran in response to source updates. They are
-called effects because they cause *side-effects* when reacting to source
-updates.
+A source and effect is analogous to a signal and connection.
 
 Effects are created using `effect()`.
 
@@ -21,11 +20,10 @@ count(1)
 -- "count: 1" printed
 ```
 
-The callback given to `effect()` is ran immediately in a *reactive scope*. Any
-source read from inside a reactive scope will be tracked, so when any of those
-sources update, the effect will be reran too.
+Any source read inside an effect is tracked and will rerun the effect when
+that source is updated.
 
-Reactive scopes also track derived sources, it doesn't matter how deeply nested
+Derived sources are also tracked, it doesn't matter how deeply nested
 inside a function a source is.
 
 ```lua

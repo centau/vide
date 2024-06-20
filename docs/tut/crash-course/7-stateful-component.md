@@ -1,7 +1,5 @@
 # Stateful Components
 
-A stateful component is a component that stores some data internally.
-
 Stateful components in Vide are created using sources and effects - sources to
 store the data, and effects to display the data.
 

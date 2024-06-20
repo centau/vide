@@ -36,14 +36,13 @@ source(1) -- prints "ran" x2
 ```
 
 To avoid this, you can use `derive()` to derive a new source instead. This will
-run a function in a new reactive scope only when a dependent source has updated.
-Reading this derived source multiple times will just return a cached result from
-when it last updated.
+run a function in a reactive scope only when a source used inside updated.
+Reading this derived source multiple times will just return a cached result.
 
 ```lua
 local source = vide.source
-local derive = vide.derive
 local effect = vide.effect
+local derive = vide.derive
 
 local count = source(0)
 
@@ -87,6 +86,7 @@ end
 ```
 
 Deriving a source in this manner is similar to creating an effect to update
-another source. You should never manually do this using an effect however,
-improper usage could accidently create infinite loops in the reactive graph.
-Always favour deriving when you need one source to update based on another.
+another source. You should never manually do this using an effect however.
+Improper usage could accidently create infinite loops in the reactive graph.
+Always favour deriving when you need one source to update based on another
+source.

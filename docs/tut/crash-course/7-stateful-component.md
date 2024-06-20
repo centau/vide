@@ -27,8 +27,6 @@ local function Counter()
 
     return instance
 end
-
-mount(Counter, game.StarterGui)
 ```
 
 Above is an example of a counter component, that when clicked, will increment
@@ -36,9 +34,6 @@ its internal count, and automatically update its text to reflect that count.
 
 Each instance of `Counter()` will maintain its own independent count, since the
 count source is created inside the component.
-
-We use `mount()` to create the counter within a reactive scope, which also takes
-a second argument to parent the counter to another instance.
 
 ## External State
 
@@ -72,4 +67,4 @@ count(1) -- the Counter component will update to display this count
 
 Sources can be created internally or passed in from externally, there are no
 restrictions on how they are used as long as the effect using it is created
-within a reactive scope.
+within a stable scope.

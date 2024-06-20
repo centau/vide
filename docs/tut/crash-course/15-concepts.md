@@ -22,52 +22,52 @@ Anything that happens in response to a source update.
 
 Created with `effect()`.
 
-## Reactive Scope
+## Stable Scope
 
-A scope created by certain functions such as:
+One of the two types of Vide scopes.
+
+Created by:
 
 - `root()`
+- `untrack()`
+- `switch()`
+- `indexes()`
+  
+Stable scopes do not track sources and never rerun.
+
+New stable or reactive scopes can be created within a stable scope.
+
+## Reactive Scope
+
+Created by:
+
 - `effect()`
 - `derive()`
 
-Reactive scopes can:
+Reactive scopes do track sources and will rerun when those sources update.
 
-- track sources that are read from within.
-- rerun when a tracked source updates.
-- track new reactive scopes created from within.
+New reactive scopes cannot be created within a reactive scope, but stable scopes
+can.
 
 ## Scope Owners
 
-A reactive scope created within another reactive scope is *owned* by the other
-reactive scope, with the exception of the reactive scope created by `root()`.
+A scope created within another scope is *owned* by the other scope, with the
+exception of the scope created by `root()`.
 
-When a reactive scope is rerun or destroyed, all reactive scopes owned by it are
-automatically destroyed.
+When a scope is rerun or destroyed, all scopes owned by it are automatically
+destroyed.
 
-`root()`, which `mount()` uses internally, creates a reactive scope with no
-owner, since it must be destroyed manually using a destructor
-returned.
+`root()` creates a stable scope with no owner, instead it is destroyed manually.
 
 ## Cleanup
 
-Arbitrary code to run whenever a reactive scope is rerun or destroyed.
+Arbitrary code to run whenever a stable or reactive scope is rerun or destroyed.
 
 Queue a function to run using `cleanup()`.
 
-## Tracking
-
-Sources read from within a reactive scope will be tracked. This can be disabled
-using `untrack()`, which will make reactive scopes temporarily ignore sources
-read.
-
-The reactive scope created by `root()` is non-tracking by default.
-
-As a guard against misusage, a reactive scope cannot be created within a
-reactive scope, unless it is made non-tracking using `untrack()`.
-
 ## Reactive Graph
 
-The combination of reactive scopes can viewed graphically, called a
+The combination of stable and reactive scopes can viewed graphically, called a
 *reactive graph*. This can be a more intuitive way to think of the
 relationships between effects and the sources they depend on.
 
@@ -114,10 +114,10 @@ count --> text
 Notes:
 
 - Since `count` is a source, not an effect, it can exist
-  outside of a root reactive scope.
+  outside of scopes.
 - An update to `count` will cause `text` to rerun, which
   then causes `effect` to rerun.
-- When the root reactive scope is destroyed, `text` and
+- When the root scope is destroyed, `text` and
   `effect` will be destroyed alongside it, since they are
   owned by it. `count` will be untouched and future updates
   to `count` will have no effect.

@@ -4,7 +4,7 @@ local typeof = game and typeof or require "test/mock".typeof :: never
 local throw = require(script.Parent.throw)
 local graph = require(script.Parent.graph)
 local get_scope = graph.get_scope
-local add_cleanup = graph.add_cleanup
+local push_cleanup = graph.push_cleanup
 
 local function helper(obj: any)
     return
@@ -21,13 +21,13 @@ local function cleanup(value: unknown)
     local scope = get_scope()
 
     if not scope then
-        throw "cannot cleanup in a non-reactive scope"
+        throw "cannot cleanup outside a stable or reactive scope"
     end; assert(scope)
 
     if type(value) == "function" then
-        add_cleanup(scope, value :: () -> ())
+        push_cleanup(scope, value :: () -> ())
     else
-        add_cleanup(scope, helper(value))
+        push_cleanup(scope, helper(value))
     end
 end
 

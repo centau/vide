@@ -4,7 +4,7 @@
 
 ## mount()
 
-Runs a function in a new reactive scope and optionally applies its result to a
+Runs a function in a new stable scope and optionally applies its result to a
 target instance.
 
 - **Type**

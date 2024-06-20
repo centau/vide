@@ -39,10 +39,3 @@ return create "ScreenGui" {
 Assign a value to a string key to set a property, and assign a value to a
 number key to set a child. Events can be connected to by assigning a function
 to a string key.
-
-::: warning
-When creating an instance with no properties, it is important to not forget to
-actually call the constructor: `create "Frame" {}` and not `create "Frame"`.
-To be clear, `create "Frame"` returns a *function* which is a constructor for
-that class, not an instance of that class.
-:::

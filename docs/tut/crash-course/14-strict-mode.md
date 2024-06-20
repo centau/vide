@@ -11,7 +11,7 @@ want this.
 
 Strict mode will run derived sources and effects twice each time they update.
 This is to help ensure that derived source computations are pure, and that any
-cleanups made in derived sources or effects are done correctly.
+cleanups made in derived sources or effects are done properly.
 
 ```lua
 local source = vide.source

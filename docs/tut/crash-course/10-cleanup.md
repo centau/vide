@@ -3,7 +3,7 @@
 Sometimes you may need to do some cleanup when destroying a component or after
 a side-effect from a source update. Vide provides a function `cleanup()` which
 is used to queue a cleanup callback for the next time a reactive scope is rerun
-or destroyed.
+or destroyed, or when a stable scope is destroyed.
 
 ```lua
 local mount = vide.mount
@@ -31,14 +31,18 @@ local function Timer()
     }
 end
 
-local unmount = mount(Timer)
+local instance, destroy = root(function(destroy)
+    local instance = Timer()
+    return instance, destroy
+end)
 
-unmount() -- all queued cleanups are ran, heartbeat connection disconnected
+wait(5)
+
+destroy() -- all queued cleanups are ran, heartbeat connection disconnected
 ```
 
 In the above example, this allows us to disconnect the heartbeat connection
-when the reactive scope responsible for creating the timer component is
-destroyed, such as when it is unmounted.
+when the scope responsible for creating the timer component is destroyed.
 
 ::: tip
 Roblox instances do not need to be explicitly destroyed for their

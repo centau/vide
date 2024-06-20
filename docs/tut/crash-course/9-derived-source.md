@@ -36,7 +36,7 @@ source(1) -- prints "ran" x2
 ```
 
 To avoid this, you can use `derive()` to derive a new source instead. This will
-run a callback in a new reactive scope only when a dependent source has updated.
+run a function in a new reactive scope only when a dependent source has updated.
 Reading this derived source multiple times will just return a cached result from
 when it last updated.
 
@@ -58,7 +58,7 @@ effect(function() text() end)
 source(1) -- prints "ran" x1
 ```
 
-`derive()` must also be called within a reactive scope, just like `effect()`.
+`derive()` must also be called within a stable scope, just like `effect()`.
 
 If the recalculated value is the same as the old value, the derived source will
 not rerun the effects using it.

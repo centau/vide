@@ -6,8 +6,8 @@ known as *control flow* functions.
 
 These functions return new sources, which hold the instances to be displayed.
 
-Control flow functions run their components in a new reactive scope, which can
-be destroyed independently of the reactive scope that called the control flow
+Control flow functions run their components in a new stable scope, which can
+be destroyed independently of the stable scope that called the control flow
 function. This means parts of your app can be independently created and
 destroyed.
 
@@ -93,9 +93,9 @@ subgraph root["root scope"]
 end
 ```
 
-A `switch()` call creates a new effect and a new scope as seen in the above
-graph. Whenever `menu` updates, it causes the `switch` effect to run, which
-will destroy and recreate the switch scope with the new component.
+A `switch()` call creates a new effect and a new stable scope as seen in the
+above graph. Whenever `menu` updates, it causes the `switch` effect to run,
+which will destroy and recreate the switch scope with the new component.
 
 This will also destroy the internal effect that the button uses to highlight
 itself when it is hovered, each time the switch is rerun.

@@ -1,4 +1,4 @@
-# Property Binding
+# Implicit Effects
 
 Explicitly creating effects to update properties can be tedious. Vide provides a
 way to *implicitly* create an effect to update properties.
@@ -31,12 +31,7 @@ source used within is updated.
 Just like effects, the function is ran immediately in a reactive scope to set
 the property initially and determine what sources are being used.
 
-This allows you as the programmer to not need to manually update UI as the state
-of your program changes. You just define how data sources map to UI, and Vide's
-reactive system will automatically update any properties depending on those
-sources.
-
-## Children Binding
+## Children
 
 Children can also be set in a similar manner. A source passed as a child (passed
 with a number key instead of string key) can return an instance or an array of

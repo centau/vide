@@ -3,12 +3,13 @@
 <br/>
 
 :::warning
-Yielding is not allowed in any reactive scope. Strict mode can check for this.
+Yielding is not allowed in any stable or reactive scope. Strict mode will check
+for this.
 :::
 
 ## root()
 
-Creates and runs a function in a new reactive scope.
+Creates and runs a function in a new stable scope.
 
 - **Type**
 
@@ -20,8 +21,8 @@ Creates and runs a function in a new reactive scope.
 
     Returns the result of the given function.
 
-    Creates a new root reactive scope, where creation and derivations of sources
-    can be tracked and properly disposed of.
+    Creates a new stable scope, where creation of effects can be tracked and
+    properly disposed of.
 
     A function to destroy the root is passed into the callback, which will run
     any cleanups and allow derived sources created to garbage collect.

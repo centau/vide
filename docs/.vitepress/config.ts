@@ -45,7 +45,7 @@ export default withMermaid({
                         { text: "Effects", link: "/tut/crash-course/5-effect" },
                         { text: "Scopes", link: "/tut/crash-course/6-scope" },
                         { text: "Stateful Components", link: "/tut/crash-course/7-stateful-component" },
-                        { text: "Property Binding", link: "/tut/crash-course/8-implicit-effect" },
+                        { text: "Implicit Effects", link: "/tut/crash-course/8-implicit-effect" },
                         { text: "Derived Sources", link: "/tut/crash-course/9-derived-source" },
                         { text: "Cleanup", link: "/tut/crash-course/10-cleanup" },
                         { text: "Control Flow", link: "/tut/crash-course/11-control-flow" },

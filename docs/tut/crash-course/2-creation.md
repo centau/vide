@@ -2,11 +2,8 @@
 
 Instances are created using `create()`.
 
-`create()` returns a constructor for a class which then takes a table of
-properties to assign when creating a new instance for that class.
-
-Luau allows us to omit parentheses `()` when calling functions with string or
-table literals which is recommended to use for brevity.
+Parentheses `()` can be omitted when calling functions with string or
+table literals which is recommended for brevity.
 
 ```lua
 local create = vide.create

@@ -34,12 +34,12 @@ end
 return Button
 ```
 
-```lua [App.luau]
+```lua [Menu.luau]
 local create = vide.create
 
 local Button = require(Button)
 
-local function App()
+local function Menu()
     return create "ScreenGui" {
         Button {
             Position = UDim2.fromOffset(200, 200),

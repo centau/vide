@@ -2,7 +2,7 @@
 
 ## cleanup()
 
-Runs a callback anytime a reactive scope is reran or destroyed.
+Runs a callback anytime a scope is reran or destroyed.
 
 - **Type**
 
@@ -31,8 +31,7 @@ Runs a callback anytime a reactive scope is reran or destroyed.
 
 ## untrack()
 
-Runs a given function where any sources read will not be tracked by a reactive
-scope.
+Runs a given function in a new stable scope.
 
 - **Type**
 
@@ -42,8 +41,8 @@ scope.
 
 - **Details**
 
-    Updates made to a source passed to `untrack()` will not cause updates to
-    anything depending on that source.
+    Can be used inside a reactive scope to read from sources you do not want
+    tracked by the reactive scope.
 
 - **Example**
 
@@ -76,7 +75,7 @@ read can still be tracked inside a reactive scope.
 ## batch()
 
 Runs a given function where any source updates made within the function do not
-trigger effects until after the function runs.
+trigger effects until after the function finishes running.
 
 - **Type**
 

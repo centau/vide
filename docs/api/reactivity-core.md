@@ -42,11 +42,6 @@ Creates a new source with the given value.
     Calling the returned source with no argument will return its stored value,
     calling with an argument will set a new value.
 
-    Reading from the source from within a reactive scope will cause changes
-    to that source to be tracked and anything depending on it to update.
-
-    Sources can be created outside of reactive scopes.
-
 - **Example**
 
     ```lua
@@ -69,10 +64,10 @@ Runs a side-effect in a new reactive scope on source update.
 
 - **Details**
 
-    Any time a source referenced in the callback is changed, the callback will
+    Any time a source referenced in the callback is updated, the callback will
     be reran.
 
-    The callback is ran to initially ran on first call to find dependent sources.
+    The callback is ran once immediately.
 
 - **Example**
 
@@ -108,7 +103,7 @@ Derives a new source in a new reactive scope from existing sources.
     Anytime its value is recalculated it is also cached, subsequent calls will
     retun this cached value until it recalculates again.
 
-    The callback is ran to initially ran on first call to find dependent sources.
+    The callback is ran once immediately.
 
 - **Example**
 

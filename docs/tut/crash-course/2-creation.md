@@ -3,7 +3,7 @@
 Instances are created using `create()`.
 
 Parentheses `()` can be omitted when calling functions with string or
-table literals which is recommended for brevity.
+table literals for brevity.
 
 ```lua
 local create = vide.create

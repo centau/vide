@@ -18,8 +18,8 @@ Returns a new source with a value always moving torwards the input source value.
 
 - **Details**
 
-    The output source value is updated every step based on the input source
-    value.
+    An effect is created to update the new source every frame based on the input
+    source value.
 
     The movement is physically simulated according to a
     [spring](https://en.wikipedia.org/wiki/Simple_harmonic_motion).

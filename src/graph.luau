@@ -23,13 +23,14 @@ export type Node<T> =  {
 local scopes = { n = 0 } :: { [number]: Node<any>, n: number } -- scopes stack
 
 local function ycall<T, U>(fn: (T) -> U, arg: T): (boolean, string|U)
-    local thread = coroutine.create(pcall)
-    local resume_ok, run_ok, result = coroutine.resume(thread, fn, arg)
+    local thread = coroutine.create(xpcall)
+    local function efn(err: string) return debug.traceback(err, 3) end
+    local resume_ok, run_ok, result = coroutine.resume(thread, fn, efn, arg)
 
     assert(resume_ok)
         
     if coroutine.status(thread) ~= "dead" then
-        return false, "attempt to yield in reactive scope"
+        return false, debug.traceback(thread, "attempt to yield in reactive scope")
     end
 
     return run_ok, result
@@ -129,41 +130,47 @@ end
 local update_queue = { n = 0 } :: { n: number, [number]: Node<any> }
 
 local function evaluate_node<T>(node: Node<T>)
-    local cur_value = node.cache
-
     if flags.strict then
+        local ok, cur_value, new_value
+        for i = 1, 2 do
+            cur_value = node.cache
+
+            flush_cleanups(node)
+            destroy_owned(node)
+    
+            push_scope(node)
+            ok, new_value = ycall(node.effect :: (T) -> T, cur_value)
+            pop_scope()
+            
+            if not ok then
+                table.clear(update_queue)
+                update_queue.n = 0
+                throw(`effect stacktrace:\n{new_value :: string}`)
+            end
+
+            node.cache = new_value :: T
+        end
+
+        return cur_value ~= new_value
+    else
+        local cur_value = node.cache
+
         flush_cleanups(node)
         destroy_owned(node)
 
         push_scope(node)
-
-        local ok, new_value = ycall(node.effect :: (T) -> T, cur_value)
-        
+        local ok, new_value = pcall(node.effect :: (T) -> T, node.cache)
         pop_scope()
-        
-        if not ok then throw(new_value :: string) end
 
-        node.cache = new_value :: T
+        if not ok then
+            table.clear(update_queue)
+            update_queue.n = 0
+            throw(`effect stacktrace:\n{new_value}\n`)
+        end
+    
+        node.cache = new_value
+        return cur_value ~= new_value
     end
-
-    flush_cleanups(node)
-    destroy_owned(node)
-
-    push_scope(node)
-
-    local ok, new_value = pcall(node.effect :: (T) -> T, node.cache)
-
-    pop_scope()
-
-    if not ok then
-        table.clear(update_queue)
-        update_queue.n = 0
-        throw(`side-effect error from source update\n{new_value}`)
-    end
-
-    node.cache = new_value
-
-    return cur_value ~= new_value
 end
 
 local function queue_children_for_update<T>(node: SourceNode<T>)

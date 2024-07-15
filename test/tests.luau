@@ -218,8 +218,8 @@ TEST("graph", function()
         do
             local c = get_children(selected)
             CHECK(#c == 2)
-            CHECK(table.find(c, bind1))
-            CHECK(table.find(c, bind2))
+            CHECK(table.find(c, bind1 :: any))
+            CHECK(table.find(c, bind2 :: any))
         end
 
         do

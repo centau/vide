@@ -26,7 +26,6 @@ end
 
 local N = 2^18 -- 262144
 
-
 TITLE "sources"
 
 BENCH("create source", function()
@@ -448,27 +447,6 @@ ROOT_BENCH("values() all remove", function()
 end)
 
 N *= 1024
-
-TITLE "cleanup"
-
-ROOT_BENCH("register new cleanup", function()
-    local cleanup = cleanup
-
-    local cleaner = function() end
-
-    local callers = {}
-
-    for i = 1, N do
-        callers[i] = function(fn, v)
-            fn(v)
-            return i -- return unique upvalue to ensure unique closure
-        end
-    end
-
-    for i = 1, START(N) do
-        callers[i](cleanup, cleaner)
-    end
-end)
 
 TITLE "aggregate"
 

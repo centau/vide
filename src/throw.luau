@@ -1,9 +1,7 @@
 if not game then script = require "test/relative-string" end
 
-local trace = require(script.Parent.trace)
-
-local function throw(msg): any
-    error(msg, trace() - 1)
+local function VIDE_ASSERT(msg): any
+    error(msg, 0)
 end
 
-return throw
+return VIDE_ASSERT

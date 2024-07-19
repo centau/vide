@@ -131,15 +131,16 @@ local update_queue = { n = 0 } :: { n: number, [number]: Node<any> }
 
 local function evaluate_node<T>(node: Node<T>)
     if flags.strict then
-        local ok, cur_value, new_value
+        local initial_value = node.cache
+
         for i = 1, 2 do
-            cur_value = node.cache
+            local cur_value = node.cache
 
             flush_cleanups(node)
             destroy_owned(node)
     
             push_scope(node)
-            ok, new_value = ycall(node.effect :: (T) -> T, cur_value)
+            local ok, new_value = ycall(node.effect :: (T) -> T, cur_value)
             pop_scope()
             
             if not ok then
@@ -151,7 +152,7 @@ local function evaluate_node<T>(node: Node<T>)
             node.cache = new_value :: T
         end
 
-        return cur_value ~= new_value
+        return initial_value ~= node.cache
     else
         local cur_value = node.cache
 

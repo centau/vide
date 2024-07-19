@@ -2261,6 +2261,27 @@ TEST("strict", wrap_root(function()
         src(not src())
         CHECK(count == 4)
     end
+
+    do CASE "effect using derived source"
+        local input = source(true)
+
+        local output = derive(function()
+            return input()
+        end)
+
+        local count = 0
+
+        effect(function()
+            output()
+            count += 1
+        end)
+
+        CHECK(count == 2)
+
+        input(false)
+
+        CHECK(count == 4)
+    end
 end))
 
 local ok = FINISH()

@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 --------------------------------------------------------------------------------
 
+## Unreleased
+
+### Fixed
+
+- Error stack traces being lost.
+
+--------------------------------------------------------------------------------
+
 ## [0.2.0] - 2023-11-22
 
 ### Added

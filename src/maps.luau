@@ -21,7 +21,7 @@ local function check_primitives(t: {})
     if not flags.strict then return end
 
     for _, v in next, t do
-        if type(v) == "table" or type(v) == "userdata" then continue end
+        if type(v) == "table" or type(v) == "userdata" or type(v) == "function" then continue end
         throw("table source map cannot return primitives")
     end
 end

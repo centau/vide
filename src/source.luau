@@ -8,7 +8,7 @@ local update_descendants = graph.update_descendants
 
 export type Source<T> = (() -> T) & ((value: T) -> T)
 
-local function source<T>(initial_value: T?): Source<T>
+local function source<T>(initial_value: T): Source<T>
     local node = create_source_node(initial_value)
 
     return function(...): T
@@ -28,4 +28,4 @@ local function source<T>(initial_value: T?): Source<T>
     end
 end
 
-return source
+return source :: (<T>(initial_value: T) -> Source<T>) & (<T>() -> Source<T>)

@@ -42,7 +42,7 @@ local function step(dt: number)
     end
 end
 
-local stepped = game and game:GetService("RunService").Heartbeat:Connect(function(dt: number)
+local stepped: RBXScriptConnection? = game and game:GetService("RunService").Heartbeat:Connect(function(dt: number)
     task.defer(step, dt)
 end)
 

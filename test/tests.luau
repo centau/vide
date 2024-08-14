@@ -1931,8 +1931,6 @@ TEST("batch()", wrap_root(function()
         end)
 
         derive(function()
-            print("update")
-
             a0()
             
             batch(function()

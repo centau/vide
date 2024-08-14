@@ -1920,6 +1920,34 @@ TEST("batch()", wrap_root(function()
         CHECK(b2() == 3)
         CHECK(b3() == 4)
     end
+
+    do CASE "recursive queue flush"
+
+        local a0 = source(0)
+        local a1 = source(1)
+
+        derive(function()
+            a0(a1() + 1)
+        end)
+
+        derive(function()
+            print("update")
+
+            a0()
+            
+            batch(function()
+            
+            end)
+
+            return 1
+        end)
+
+        a1(2)
+
+        -- if it didnt error, all is fine!
+        CHECK(true)
+
+    end
 end))
 
 TEST("read()", wrap_root(function()

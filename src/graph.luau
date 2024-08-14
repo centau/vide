@@ -186,27 +186,29 @@ end
 
 local _flushing = false
 local function flush_update_queue()
-    assert(not _flushing, "recursive queue flush occured") -- todo
-    _flushing = true
+    local n0 = update_queue.n
 
-    local n0 = 0
+    return function()
+        assert(not _flushing, "recursive queue flush occured") -- todo
+        _flushing = true
 
-    local i = n0 + 1
-    while i <= update_queue.n do
-        local node = update_queue[i]
-        --assert(node.effect)
+        local i = n0 + 1
+        while i <= update_queue.n do
+            local node = update_queue[i]
+            --assert(node.effect)
 
-        if node.owner and evaluate_node(node) then
-            queue_children_for_update(node)
+            if node.owner and evaluate_node(node) then
+                queue_children_for_update(node)
+            end
+
+            update_queue[i] = false :: any
+            i += 1
         end
 
-        update_queue[i] = false :: any
-        i += 1
+        update_queue.n = n0
+
+        _flushing = false
     end
-
-    update_queue.n = n0
-
-    _flushing = false
 end
 
 local function update_descendants<T>(root: SourceNode<T>)

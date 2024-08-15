@@ -1925,26 +1925,36 @@ TEST("batch()", wrap_root(function()
 
         local a0 = source(0)
         local a1 = source(1)
+        local a2 = source(0)
+        local updates = 0
 
         derive(function()
             a0(a1() + 1)
         end)
 
         derive(function()
+            updates += 1
             a0()
             
             batch(function()
+                a2(a0())
+            end)
+
+            return 1
+        end)
+
+        derive(function()
+            a2()
             
+            batch(function()
+                
             end)
 
             return 1
         end)
 
         a1(2)
-
-        -- if it didnt error, all is fine!
-        CHECK(true)
-
+        CHECK(updates == 2)
     end
 end))
 

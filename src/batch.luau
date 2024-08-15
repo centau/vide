@@ -16,8 +16,8 @@ local function batch(setter: () -> ())
     local ok, err: string? = pcall(setter)
 
     if not already_batching then
-        flush()
         flags.batch = false
+        flush()
     end
 
     if not ok then throw(`error occured while batching updates: {err}`) end

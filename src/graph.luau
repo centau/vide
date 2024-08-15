@@ -184,13 +184,10 @@ local function queue_children_for_update<T>(node: SourceNode<T>)
     update_queue.n = i
 end
 
-local _flushing = false
 local function flush_update_queue()
     local n0 = update_queue.n
 
     return function()
-        assert(not _flushing, "recursive queue flush occured") -- todo
-        _flushing = true
 
         local i = n0 + 1
         while i <= update_queue.n do
@@ -204,10 +201,9 @@ local function flush_update_queue()
             update_queue[i] = false :: any
             i += 1
         end
-
+        
         update_queue.n = n0
 
-        _flushing = false
     end
 end
 

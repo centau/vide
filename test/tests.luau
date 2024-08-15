@@ -1924,36 +1924,25 @@ TEST("batch()", wrap_root(function()
     do CASE "recursive queue flush"
 
         local a0 = source(0)
-        local a1 = source(1)
-        local a2 = source(0)
+        local a1 = source(0)
         local updates = 0
 
-        derive(function()
-            a0(a1() + 1)
+        derive(function() -- depends on a1
+            a0(a1())
         end)
 
-        derive(function()
+        derive(function() -- batch updates a2
             updates += 1
             a0()
             
             batch(function()
-                a2(a0())
+
             end)
 
             return 1
         end)
 
-        derive(function()
-            a2()
-            
-            batch(function()
-                
-            end)
-
-            return 1
-        end)
-
-        a1(2)
+        a1(1)
         CHECK(updates == 2)
     end
 end))

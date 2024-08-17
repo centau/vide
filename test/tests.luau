@@ -1927,23 +1927,21 @@ TEST("batch()", wrap_root(function()
         local a = source(0)
         local b = source(0)
         local c = source(0)
-        local d = source(0)
         local d_n = 0
 
         effect(function()
+            b()
             c()
-            d()
             d_n += 1
         end)
 
         effect(function()
+            b(a())
             c(a())
-            d(b())
         end)
         
         batch(function()
             a(1)
-            b(1)
         end)
 
         CHECK(d_n == 3)

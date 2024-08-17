@@ -184,27 +184,25 @@ local function queue_children_for_update<T>(node: SourceNode<T>)
     update_queue.n = i
 end
 
-local function flush_update_queue()
-    local n0 = update_queue.n
+local function get_graph_length()
+    return update_queue.n
+end
 
-    return function()
+local function flush_update_queue(from: number)
+    local i = from + 1
+    while i <= update_queue.n do
+        local node = update_queue[i]
+        --assert(node.effect)
 
-        local i = n0 + 1
-        while i <= update_queue.n do
-            local node = update_queue[i]
-            --assert(node.effect)
-
-            if node.owner and evaluate_node(node) then
-                queue_children_for_update(node)
-            end
-
-            update_queue[i] = false :: any
-            i += 1
+        if node.owner and evaluate_node(node) then
+            queue_children_for_update(node)
         end
-        
-        update_queue.n = n0
 
+        update_queue[i] = false :: any
+        i += 1
     end
+    
+    update_queue.n = from
 end
 
 local function update_descendants<T>(root: SourceNode<T>)
@@ -284,5 +282,6 @@ return table.freeze {
     create_source_node = create_source_node,
     get_children = get_children,
     flush_update_queue = flush_update_queue,
+    get_graph_length = get_graph_length,
     scopes = scopes
 }

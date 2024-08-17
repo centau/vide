@@ -184,7 +184,7 @@ local function queue_children_for_update<T>(node: SourceNode<T>)
     update_queue.n = i
 end
 
-local function get_graph_length()
+local function get_update_queue_length()
     return update_queue.n
 end
 
@@ -282,6 +282,6 @@ return table.freeze {
     create_source_node = create_source_node,
     get_children = get_children,
     flush_update_queue = flush_update_queue,
-    get_graph_length = get_graph_length,
+    get_update_queue_length = get_update_queue_length,
     scopes = scopes
 }

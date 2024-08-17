@@ -10,7 +10,7 @@ local function batch(setter: () -> ())
 
     if not already_batching then
         flags.batch = true
-        from = graph.get_graph_length()
+        from = graph.get_update_queue_length()
     end
 
     local ok, err: string? = pcall(setter)

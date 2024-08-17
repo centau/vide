@@ -2107,6 +2107,80 @@ TEST("batch()", wrap_root(function()
 
     end
 
+    do CASE "recursive queue flush diamond A,B,C,D,E,F,G"
+--[[
+
+        a > b > d > E > G
+          > c ^   > F  
+
+        ]]
+
+        local a = source(0)
+
+        local b = source(0)
+        local c = source(0)
+        local d = source(0)
+        
+        local e = source(0)
+        local f = source(0)
+        local g = source(0)
+
+        local count = { b = 0, c = 0, d = 0, e = 0, f = 0, g = 0 }
+        effect(function()
+            batch(function()
+                b(a() % 2 == 0 and 1 or 0)
+                c(a() * 2)
+            end)
+            count.b += 1
+            count.c += 1
+        end)
+
+        effect(function()
+            batch(function()
+                d(b() + c())
+            end)
+            count.d += 1
+        end)
+
+        effect(function()
+            batch(function()
+                e(d() % 2 == 0 and 1 or 0)
+                f(d() * 2)
+            end)
+            count.e += 1
+            count.f += 1
+        end)
+
+        effect(function()
+            batch(function()
+                g(e() + f())
+            end)
+            count.g += 1
+        end)
+
+        a(1)
+        CHECK(count.b == 2)
+        CHECK(count.c == 2)
+        CHECK(count.d == 2)
+        CHECK(count.e == 2)
+        CHECK(count.f == 2)
+        CHECK(count.g == 2)
+        CHECK(d() == 2)
+        CHECK(g() == 5)
+
+        a(3)
+        CHECK(count.b == 3)
+        CHECK(count.c == 3)
+        CHECK(count.d == 3)
+        CHECK(count.e == 3)
+        CHECK(count.f == 3)
+        CHECK(count.g == 3)
+        CHECK(d() == 6)
+        CHECK(g() == 13)
+
+
+    end
+
 end))
 
 TEST("read()", wrap_root(function()

@@ -2108,7 +2108,7 @@ TEST("batch()", wrap_root(function()
     end
 
     do CASE "recursive queue flush diamond A,B,C,D,E,F,G"
---[[
+        --[[
 
         a > b > d > E > G
           > c ^   > F  

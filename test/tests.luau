@@ -1842,6 +1842,7 @@ end))
 TEST("batch()", wrap_root(function()
     local source = vide.source
     local derive = vide.derive
+    local effect = vide.effect
     local batch = vide.batch
 
     do CASE "evaluation deferred"
@@ -1924,27 +1925,188 @@ TEST("batch()", wrap_root(function()
     do CASE "recursive queue flush"
 
         local a0 = source(0)
-        local a1 = source(0)
-        local updates = 0
 
-        derive(function() -- depends on a1
-            a0(a1())
-        end)
-
-        derive(function() -- batch updates a2
-            updates += 1
+        -- this effect should only update every time a0() is set
+        local changes = { a = 0, b = 0, c = 0, d = 0, e = 0 }
+        effect(function()
             a0()
-            
-            batch(function()
-
-            end)
-
-            return 1
+            changes.a += 1
         end)
 
-        a1(1)
-        CHECK(updates == 2)
+        -- we first check if a0() works normally
+        a0(1)
+        CHECK(changes.a == 2)
+        a0(2)
+        CHECK(changes.a == 3)
+
+        -- we batch the sets to check if batch works normally
+        batch(function()
+            a0(3)
+            a0(4)
+        end)
+        -- since the previous updates are batched, it should now have 3 updates in total
+        CHECK(changes.a == 4)
+
+        local b0 = source(0)
+        local b1 = source(0)
+
+        -- now lets add a effect that updates another effect
+        -- this effect tracks a0(), and updates b0() and b1() in a batch
+        -- originally, recursive queue flush would be triggered here since it
+        -- would reprocess the entire queue.
+        effect(function()
+            batch(function()
+                b0(a0())
+                b1(a0())
+            end)
+            changes.b += 1
+        end)
+
+        local c0 = source(0)
+        local c1 = source(0)
+
+        -- we add another effect that tracks b0 and b1 updates
+        -- it then updates c0 and c1, which should not be batched
+        effect(function()
+            -- this should not batch
+            c0(b0())
+            c1(b1())
+            changes.c += 1
+        end)
+
+        -- lets set a0() again to check if b0() and b1() are properly batched
+        -- this used to perform a recursive queue flush since we run batch inside
+        -- a effect previously, which would make batch rerun the effect
+        -- updating a0 once should mean effect2 only updated once
+        a0(1)
+        CHECK(changes.b == 2)
+        CHECK(changes.c == 2)
+        a0(2)
+        CHECK(changes.b == 3)
+        CHECK(changes.c == 3)
+
+        -- this tracks how often c0 and c1 are updated
+        effect(function()
+            c0()
+            c1()
+            changes.d += 1
+        end)
+
+        -- updates that happen after batch should not batch.
+        -- this checks to make sure that isn't the case
+        a0(1)
+        CHECK(changes.b == 4)
+        CHECK(changes.c == 4)
+        CHECK(changes.d == 3)
+        a0(2)
+        CHECK(changes.b == 5)
+        CHECK(changes.c == 5)
+        CHECK(changes.d == 5)
     end
+
+    do CASE "recursive queue flush diamond A,B,C,D"
+        --[[
+
+        a > b > d
+          > c >
+
+        ]]
+
+        local a = source(0)
+
+        local b = source(0)
+        local c = source(0)
+        local d = source(0)
+
+        local count = { b = 0, c = 0, d = 0 }
+        effect(function()
+            batch(function()
+                b(a() % 2 == 0 and 1 or 0)
+                c(a() * 2)
+            end)
+            count.b += 1
+            count.c += 1
+        end)
+
+        effect(function()
+            batch(function()
+                d(b() + c())
+            end)
+            count.d += 1
+        end)
+
+        a(1)
+        CHECK(count.b == 2)
+        CHECK(count.c == 2)
+        CHECK(count.d == 2)
+        CHECK(d() == 2)
+
+        a(3)
+        CHECK(count.b == 3)
+        CHECK(count.c == 3)
+        CHECK(count.d == 3)
+        CHECK(d() == 6)
+    end
+
+    do CASE "recursive queue flush diamond A,B,C,D,E"
+        --[[
+        where b and c batches d
+        
+        a > b >     e
+          > c > d >
+        
+        ]]
+
+        local a = source(0)
+
+        local b = source(0)
+        local c = source(0)
+        local d = source(0)
+        local e = source(0)
+
+        local count = { b = 0, c = 0, d = 0, e = 0 }
+        effect(function()
+            batch(function()
+                b(a() % 2 == 0 and 1 or 0)
+                c(a() * 2)
+            end)
+            count.b += 1
+            count.c += 1
+        end)
+
+        effect(function()
+            batch(function()
+                d(c() * 2)
+            end)
+            count.d += 1
+        end)
+
+        effect(function()
+            batch(function()
+                e(b() + d())
+            end)
+            count.e += 1
+        end)
+
+        CHECK(e() == 1)
+
+        a(1)
+
+        CHECK(count.b == 2)
+        CHECK(count.c == 2)
+        CHECK(count.d == 2)
+        CHECK(count.e == 3)
+        CHECK(e() == 4)
+
+        a(3)
+        CHECK(count.b == 3)
+        CHECK(count.c == 3)
+        CHECK(count.d == 3)
+        CHECK(count.e == 4)
+        CHECK(e() == 12)
+
+    end
+
 end))
 
 TEST("read()", wrap_root(function()

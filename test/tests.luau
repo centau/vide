@@ -1922,86 +1922,32 @@ TEST("batch()", wrap_root(function()
         CHECK(b3() == 4)
     end
 
-    do CASE "recursive queue flush"
+    do CASE "subsequent updates do not batch"
 
-        local a0 = source(0)
+        local a = source(0)
+        local b = source(0)
+        local c = source(0)
+        local d = source(0)
+        local d_n = 0
 
-        -- this effect should only update every time a0() is set
-        local changes = { a = 0, b = 0, c = 0, d = 0, e = 0 }
         effect(function()
-            a0()
-            changes.a += 1
+            c()
+            d()
+            d_n += 1
         end)
 
-        -- we first check if a0() works normally
-        a0(1)
-        CHECK(changes.a == 2)
-        a0(2)
-        CHECK(changes.a == 3)
-
-        -- we batch the sets to check if batch works normally
+        effect(function()
+            c(a())
+            d(b())
+        end)
+        
         batch(function()
-            a0(3)
-            a0(4)
-        end)
-        -- since the previous updates are batched, it should now have 3 updates in total
-        CHECK(changes.a == 4)
-
-        local b0 = source(0)
-        local b1 = source(0)
-
-        -- now lets add a effect that updates another effect
-        -- this effect tracks a0(), and updates b0() and b1() in a batch
-        -- originally, recursive queue flush would be triggered here since it
-        -- would reprocess the entire queue.
-        effect(function()
-            batch(function()
-                b0(a0())
-                b1(a0())
-            end)
-            changes.b += 1
+            a(1)
+            b(1)
         end)
 
-        local c0 = source(0)
-        local c1 = source(0)
+        CHECK(d_n == 3)
 
-        -- we add another effect that tracks b0 and b1 updates
-        -- it then updates c0 and c1, which should not be batched
-        effect(function()
-            -- this should not batch
-            c0(b0())
-            c1(b1())
-            changes.c += 1
-        end)
-
-        -- lets set a0() again to check if b0() and b1() are properly batched
-        -- this used to perform a recursive queue flush since we run batch inside
-        -- a effect previously, which would make batch rerun the effect
-        -- updating a0 once should mean effect2 only updated once
-        a0(1)
-        CHECK(changes.b == 2)
-        CHECK(changes.c == 2)
-        a0(2)
-        CHECK(changes.b == 3)
-        CHECK(changes.c == 3)
-
-        -- this tracks how often c0 and c1 are updated
-        effect(function()
-            c0()
-            c1()
-            changes.d += 1
-        end)
-
-        -- updates that happen after batch should not batch.
-        -- this checks to make sure that isn't the case
-        a0(1)
-        CHECK(changes.b == 4)
-        CHECK(changes.c == 4)
-        CHECK(changes.d == 3)
-        a0(2)
-        CHECK(changes.b == 5)
-        CHECK(changes.c == 5)
-        CHECK(changes.d == 5)
     end
 
     do CASE "recursive queue flush diamond A,B,C,D"

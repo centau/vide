@@ -24,6 +24,7 @@ action used to listen for property changes:
 
 ```lua
 local action = vide.action
+local effect = vide.effect
 local cleanup = vide.cleanup
 
 local function changed(prop: string, callback: (new) -> ())
@@ -44,9 +45,11 @@ local instance = create "TextBox" {
     changed("Text", output)
 }
 
-instance.Text = "foo"
+effect(function()
+    print(output())
+end)
 
-print(output()) -- "foo"
+instance.Text = "foo" -- "foo" will be printed from the effect
 ```
 
 The source `output` will be updated with the new property value any time it is

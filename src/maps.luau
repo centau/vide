@@ -4,15 +4,14 @@ local throw = require(script.Parent.throw)
 local flags = require(script.Parent.flags)
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
-type StartNode<T> = graph.StartNode<T>
+type SourceNode<T> = graph.SourceNode<T>
 local create_node = graph.create_node
-local create_start_node = graph.create_start_node
-local set_owner = graph.set_owner
-local track = graph.track
-local update = graph.update
-local assert_owning_scope = graph.assert_owning_scope
-local open_scope = graph.open_scope
-local close_scope = graph.close_scope
+local create_source_node = graph.create_source_node
+local push_child_to_scope = graph.push_child_to_scope
+local update_descendants = graph.update_descendants
+local assert_stable_scope = graph.assert_stable_scope
+local push_scope = graph.push_scope
+local pop_scope = graph.pop_scope
 local evaluate_node = graph.evaluate_node
 local destroy = graph.destroy
 
@@ -22,20 +21,18 @@ local function check_primitives(t: {})
     if not flags.strict then return end
 
     for _, v in next, t do
-        if type(v) == "table" or type(v) == "userdata" then continue end
+        if type(v) == "table" or type(v) == "userdata" or type(v) == "function" then continue end
         throw("table source map cannot return primitives")
     end
 end
 
 local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI, K) -> VO): () -> { VO }
-    local owner = assert_owning_scope()
-
-    local subowner = create_node(false, false)
-    set_owner(subowner, owner)
+    local owner = assert_stable_scope()
+    local subowner = create_node(owner, false, false)
 
     local input_cache = {} :: Map<K, VI>
     local output_cache = {} :: Map<K, VO>
-    local input_nodes = {} :: Map<K, StartNode<VI>>
+    local input_nodes = {} :: Map<K, SourceNode<VI>>
     local remove_queue = {} :: { K }
     local scopes = {} :: Map<K, Node<unknown>>
 
@@ -59,7 +56,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
         table.clear(remove_queue)
 
-        open_scope(subowner)
+        push_scope(subowner)
 
         -- process new or changed values
         for i, v in next, data do
@@ -67,23 +64,22 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
             if cv ~= v then
                 if cv == nil then -- create new scope and run transform
-                    local scope = create_node(false, false)
+                    local scope = create_node(subowner, false, false)
                     scopes[i] = scope :: Node<any>
 
-                    local node = create_start_node(v)
+                    local node = create_source_node(v)
 
-                    set_owner(scope, subowner)
-                    open_scope(scope)
+                    push_scope(scope)
 
                     local ok, result = pcall(transform, function()
-                        track(node)
+                        push_child_to_scope(node)
                         return node.cache
                     end, i)
                     
-                    close_scope()
+                    pop_scope()
 
                     if not ok then
-                        close_scope() -- subowner scope
+                        pop_scope() -- subowner scope
                         error(result, 0)
                     end
                     
@@ -91,14 +87,14 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
                     output_cache[i] = result
                 else -- update source
                     input_nodes[i].cache = v
-                    update(input_nodes[i])
+                    update_descendants(input_nodes[i])
                 end
 
                 input_cache[i] = v
             end
         end
 
-        close_scope()
+        pop_scope()
 
         local output_array = table.create(#scopes)
         for _, v in next, output_cache do
@@ -109,29 +105,26 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
         return output_array
     end
 
-    local node = create_node(false :: any, function()
+    local node = create_node(owner, function()
         return update_children(input())
-    end)
-    set_owner(node, owner)
+    end, false :: any)
 
     evaluate_node(node)
 
     return function()
-        track(node)
+        push_child_to_scope(node)
         return node.cache
     end
 end
 
 local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> K) -> VO): () -> { VO }
-    local owner = assert_owning_scope()
-
-    local subowner = create_node(false, false)
-    set_owner(subowner, owner)
+    local owner  = assert_stable_scope()
+    local subowner = create_node(owner, false, false)
     
     local cur_input_cache_up = {} :: Map<VI, K>
     local new_input_cache_up = {} :: Map<VI, K>
     local output_cache = {} :: Map<VI, VO>
-    local input_nodes = {} :: Map<VI, StartNode<K>>
+    local input_nodes = {} :: Map<VI, SourceNode<K>>
     local scopes = {} :: Map<VI, Node<unknown>>
 
     local function update_children(data: Map<K, VI>)
@@ -147,7 +140,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
             end
         end
 
-        open_scope(subowner)
+        push_scope(subowner)
     
         -- process data
         for i, v in next, data do
@@ -156,23 +149,22 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
             local cv = cur_input_cache[v]
             
             if cv == nil then -- create new scope and run transform
-                local scope = create_node(false, false)
+                local scope = create_node(subowner, false, false)
                 scopes[v] = scope :: Node<any>
 
-                local node = create_start_node(i)
+                local node = create_source_node(i)
     
-                set_owner(scope, subowner)
-                open_scope(scope)
+                push_scope(scope)
                 
                 local ok, result = pcall(transform, v, function()
-                    track(node)
+                    push_child_to_scope(node)
                     return node.cache
                 end)
                 
-                close_scope()
+                pop_scope()
 
                 if not ok then
-                    close_scope() -- subowner scope
+                    pop_scope() -- subowner scope
                     error(result, 0)
                 end
 
@@ -181,14 +173,14 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
             else -- update source
                 if cv ~= i then
                     input_nodes[v].cache = i
-                    update(input_nodes[v])
+                    update_descendants(input_nodes[v])
                 end
 
                 cur_input_cache[v] = nil
             end
         end
 
-        close_scope()
+        pop_scope()
 
         -- remove old values
         for v in next, cur_input_cache do
@@ -212,15 +204,14 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
         return output_array
     end
 
-    local node = create_node(false :: any, function()
+    local node = create_node(owner, function()
         return update_children(input())
-    end)
-    set_owner(node, owner)
+    end, false :: any)
 
     evaluate_node(node)
 
     return function()
-        track(node)
+        push_child_to_scope(node)
         return node.cache
     end
 end

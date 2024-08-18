@@ -4,7 +4,7 @@
 
 ## mount()
 
-Runs a function in a new reactive scope and optionally applies its result to a
+Runs a function in a new stable scope and optionally applies its result to a
 target instance.
 
 - **Type**
@@ -18,10 +18,10 @@ target instance.
     The result of the function is applied to a target in the same way
     properties are using `create()`.
 
-    The function is ran in a new reactive scope, just like
+    The function is ran in a new stable scope, just like
     [root()](reactivity-core.md#root).
 
-    Returns a function that when called will destroy the reactive scope.
+    Returns a function that when called will destroy the stable scope.
 
 - **Example**
 
@@ -170,7 +170,7 @@ A wrapper for `action()` to listen for property changes.
     Will run the given callback any time the property is changed, as well as
     when the action is initially run.
 
-    The changed connection is disconnected when the reactive scope the action is
-    ran in is destroyed.
+    The changed connection is disconnected when the scope the action is ran in
+    is destroyed.
 
     Runs with an action priority of 1.

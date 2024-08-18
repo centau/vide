@@ -1,7 +1,7 @@
-# Property Binding
+# Implicit Effects
 
-Explicitly creating effects to update properties can be tedious. Vide provides a
-way to *implicitly* create an effect to update properties.
+Explicitly creating effects to update properties is tedious. You can
+*implicitly* create an effect to update properties instead.
 
 ```lua
 local create = vide.create
@@ -25,23 +25,14 @@ end
 This example is equivalent to the example seen on the previous page.
 
 Instead of explicitly creating an effect, assigning a (non-event) property a
-function will implicitly create an effect to update that property anytime a
-source used within is updated.
+function will implicitly create an effect to update that property.
 
-Just like effects, the function is ran immediately in a reactive scope to set
-the property initially and determine what sources are being used.
-
-This allows you as the programmer to not need to manually update UI as the state
-of your program changes. You just define how data sources map to UI, and Vide's
-reactive system will automatically update any properties depending on those
-sources.
-
-## Children Binding
+## Children
 
 Children can also be set in a similar manner. A source passed as a child (passed
 with a number key instead of string key) can return an instance or an array of
-instances. Vide will automatically unparent removed instances and parent new
-instances when that source's stored instances change.
+instances. An effect is automatically created to unparent removed instances and
+parent new instances on source update.
 
 ```lua
 local items = source {
@@ -62,5 +53,5 @@ items {
     create "TextLabel" { Text = "C" }
 }
 
--- this will automatically unparent the text label "A", and parent the labels "B" and "C".
+-- this will automatically unparent the text label "A", and parent the labels "B" and "C"
 ```

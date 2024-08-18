@@ -1,7 +1,7 @@
 # Sources
 
-Sources are special objects that store a single value. They are the core of
-Vide's reactivity. They are called sources because they act as sources of data.
+Sources are special objects that store a single value and are the core of
+Vide's reactivity.
 
 A source can be created using `source()`.
 
@@ -20,8 +20,7 @@ by calling it with no arguments.
 count(count() + 1) -- increment count by 1
 ```
 
-Sources can be *derived* by wrapping them in functions. A wrapped source
-effectively becomes a new source.
+Sources can be *derived* by wrapping them in functions.
 
 ```lua
 local count = source(0)
@@ -35,7 +34,5 @@ count(1)
 print(text()) -- "count: 1"
 ```
 
-Sources on their own aren't very special, the above can be achieved with plain
-variables. The real use for sources become apparent when used in combination
-with *effects*. Similar to a signal and connection, a source and effect allows
-you to do things like automatically updating UI when a source is updated.
+While the above can be achieved with plain variables, the use for sources will
+be obvious in the next part.

@@ -4,14 +4,14 @@ local throw = require(script.Parent.throw)
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
 local create_node = graph.create_node
-local open_scope = graph.open_scope
-local close_scope = graph.close_scope
+local push_scope = graph.push_scope
+local pop_scope = graph.pop_scope
 local destroy = graph.destroy
 
 local refs = {}
 
 local function root<T...>(fn: (destroy: () -> ()) -> T...): T...
-    local node = create_node(false, false)
+    local node = create_node(false, false, false)
 
     refs[node] = true -- prevent gc of root node
 
@@ -21,15 +21,16 @@ local function root<T...>(fn: (destroy: () -> ()) -> T...): T...
         destroy(node)
     end
 
-    open_scope(node)
+    push_scope(node)
 
-    local result = { pcall(fn, destroy) }
+    local function efn(err: string) return debug.traceback(err, 3) end
+    local result = { xpcall(fn, efn, destroy) }
 
-    close_scope()
+    pop_scope()
 
     if not result[1] then
         refs[node] = nil
-        throw(`mount error\n{result[2]}`)
+        throw(`error while running root():\n\n{result[2]}`)
     end
 
     return unpack(result :: any, 2)

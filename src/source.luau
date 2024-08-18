@@ -2,18 +2,18 @@ if not game then script = require "test/relative-string" end
 
 local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
-local create_start_node = graph.create_start_node
-local track = graph.track
-local update = graph.update
+local create_source_node = graph.create_source_node
+local push_child_to_scope = graph.push_child_to_scope
+local update_descendants = graph.update_descendants
 
 export type Source<T> = (() -> T) & ((value: T) -> T)
 
 local function source<T>(initial_value: T): Source<T>
-    local node = create_start_node(initial_value)
+    local node = create_source_node(initial_value)
 
     return function(...): T
         if select("#", ...) == 0 then -- no args were given
-            track(node)
+            push_child_to_scope(node)
             return node.cache
         end
 
@@ -23,7 +23,7 @@ local function source<T>(initial_value: T): Source<T>
         end
 
         node.cache = v
-        update(node)
+        update_descendants(node)
         return v
     end
 end

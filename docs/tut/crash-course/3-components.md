@@ -34,12 +34,12 @@ end
 return Button
 ```
 
-```lua [App.luau]
+```lua [Menu.luau]
 local create = vide.create
 
 local Button = require(Button)
 
-local function App()
+local function Menu()
     return create "ScreenGui" {
         Button {
             Position = UDim2.fromOffset(200, 200),
@@ -58,20 +58,8 @@ local function App()
         }
     }
 end
-
-App().Parent = game.StarterGui
 ```
 
 :::
 
-Above is a simple example of a button component being used across files.
-
 A single parameter `props` is used to pass properties to the component.
-
-You can only modify the component in ways that you allow in the component,
-through the `props` parameter.
-
-To create a new button all you must do is call the `Button` function, passing in
-values. This saves having to create and set every property each time. Also, when
-updating the button component in future, any changes to the button file will be
-seen anywhere the button is used in your app.

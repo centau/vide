@@ -18,12 +18,12 @@ Shows one of two components depending on an input source.
     Returns a source holding an instance of the currently shown component.
 
     When the input source changes from a falsey to a truthy value, the
-    component will be reran under a new reactive scope. If it changes from a
-    truthy to falsey value, the reactive scope the component was created in will
+    component will be reran under a new stable scope. If it changes from a
+    truthy to falsey value, the stable scope the component was created in will
     be destroyed, and the returned source will output `nil`, or a fallback
     component if given.
 
-    The fallback component is also ran under a new reactive scope, and destroyed
+    The fallback component is also ran under a new stable scope, and destroyed
     when the input source switches back to truthy.
 
 ## switch()
@@ -41,10 +41,10 @@ Shows one of a set of components depending on an input source and a mapping tabl
     Returns a source holding an instance of the currently shown component.
 
     When the input source changes, the new value will be used to lookup a given
-    mapping table to get a component, which will be ran under a new reactive
-    scope. If the input source changes, the reactive scope the component was
+    mapping table to get a component, which will be ran under a new stable
+    scope. If the input source changes, the stable scope the component was
     created in will be destroyed, and a new component created under a new
-    reactive scope. If no component is found for an input value, the switch will
+    stable scope. If no component is found for an input value, the switch will
     output `nil`.
 
 - **Example**
@@ -82,9 +82,9 @@ Maps each index in a table source to an object.
     When the input source changes, each *index* in the new table is compared with
     the last input table.
 
-    - For any new index, the `transform` function is ran under a new reactive
+    - For any new index, the `transform` function is ran under a new stable
       scope to produce a new instance.
-    - For any removed index, the reactive scope for that index is destroyed.
+    - For any removed index, the stable scope for that index is destroyed.
     - Unchanged indexes are untouched.
 
     The transform function is called only ever *once* for each index in the
@@ -142,9 +142,9 @@ Maps each value in a table source to an object.
     When the input source changes, each *value* in the new table is compared with
     the last input table. Similar to `indexes()` but for values instead of indexes.
 
-    - For any new value, the `transform` function is ran under a new reactive
+    - For any new value, the `transform` function is ran under a new stable
       scope to produce a new instance.
-    - For any removed value, the reactive scope for that value is destroyed.
+    - For any removed value, the stable scope for that value is destroyed.
     - Unchanged values are untouched.
 
     The transform function is only ever called *once* for each value in the
@@ -203,7 +203,7 @@ Maps each value in a table source to an object.
     - Toast notifications.
 
     `indexes()` should be used in other cases, especially when your source table
-    has primitive value. It maps an index to a UI element.
+    has primitive values. It maps an index to a UI element.
 
     e.g.
     - List of character or weapon stats.
@@ -213,6 +213,6 @@ Maps each value in a table source to an object.
     result in less property updates and less re-renders. One case to note is
     that `values()` works nicely when animating re-ordering of instances, since
     the value is not destroyed when indexes are changed, and the source index
-    can easily be put through a spring.
+    can be used to animate a change in position for the UI element.
 
 --------------------------------------------------------------------------------

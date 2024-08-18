@@ -35,28 +35,27 @@ vide.strict = false
 
 TEST("graph", function()
     local create_node = graph.create_node
-    local track = graph.track
-    local update = graph.update
-    local add_child = graph.add_child
+    local push_child_to_scope = graph.push_child_to_scope
+    local update_descendants = graph.update_descendants
+    local push_child = graph.push_child
     local get_scope = graph.get_scope
-    local open_scope = graph.open_scope
-    local close_scope = graph.close_scope
-    local set_owner = graph.set_owner
+    local push_scope = graph.push_scope
+    local pop_scope = graph.pop_scope
     local get_children = graph.get_children
-    local add_cleanup = graph.add_cleanup
+    local push_cleanup = graph.push_cleanup
     local destroy = graph.destroy
 
-    local function node<T>(v: T?)
-        return create_node(v or false, function(x) return not x end)
+    local function node<T>(owner: Node<any>?, v: T?)
+        return create_node(owner or false, function(x) return not x end, v or false :: any)
     end
 
-    local function scope()
-        return create_node(false, false)
+    local function scope(owner: Node<any>?)
+        return create_node(owner or false, false, false)
     end
 
     local function cleanup(fn: () -> ())
         local node = assert(get_scope())
-        add_cleanup(node, fn)
+        push_cleanup(node, fn)
     end
 
     do CASE "link nodes"
@@ -64,12 +63,12 @@ TEST("graph", function()
         local b = node()
         local c = node()
 
-        open_scope(c)
+        push_scope(c)
 
-        track(a)
-        track(b)
+        push_child_to_scope(a)
+        push_child_to_scope(b)
 
-        close_scope()
+        pop_scope()
 
         CHECK(get_children(a)[1] == c)
         CHECK(get_children(b)[1] == c)
@@ -78,33 +77,30 @@ TEST("graph", function()
     do CASE "rerun linked nodes"
         local root = node()
         local a = node()
-        local b = node()
-        local c = node()
-
-        set_owner(b, root)
-        set_owner(c, root)
+        local b = node(root)
+        local c = node(root)
 
         local count = 0
 
         local function effect(x)
-            track(a)
-            track(b)
+            push_child_to_scope(a)
+            push_child_to_scope(b)
             count += 1
             return not x
         end
 
         c.effect = effect
 
-        open_scope(c)
+        push_scope(c)
 
         effect(c.cache)
 
-        close_scope()
+        pop_scope()
         
         CHECK(count == 1)
-        update(a)
+        update_descendants(a)
         CHECK(count == 2)
-        update(b)
+        update_descendants(b)
         CHECK(count == 3)
     end
 
@@ -112,22 +108,18 @@ TEST("graph", function()
         -- a -> b -> d
         --   -> c
         local root = node()
-        local a, b, c, d = node(), node(), node(), node()
-
-        set_owner(b, root)
-        set_owner(c, root)
-        set_owner(d, root)
+        local a, b, c, d = node(), node(root), node(root), node(root)
 
         local b_cnt, c_cnt, d_cnt = 0, 0, 0
         function b.effect(x) b_cnt += 1; return not x end
         function c.effect(x) c_cnt += 1; return not x end
         function d.effect(x) d_cnt += 1; return not x end
 
-        open_scope(b); track(a); close_scope()
-        open_scope(c); track(a); close_scope()
-        open_scope(d); track(b); track(c); close_scope()
+        push_scope(b); push_child_to_scope(a); pop_scope()
+        push_scope(c); push_child_to_scope(a); pop_scope()
+        push_scope(d); push_child_to_scope(b); push_child_to_scope(c); pop_scope()
 
-        update(a)
+        update_descendants(a)
 
         CHECK(b_cnt == 1)
         CHECK(c_cnt == 1)
@@ -136,21 +128,17 @@ TEST("graph", function()
 
     do CASE "duplicate child on rerun"
         local root = node()
-        local a, b, c = node(), node(), node()
-
-        set_owner(a, root)
-        set_owner(b, root)
-        set_owner(c, root)
+        local a, b, c = node(root), node(root), node(root)
 
         function c.effect(x)
-            track(a)
-            track(b)
+            push_child_to_scope(a)
+            push_child_to_scope(b)
             return not x
         end
 
-        open_scope(c); assert(type(c.effect) == "function" and c.effect)(NIL); close_scope()
+        push_scope(c); assert(type(c.effect) == "function" and c.effect)(NIL); pop_scope()
 
-        update(a)
+        update_descendants(a)
 
         CHECK(#get_children(a) == 1)
         CHECK(#get_children(b) == 1)
@@ -159,13 +147,13 @@ TEST("graph", function()
     do CASE "case 1"
         -- construct graph
 
-        local items = node { "a", "b" }
-        local selected = node "a"
+        local items = node(nil, { "a", "b" })
+        local selected = node(nil, "a")
 
         local root = scope()
 
-        local scope1 = scope()
-        local scope2 = scope()
+        local scope1 = scope(root)
+        local scope2 = scope(root)
 
         local items_updated
 
@@ -180,41 +168,36 @@ TEST("graph", function()
             end)
         end
 
-        do open_scope(root) 
+        do push_scope(root) 
             clean "root"
-            items_updated = node()
-            track(items_updated) -- should not
+            items_updated = node(root)
+            push_child_to_scope(items_updated) -- should not
 
-            set_owner(items_updated, root)
-            do open_scope(items_updated)
-                track(items)
+            do push_scope(items_updated)
+                push_child_to_scope(items)
 
-                do open_scope(root)
-                    set_owner(scope1, root)
-                    do open_scope(scope1)
+                do push_scope(root)
+                    do push_scope(scope1)
                         clean "scope1"
-                        bind1 = node()
+                        bind1 = node(scope1)
 
-                        set_owner(bind1, scope1)
-                        do open_scope(bind1)
+                        do push_scope(bind1)
                             clean "bind1"
-                            track(selected)
-                        close_scope() end
-                    close_scope() end
+                            push_child_to_scope(selected)
+                        pop_scope() end
+                    pop_scope() end
 
-                    set_owner(scope2, root)
-                    do open_scope(scope2)
+                    do push_scope(scope2)
                         clean "scope2"
-                        bind2 = node()
-                        set_owner(bind2, scope2)
-                        do open_scope(bind2)
+                        bind2 = node(scope2)
+                        do push_scope(bind2)
                             clean "bind2"
-                            track(selected)
-                        close_scope() end
-                    close_scope() end
-                close_scope() end
-            close_scope() end 
-        close_scope() end
+                            push_child_to_scope(selected)
+                        pop_scope() end
+                    pop_scope() end
+                pop_scope() end
+            pop_scope() end 
+        pop_scope() end
         
 
         -- verify graph
@@ -235,8 +218,8 @@ TEST("graph", function()
         do
             local c = get_children(selected)
             CHECK(#c == 2)
-            CHECK(table.find(c, bind1))
-            CHECK(table.find(c, bind2))
+            CHECK(table.find(c, bind1 :: any))
+            CHECK(table.find(c, bind2 :: any))
         end
 
         do
@@ -267,7 +250,7 @@ TEST("graph", function()
     end
 
     do CASE "nodes garbage collection"
-        local wref = weak { node(1) }
+        local wref = weak { node(nil, 1) }
         destroy(wref[1])
         gc()
         CHECK(not wref[1])
@@ -294,30 +277,23 @@ TEST("graph", function()
            ^
 
         depth=1
-        _, _   <- attempt to update nothing
+        _, _   <- attempt to update_descendants nothing
            ^        
 
         ]]
 
-        local a, b, c, d, e, f = node(), node(), node(), node(), node(), node()
-
         local root = node()
-        set_owner(a, root)
-        set_owner(b, root)
-        set_owner(c, root)
-        set_owner(d, root)
-        set_owner(e, root)
-        set_owner(f, root)
+        local a, b, c, d, e, f = node(root), node(root), node(root), node(root), node(root), node(root)
 
         function b.effect(x)
-            update(d)
+            update_descendants(d)
             return not x
         end
 
-        add_child(a, b); add_child(a, c)
-        add_child(d, e); add_child(d, f)
+        push_child(a, b); push_child(a, c)
+        push_child(d, e); push_child(d, f)
 
-        update(a)
+        update_descendants(a)
 
         CHECK(true)
     end
@@ -1924,7 +1900,7 @@ TEST("read()", wrap_root(function()
         CHECK(read(src) == 1)
     end
 
-    do CASE "track source"
+    do CASE "push_child_to_scope source"
         local src = source(0)
 
         local count = 0
@@ -2283,6 +2259,27 @@ TEST("strict", wrap_root(function()
 
         CHECK(count == 2)
         src(not src())
+        CHECK(count == 4)
+    end
+
+    do CASE "effect using derived source"
+        local input = source(true)
+
+        local output = derive(function()
+            return input()
+        end)
+
+        local count = 0
+
+        effect(function()
+            output()
+            count += 1
+        end)
+
+        CHECK(count == 2)
+
+        input(false)
+
         CHECK(count == 4)
     end
 end))

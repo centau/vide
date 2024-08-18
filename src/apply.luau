@@ -11,6 +11,7 @@ local graph = require(script.Parent.graph)
 type Node<T> = graph.Node<T>
 
 type Array<V> = { V }
+type ArrayOrV<V> = {ArrayOrV<V>} | V
 type Map<K, V> = { [K]: V }
 
 local free_caches: {
@@ -124,7 +125,7 @@ local function apply<T>(instance: T & Instance, properties: { [unknown]: unknown
                 end    
             elseif type(property) == "number" then
                 if type(value) == "function" then
-                    bind.children(instance, value :: () -> Instance | Array<Instance>) -- bind children
+                    bind.children(instance, value :: () -> ArrayOrV<Instance>) -- bind children
                 elseif type(value) == "table" then
                     if is_action(value) then
                         table.insert(actions[(value :: any).priority], (value :: any).callback :: () -> ()) -- add action to buffer

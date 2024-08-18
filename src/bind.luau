@@ -38,6 +38,7 @@ type ChildrenBinding = {
     children: () -> Instance | { Instance }
 }
 
+type ArrayOrV<V> = V | { V }
 local function update_children_effect(p: ChildrenBinding)
     local cur_children_set: { [Instance]: true } = p.cur_children_set -- cache of all children parented before update
     local new_child_set: { [Instance]: true } = p.new_children_set -- cache of all children parented after update
@@ -48,8 +49,14 @@ local function update_children_effect(p: ChildrenBinding)
         new_children = { new_children }
     end
 
-    if new_children then
-        for _, child in next, new_children :: { Instance } do
+    local function process_child(child: ArrayOrV<Instance>)
+        if type(child) == "table" then
+            for _, child in next, child do
+                process_child(child)
+            end
+        else
+            if new_child_set[child] then return end -- stops redundant reparenting
+
             new_child_set[child] = true -- record child set from this update
             if not cur_children_set[child] then
                 child.Parent = p.instance -- if child wasn't already parented then parent it
@@ -58,6 +65,8 @@ local function update_children_effect(p: ChildrenBinding)
             end
         end
     end
+
+    process_child(new_children)
 
     for child in next, cur_children_set do
         child.Parent = nil -- unparent all children that weren't in the new children set

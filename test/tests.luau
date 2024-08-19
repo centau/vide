@@ -945,6 +945,26 @@ TEST("create()", wrap_root(function()
         CHECK((f2 :: any).a == 2)
     end
 
+    do CASE "recursive fragment"
+        
+        local obj = create "Frame" {
+
+            function()
+                return {
+                    {
+                        create "Frame" {
+                            Name = "A"
+                        }
+                    }
+                }
+            end
+
+        }
+
+        CHECK(obj:FindFirstChild("A"))
+
+    end
+
     do CASE "garbage collection test"
         local wref
 

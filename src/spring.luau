@@ -114,11 +114,11 @@ local vec6_to_type = {
     end :: Vec6ToType<Color3>,
 
     UDim = function(v)
-        return UDim.new(v.X, v.Y)
+        return UDim.new(v.X, math.round(v.Y))
     end :: Vec6ToType<UDim>,
     
     UDim2 = function(a, b)
-        return UDim2.new(a.X, a.Y, a.Z, b.X)
+        return UDim2.new(a.X, math.round(a.Y), a.Z, math.round(b.X))
     end :: Vec6ToType<UDim2>,
 
     Vector2 = function(v)

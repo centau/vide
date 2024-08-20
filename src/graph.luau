@@ -184,14 +184,12 @@ local function queue_children_for_update<T>(node: SourceNode<T>)
     update_queue.n = i
 end
 
-local _flushing = false
-local function flush_update_queue()
-    assert(not _flushing, "recursive queue flush occured") -- todo
-    _flushing = true
+local function get_update_queue_length()
+    return update_queue.n
+end
 
-    local n0 = 0
-
-    local i = n0 + 1
+local function flush_update_queue(from: number)
+    local i = from + 1
     while i <= update_queue.n do
         local node = update_queue[i]
         --assert(node.effect)
@@ -203,10 +201,8 @@ local function flush_update_queue()
         update_queue[i] = false :: any
         i += 1
     end
-
-    update_queue.n = n0
-
-    _flushing = false
+    
+    update_queue.n = from
 end
 
 local function update_descendants<T>(root: SourceNode<T>)
@@ -286,5 +282,6 @@ return table.freeze {
     create_source_node = create_source_node,
     get_children = get_children,
     flush_update_queue = flush_update_queue,
+    get_update_queue_length = get_update_queue_length,
     scopes = scopes
 }

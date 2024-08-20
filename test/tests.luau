@@ -945,24 +945,40 @@ TEST("create()", wrap_root(function()
         CHECK((f2 :: any).a == 2)
     end
 
-    do CASE "recursive fragment"
+    do CASE "nested children effect"
+        local a = create "Frame" { Name = "a" }
+        local b = create "Frame" { Name = "b" }
+        local c = create "Frame" { Name = "c" }
+        local d = create "Frame" { Name = "d" }
+        local e = create "Frame" { Name = "e" }
+        
+        local children = source {
+            a,
+            { b, c, { d } },
+            { { e } }
+        }
         
         local obj = create "Frame" {
-
-            function()
-                return {
-                    {
-                        create "Frame" {
-                            Name = "A"
-                        }
-                    }
-                }
-            end
-
+            children
         }
 
-        CHECK(obj:FindFirstChild("A"))
+        CHECK(obj:FindFirstChild("a"))
+        CHECK(obj:FindFirstChild("b"))
+        CHECK(obj:FindFirstChild("c"))
+        CHECK(obj:FindFirstChild("d"))
+        CHECK(obj:FindFirstChild("e"))
 
+        children {
+            b,
+            { c, a },
+            { { d } }
+        }
+
+        CHECK(obj:FindFirstChild("a"))
+        CHECK(obj:FindFirstChild("b"))
+        CHECK(obj:FindFirstChild("c"))
+        CHECK(obj:FindFirstChild("d"))
+        CHECK(not obj:FindFirstChild("e"))
     end
 
     do CASE "garbage collection test"

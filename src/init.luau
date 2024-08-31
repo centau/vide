@@ -16,6 +16,7 @@ local cleanup = require(script.cleanup)
 local untrack = require(script.untrack)
 local read = require(script.read)
 local batch = require(script.batch)
+local mutate = require(script.mutate)
 local switch = require(script.switch)
 local show = require(script.show)
 local indexes, values = require(script.maps)()
@@ -63,6 +64,7 @@ local vide = {
     untrack = untrack,
     read = read,
     batch = batch,
+    mutate = mutate,
 
     -- animations
     spring = spring,

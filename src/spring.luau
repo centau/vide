@@ -201,9 +201,27 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
     -- set output to goal
     output.cache = data.source_value
 
-    return function()
-        push_child_to_scope(output)
-        return output.cache
+    return function(...)
+        if select("#", ...) == 0 then -- no args were given
+            push_child_to_scope(output)
+            return output.cache
+        end
+
+        -- set current position to value
+        local v = ... :: T
+        data.x0_123, data.x0_456 = type_to_vec6[typeof(v)](v)
+
+        -- reset velocity
+        data.v_123 = ZERO
+        data.v_456 = ZERO
+
+        -- schedule spring
+        springs[data] = output
+
+        -- set output to value
+        output.cache = v
+
+        return v
     end
 end
 

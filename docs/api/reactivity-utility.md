@@ -90,4 +90,45 @@ trigger effects until after the function finishes running.
     only cause the effect to run once after the batch call ends instead of after
     each time a source is updated.
 
+## context()
+
+Creates a new context.
+
+- **Type**
+
+    ```lua
+    function context<T>(default: T): Context<T>
+
+    type Context<T> =
+        () -> T -- get
+        & (T, () -> ()) -> () -- set
+    ```
+
+- **Details**
+
+    Calling `context()` returns a new context function.
+    Call this function with no arguments to get the context value.
+    Call this function with a value and a callback to set a new context with the
+    given value.
+
+- **Example**
+
+    ```lua
+    local theme = context()
+
+    local function Button()
+        print(theme())
+    end
+
+    root(function()
+        theme("light", function()
+             Button() -- prints "light"
+
+            theme("dark", function()
+                Button() -- prints "dark"
+            end)
+        end)
+    end)
+    ```
+
 --------------------------------------------------------------------------------

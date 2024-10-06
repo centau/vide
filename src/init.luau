@@ -16,6 +16,7 @@ local cleanup = require(script.cleanup)
 local untrack = require(script.untrack)
 local read = require(script.read)
 local batch = require(script.batch)
+local context = require(script.context)
 local switch = require(script.switch)
 local show = require(script.show)
 local indexes, values = require(script.maps)()
@@ -26,6 +27,9 @@ local throw = require(script.throw)
 local flags = require(script.flags)
 
 export type Source<T> = source.Source<T>
+export type source<T> = Source<T>
+export type Context<T> = context.Context<T>
+export type context<T> = Context<T>
 
 local function step(dt: number)
     if game then
@@ -63,6 +67,7 @@ local vide = {
     untrack = untrack,
     read = read,
     batch = batch,
+    context = context,
 
     -- animations
     spring = spring,

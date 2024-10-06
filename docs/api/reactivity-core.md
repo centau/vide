@@ -34,7 +34,11 @@ Creates a new source with the given value.
 - **Type**
 
     ```lua
-    function source<T>(value: T): (T?) -> T
+    function source<T>(value: T): Source<T>
+
+    type Source<T> =
+        () -> T -- get
+        & (T) -> () -- set
     ```
 
 - **Details**

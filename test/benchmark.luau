@@ -4,11 +4,14 @@ local BENCH, START = testkit.benchmark()
 local vide = require "src/init"
 local source = vide.source
 local derive = vide.derive
+local effect = vide.effect
 local indexes = vide.indexes
 local values = vide.values
 local batch = vide.batch
 local cleanup = vide.cleanup
+local untrack = vide.untrack
 local create = vide.create
+local context = vide.context
 
 assert(not vide.strict)
 
@@ -444,6 +447,61 @@ ROOT_BENCH("values() all remove", function()
     START(N)
 
     src(data)
+end)
+
+TITLE "context()"
+
+ROOT_BENCH("set context", function()
+    local ctx = context()
+
+    for i = 1, START(N) do
+        ctx(i, function() end)
+    end
+end)
+
+ROOT_BENCH("get context (depth=1)", function()
+    local ctx = context()
+
+    local function run()
+        for i = 1, START(N) do
+            ctx()
+        end
+    end
+
+    ctx(1, function()
+        run()
+    end)
+end)
+
+local depth = 10
+ROOT_BENCH(`get context (depth={depth})`, function()
+
+    local ctx = context()
+
+    local function run()
+        for i = 1, START(N) do
+            ctx()
+        end
+    end
+
+    local function nest_effect(fn)
+        untrack(function()
+            effect(fn)
+            return nil
+        end)
+    end
+    
+    local f = run
+    for i = 1, depth - 1 do
+        local f_inner = f
+        f = function()
+            nest_effect(f_inner)
+        end
+    end
+
+    ctx(1, function()
+        f()
+    end)
 end)
 
 N *= 1024

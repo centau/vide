@@ -13,6 +13,8 @@ export type Node<T> =  {
     effect:  ((T) -> T) | false,
     cleanups: { () -> () } | false,
 
+    context: { [number]: unknown } | false,
+
     owned: { Node<T> } | false,
     owner: Node<T> | false,
 
@@ -241,6 +243,8 @@ local function create_node<T>(owner: false | Node<any>, effect: false | (T) -> T
         effect = effect,
         cleanups = false,
 
+        context = false,
+
         owner = owner,
         owned = false,
 
@@ -266,6 +270,14 @@ local function get_children<T>(node: Node<T>): { Node<unknown> }
     return { unpack(node) } :: { Node<any> }
 end
 
+local function set_context<T>(node: Node<T>, key: number, value: unknown)
+    if node.context then
+        node.context[key] = value
+    else
+        node.context = { [key] = value }
+    end
+end
+
 return table.freeze {
     push_scope = push_scope,
     pop_scope = pop_scope,
@@ -283,5 +295,6 @@ return table.freeze {
     get_children = get_children,
     flush_update_queue = flush_update_queue,
     get_update_queue_length = get_update_queue_length,
+    set_context = set_context,
     scopes = scopes
 }

@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - Error stack traces being lost.
+- `root()` now destroys the scope automatically if an error occurs during call.
 
 --------------------------------------------------------------------------------
 

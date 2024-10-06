@@ -29,7 +29,7 @@ local function root<T...>(fn: (destroy: () -> ()) -> T...): (() -> (), T...)
     pop_scope()
 
     if not result[1] then
-        refs[node] = nil
+        destroy()
         throw(`error while running root():\n\n{result[2]}`)
     end
 

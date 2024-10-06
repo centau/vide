@@ -10,7 +10,7 @@ Stores a single value that can be updated.
 
 Created with `source()`.
 
-# Derived Source
+## Derived Source
 
 A new source composed of other sources.
 
@@ -46,7 +46,7 @@ Created by:
 
 Reactive scopes do track sources and will rerun when those sources update.
 
-New reactive scopes cannot be created within a reactive scope, but stable scopes
+Reactive scopes cannot be created within a reactive scope, but stable scopes
 can.
 
 ## Scope Owners

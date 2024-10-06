@@ -32,7 +32,7 @@ end
 effect(function() text() end)
 effect(function() text() end)
 
-source(1) -- prints "ran" x2
+count(1) -- prints "ran" x2
 ```
 
 To avoid this, you can use `derive()` to derive a new source instead. This will
@@ -54,7 +54,7 @@ end)
 effect(function() text() end)
 effect(function() text() end)
 
-source(1) -- prints "ran" x1
+count(1) -- prints "ran" x1
 ```
 
 `derive()` must also be called within a stable scope, just like `effect()`.

@@ -81,9 +81,8 @@ mount(function()
 
     effect(function()
         if toggled() then
-            local destroy = root(function(destroy)
+            local destroy = root(function()
                 Counter()
-                return destroy
             end)
             cleanup(destroy)
         end

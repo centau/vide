@@ -13,15 +13,13 @@ local effect = vide.effect
 local count = source(0)
 
 
-local destroy = root(function(destroy)
+local destroy = root(function()
     effect(function()
         local x = count()
         cleanup(function() print(x) end)
     end)
 
     cleanup(function() print "root destroyed" end)
-
-    return destroy
 end)
 
 count(1) -- prints "0"

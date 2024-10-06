@@ -14,18 +14,15 @@ Creates and runs a function in a new stable scope.
 - **Type**
 
     ```lua
-    function root<T...>(fn: (destroy: () -> ()) -> T...): T...
+    function root<T...>(fn: (() -> ()) -> T...): (() -> (), T...)
     ```
 
 - **Details**
 
-    Returns the result of the given function.
+    Returns a function to destroy the root scope. Also passes this function as
+    the first argument into its callback.
 
-    Creates a new stable scope, where creation of effects can be tracked and
-    properly disposed of.
-
-    A function to destroy the root is passed into the callback, which will run
-    any cleanups and allow derived sources created to garbage collect.
+    All values returned by the callback are also returned following the destructor.
 
 ## source()
 

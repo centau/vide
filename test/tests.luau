@@ -892,7 +892,7 @@ TEST("create()", wrap_root(function()
     end
 
     do CASE "parent bound to source"
-        local wref, destroy = vide.root(function(destroy)
+        local _, wref, destroy = vide.root(function(destroy)
             local frame = create "Frame" { Name = "Parent" }
             local parent = source(frame :: Frame?)
 
@@ -1228,7 +1228,7 @@ TEST("indexes()", wrap_root(function()
 
         local count = table.create(3, 0)
 
-        local output = vide.root(function()
+        local _, output = vide.root(function()
             local output = indexes(input, function(v, i)
                 count[i] += 1
                 return v
@@ -1690,7 +1690,7 @@ TEST("untrack()", wrap_root(function()
 
         local input = source(0)
 
-        local output, destroy = root(function(destroy)
+        local _, output, destroy = root(function(destroy)
             local output = derive(function()
                 outer_count += 1
 
@@ -1820,7 +1820,7 @@ TEST("changed()", wrap_root(function()
     end
 
     do CASE "connection disconnected"
-        local text, destroy = root(function(destroy)
+        local _, text, destroy = root(function(destroy)
             local output = source(nil)
 
             return create "TextLabel" {
@@ -2397,7 +2397,7 @@ TEST("graph edge cases", wrap_root(function()
     do CASE "do not destroy children"
         local parent = source(0)   
 
-        local
+        local _,
             destroy,
             parent_to_destroy,
             update_parent_to_destroy
@@ -2440,7 +2440,7 @@ TEST("graph edge cases", wrap_root(function()
         -- child B reevaluates due to already being queued
         -- parent destroys, destroys child B - uh oh
 
-        local
+        local _,
             destroy_parent,
             parent,
             update_parent
@@ -2452,7 +2452,7 @@ TEST("graph edge cases", wrap_root(function()
                 src
         end)
 
-        local destroy_child, _child_B = function() end, nil
+        local _, destroy_child, _child_B = nil, function() end, nil
 
         local count_A = 0
     

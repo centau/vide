@@ -43,21 +43,20 @@ local count = root(setup) -- ok since effect() was called within a stable scope
 count(1) -- prints "1"
 ```
 
-The scope created by `root()` can be destroyed by calling the function it passes
-into the given function.
+The scope created by `root()` can be destroyed.
 
 ```lua
-local function setup(destroy)
+local function setup()
     local count = source(0)
 
     effect(function()
         print(count())
     end)
 
-    return count, destroy
+    return count
 end
 
-local count, destroy = root(setup)
+local destroy, count = root(setup)
 
 count(1) -- prints "1"
 

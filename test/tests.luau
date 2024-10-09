@@ -2192,10 +2192,12 @@ TEST("context()", function()
         CHECK(ctx() == 1)
 
         root(function()
-            ctx(2, function()
+            local v = ctx(2, function()
                 CHECK(ctx() == 2)
+                return ctx()
             end)
 
+            CHECK(v == 2)
             CHECK(ctx() == 1)
         end)
     end

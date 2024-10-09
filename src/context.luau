@@ -9,7 +9,7 @@ local push_scope = graph.push_scope
 local pop_scope = graph.pop_scope
 local set_context = graph.set_context
 
-export type Context<T> = (() -> T) & ((T, () -> ()) -> ())
+export type Context<T> = (() -> T) & (<U>(T, () -> U) -> U)
 
 local nil_symbol = newproxy()
 local count = 0
@@ -21,7 +21,7 @@ local function context<T>(...: T): Context<T>
     local has_default = select("#", ...) > 0
     local default_value = ...
 
-    return function(...)
+    return function<T>(...): any -- todo: fix type error
         local scope: Node<unknown>? | false = get_scope()
 
         if select("#", ...) == 0 then -- get
@@ -66,6 +66,8 @@ local function context<T>(...: T): Context<T>
             if not ok then
                 throw(`error while running context:\n\n{result}`)
             end
+
+            return result
         end
 
         return nil :: any

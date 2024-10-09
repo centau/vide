@@ -5,6 +5,7 @@ local Instance = game and Instance or require "test/mock".Instance :: never
 local throw = require(script.Parent.throw)
 local defaults = require(script.Parent.defaults)
 local apply = require(script.Parent.apply)
+local r = require(script.Parent.roblox_types)
 
 local ctor_cache = {} :: { [string]: () -> Instance }
 
@@ -54,31 +55,50 @@ end
 
 type Props = { [any]: any }
 return (create :: any) :: 
-( <T>(T & Instance) -> (Props) -> T ) &
-( ("Folder") -> (Props) -> Folder ) &
-( ("BillboardGui") -> (Props) -> BillboardGui ) &
-( ("CanvasGroup") -> (Props) -> CanvasGroup ) &
-( ("Frame") -> (Props) -> Frame ) &
-( ("ImageButton") -> (Props) -> ImageButton ) &
-( ("ImageLabel") -> (Props) -> ImageLabel ) &
-( ("ScreenGui") -> (Props) -> ScreenGui ) &
-( ("ScrollingFrame") -> (Props) -> ScrollingFrame ) &
-( ("SurfaceGui") -> (Props) -> SurfaceGui ) &
-( ("TextBox") -> (Props) -> TextBox ) &
-( ("TextButton") -> (Props) -> TextButton ) &
-( ("TextLabel") -> (Props) -> TextLabel ) &
-( ("UIAspectRatioConstraint") -> (Props) -> UIAspectRatioConstraint ) &
-( ("UICorner") -> (Props) -> UICorner ) &
-( ("UIGradient") -> (Props) -> UIGradient ) &
-( ("UIGridLayout") -> (Props) -> UIGridLayout ) &
-( ("UIListLayout") -> (Props) -> UIListLayout ) &
-( ("UIPadding") -> (Props) -> UIPadding ) &
-( ("UIPageLayout") -> (Props) -> UIPageLayout ) &
-( ("UIScale") -> (Props) -> UIScale ) &
-( ("UISizeConstraint") -> (Props) -> UISizeConstraint ) &
-( ("UIStroke") -> (Props) -> UIStroke ) &
-( ("UITableLayout") -> (Props) -> UITableLayout ) &
-( ("UITextSizeConstraint") -> (Props) -> UITextSizeConstraint ) &
-( ("VideoFrame") -> (Props) -> VideoFrame ) &
-( ("ViewportFrame") -> (Props) -> ViewportFrame ) &
-( (string) -> (Props) -> Instance )
+	( (class: "CanvasGroup") -> (r.vCanvasGroup) -> CanvasGroup )
+&	( (class: "Frame") -> (r.vFrame) -> Frame )
+&	( (class: "ImageButton") -> (r.vImageButton) -> ImageButton )
+&	( (class: "TextButton") -> (r.vTextButton) -> TextButton )
+&	( (class: "ImageLabel") -> (r.vImageLabel) -> ImageLabel )
+&	( (class: "TextLabel") -> (r.vTextLabel) -> TextLabel )
+&	( (class: "ScrollingFrame") -> (r.vScrollingFrame) -> ScrollingFrame )
+&	( (class: "TextBox") -> (r.vTextBox) -> TextBox )
+&	( (class: "VideoFrame") -> (r.vVideoFrame) -> VideoFrame )
+&	( (class: "ViewportFrame") -> (r.vViewportFrame) -> ViewportFrame )
+&	( (class: "BillboardGui") -> (r.vBillboardGui) -> BillboardGui )
+&	( (class: "ScreenGui") -> (r.vScreenGui) -> ScreenGui )
+&	( (class: "AdGui") -> (r.vAdGui) -> AdGui )
+&	( (class: "SurfaceGui") -> (r.vSurfaceGui) -> SurfaceGui )
+&	( (class: "SelectionBox") -> (r.vSelectionBox) -> SelectionBox )
+&	( (class: "BoxHandleAdornment") -> (r.vBoxHandleAdornment) -> BoxHandleAdornment )
+&	( (class: "ConeHandleAdornment") -> (r.vConeHandleAdornment) -> ConeHandleAdornment )
+&	( (class: "CylinderHandleAdornment") -> (r.vCylinderHandleAdornment) -> CylinderHandleAdornment )
+&	( (class: "ImageHandleAdornment") -> (r.vImageHandleAdornment) -> ImageHandleAdornment )
+&	( (class: "LineHandleAdornment") -> (r.vLineHandleAdornment) -> LineHandleAdornment )
+&	( (class: "SphereHandleAdornment") -> (r.vSphereHandleAdornment) -> SphereHandleAdornment )
+&	( (class: "WireframeHandleAdornment") -> (r.vWireframeHandleAdornment) -> WireframeHandleAdornment )
+&	( (class: "ParabolaAdornment") -> (r.vParabolaAdornment) -> ParabolaAdornment )
+&	( (class: "SelectionSphere") -> (r.vSelectionSphere) -> SelectionSphere )
+&	( (class: "ArcHandles") -> (r.vArcHandles) -> ArcHandles )
+&	( (class: "Handles") -> (r.vHandles) -> Handles )
+&	( (class: "SurfaceSelection") -> (r.vSurfaceSelection) -> SurfaceSelection )
+&	( (class: "Path2D") -> (r.vPath2D) -> Path2D )
+&	( (class: "UIAspectRatioConstraint") -> (r.vUIAspectRatioConstraint) -> UIAspectRatioConstraint )
+&	( (class: "UISizeConstraint") -> (r.vUISizeConstraint) -> UISizeConstraint )
+&	( (class: "UITextSizeConstraint") -> (r.vUITextSizeConstraint) -> UITextSizeConstraint )
+&	( (class: "UICorner") -> (r.vUICorner) -> UICorner )
+&	( (class: "UIDragDetector") -> (r.vUIDragDetector) -> UIDragDetector )
+&	( (class: "UIFlexItem") -> (r.vUIFlexItem) -> UIFlexItem )
+&	( (class: "UIGradient") -> (r.vUIGradient) -> UIGradient )
+&	( (class: "UIListLayout") -> (r.vUIListLayout) -> UIListLayout )
+&	( (class: "UIGridLayout") -> (r.vUIGridLayout) -> UIGridLayout )
+&	( (class: "UIPageLayout") -> (r.vUIPageLayout) -> UIPageLayout )
+&	( (class: "UITableLayout") -> (r.vUITableLayout) -> UITableLayout )
+&	( (class: "UIPadding") -> (r.vUIPadding) -> UIPadding )
+&	( (class: "UIScale") -> (r.vUIScale) -> UIScale )
+&	( (class: "UIStroke") -> (r.vUIStroke) -> UIStroke )
+&	( (class: "WorldModel") -> (r.vWorldModel) -> WorldModel )
+&	( (class: "Camera") -> (r.vCamera) -> Camera )
+&	( (class: "Part") -> (r.vPart) -> Part )
+&	( (class: "Model") -> (r.vModel) -> Model )
+&	( (class: "MeshPart") -> (r.vMeshPart) -> MeshPart )

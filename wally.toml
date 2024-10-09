@@ -1,8 +1,8 @@
 [package]
-name = "centau/vide"
-description = "A reactive Luau library for creating UI. "
+name = "alicesaidhi/vide"
+description = "Fork of vide, comes with Roblox Instance Types"
 license = "MIT"
-version = "0.3.1"
+version = "0.3.1-lite.646"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 include = ["default.project.json", "LICENSE", "src"]

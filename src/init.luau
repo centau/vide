@@ -1,7 +1,8 @@
 --------------------------------------------------------------------------------
 -- vide.luau
--- v0.3.0
 --------------------------------------------------------------------------------
+
+local version = { major = 0, minor = 3, patch = 1 }
 
 if not game then script = require "test/relative-string" end
 
@@ -50,6 +51,8 @@ local stepped = game and game:GetService("RunService").Heartbeat:Connect(functio
 end)
 
 local vide = {
+    version = version,
+
     -- core
     root = root,
     mount = mount,

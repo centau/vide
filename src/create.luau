@@ -54,7 +54,7 @@ local function create(class_or_instance: string|Instance): (Props) -> Instance
 end
 
 type Props = { [any]: any }
-return (create :: any) :: 
+return (create :: any) ::
 	( (class: "CanvasGroup") -> (r.vCanvasGroup) -> CanvasGroup )
 &	( (class: "Frame") -> (r.vFrame) -> Frame )
 &	( (class: "ImageButton") -> (r.vImageButton) -> ImageButton )
@@ -102,3 +102,4 @@ return (create :: any) ::
 &	( (class: "Part") -> (r.vPart) -> Part )
 &	( (class: "Model") -> (r.vModel) -> Model )
 &	( (class: "MeshPart") -> (r.vMeshPart) -> MeshPart )
+&	( (class: "Highlight") -> (r.vHighlight) -> Highlight )

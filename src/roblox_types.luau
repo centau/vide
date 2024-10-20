@@ -1,11 +1,10 @@
-type p<T> = T?|()->T -- property
-type e<T=()->()> = T? -- event
+type p<T> = T?|()->T
+type e<T=()->()> = T?
 type a={priority: number, callback: (Instance) -> ()}
-type Recursive<T> = T | {Recursive<T>}
-type c<T> =a|T|Recursive<Instance>|()->Recursive<Instance>
+type recursive<T> =T|{recursive<T>}type c<T> =a|T|Recursive<Instance>|()->Recursive<Instance>
+type ContentId = string
 type Dictionary = {[string]: any}
 type Array = {any}
-
 export type vCanvasGroup = {
 	GroupColor3: p<Color3>,
 	GroupTransparency: p<number>,
@@ -1760,6 +1759,28 @@ export type vMeshPart = {
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
 	[number]: c<vMeshPart>
+
+}
+export type vHighlight = {
+	Adornee: p<Instance?>,
+	DepthMode: p<Enum.HighlightDepthMode>,
+	Enabled: p<boolean>,
+	FillColor: p<Color3>,
+	FillTransparency: p<number>,
+	OutlineColor: p<Color3>,
+	OutlineTransparency: p<number>,
+	Archivable: p<boolean>,
+	Name: p<string | number>,
+	Parent: p<Instance?>,
+	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
+	AttributeChanged: e<(attribute:string | number) -> ()>,
+	Changed: e<(property:string | number) -> ()>,
+	ChildAdded: e<(child:Instance?) -> ()>,
+	ChildRemoved: e<(child:Instance?) -> ()>,
+	DescendantAdded: e<(descendant:Instance?) -> ()>,
+	DescendantRemoving: e<(descendant:Instance?) -> ()>,
+	Destroying: e<() -> ()>,
+	[number]: c<vHighlight>
 
 }
 return{}

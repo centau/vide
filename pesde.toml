@@ -1,0 +1,16 @@
+name = "alicesaidhi/vide"
+version = "0.3.1-lite.646"
+description = "vide with types"
+authors = ["centau"]
+repository = "https://github.com/centau/vide"
+license = "MIT"
+
+[target]
+environment = "roblox"
+
+[scripts]
+roblox_sync_config_generator = ".pesde/roblox_sync_config_generator.luau"
+sourcemap_generator = ".pesde/sourcemap_generator.luau"
+
+[indices]
+default = "https://github.com/daimond113/pesde-index"

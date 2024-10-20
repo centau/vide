@@ -71,7 +71,7 @@ lines_before = [
 	"type p<T> ="+space+"T?|()->T",
 	"type e<T=()->()> ="+space+"T?",
 	"type a={priority:"+space+"number,"+space+"callback:"+space+"(Instance)"+space+"->"+space+"()}",
-	"type recursive<T>=T|{recursive<T>}"
+	"type recursive<T> =T|{recursive<T>}"
 	"type c<T> =a|T|Recursive<Instance>|()->Recursive<Instance>",
 	"type ContentId = string", # temporary
 	"type Dictionary = {[string]: any}",

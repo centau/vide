@@ -24,7 +24,4 @@ features:
     details: Syntax built to be minimal while also obvious and easy to understand to anyone
   - title: Fully Luau Typecheckable
     details: Ensure you write correct code through the Luau typechecking engine.
-  - title: In Development
-    details: Not recommended for production use.
 ---
-

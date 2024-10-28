@@ -1,5 +1,38 @@
+.banner {
+  background-color: var(--vp-button-brand-bg) !important;
+  color: rgba(255, 255, 255, 100%);
+  width: 100%;
+  height: 1.5rem;
+  text-align: center;
+  position: fixed;
+  z-index: 30;
+}
+
+.VPNav {
+  margin-top: 1.5rem;
+}
+
+.VPSidebar {
+  margin-top: 1.5rem;
+}
+
 :root {
     --vp-c-brand-1: #3086ff;
+
+    --vp-button-brand-bg: #3661A2;
+    --vp-button-brand-hover-bg: #24447F;
+    --vp-button-brand-press-bg: #4896F3;
+
+    --vp-home-hero-name-color: transparent;
+    --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #3661A2, #4896F3);
+    --vp-home-hero-logo-background: -webkit-linear-gradient(120deg, #3661A2, #4896F3);
+
+    --vp-home-hero-image-background-image: linear-gradient(
+		135deg,
+		#1D314F 50%,
+		#2A57A2 50%
+	);
+	--vp-home-hero-image-filter: blur(96px);
 
     --vp-c-bg: #f2f5f8;
     --vp-c-bg-alt: #dfe8f5;
@@ -20,4 +53,10 @@
     --vp-c-border: #111720;
     --vp-c-divider: #181d27;
     --vp-c-gutter: #181d27;
+
+    --vp-home-hero-image-background-image: linear-gradient(
+		-45deg,
+		#3D506C 50%,
+		#2F415C 50%
+	);
 }

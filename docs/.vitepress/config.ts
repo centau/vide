@@ -17,6 +17,11 @@ export default withMermaid({
             provider: "local"
         },
 
+        footer: {
+            message: 'Released under the MIT License.',
+            copyright: 'Copyright © 2023-present centau'
+        },
+
         // https://vitepress.dev/reference/default-theme-config
         nav: [
             { text: "Home", link: "/" },

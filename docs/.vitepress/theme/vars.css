@@ -1,19 +1,39 @@
+
+.VPSkipLink {
+  order: -3
+}
+
+.VPNav {
+  order: -2
+}
+
+.VPLocalNav {
+  order: 0;
+}
+
 .banner {
   background-color: var(--vp-button-brand-bg);
   color: var(--vp-button-brand-text);
   width: 100%;
-  height: 1.5rem;
   text-align: center;
   position: fixed;
-  z-index: 30;
+  bottom: 0px;
+  z-index: 50;
+  order: -1
 }
 
-.VPNav {
-  margin-top: 1.5rem;
+.advertising {
+  margin: auto;
 }
 
-.VPSidebar {
-  margin-top: 1.5rem;
+@media only screen and (min-width: 768px) {
+  .advertising {width: calc(100% - 8rem);}
+} 
+
+@media only screen and (min-width: 960px) {
+  .banner {position: fixed; margin-top: var(--vp-nav-height); bottom: auto}
+  #VPSidebarNav {margin-top: 1.5rem;}
+  .VPLocalNav {top: calc(var(--vp-nav-height) + 1.5rem) !important;}
 }
 
 .plugin-tabs--tab-list {
@@ -29,13 +49,6 @@
   opacity: 0;
 }
 
-#VPContent.is-home {
-  background-color: rgba(255, 255, 255, 0%);
-  background-image: radial-gradient(
-    var(--vp-c-brand-2), var(--vp-c-bg)
-  );
-}
-
 :root {
   --vp-c-brand-1: #3086ff;
   --vp-c-brand-2: #75aeff;
@@ -48,11 +61,6 @@
   --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #3661A2, #4896F3);
   --vp-home-hero-logo-background: -webkit-linear-gradient(120deg, #3661A2, #4896F3);
 
-  --vp-home-hero-image-background-image: linear-gradient(
-		135deg,
-		#1D314F 50%,
-		#2A57A2 50%
-	);
 	--vp-home-hero-image-filter: blur(96px);
 
   --vp-c-bg: #f2f5f8;
@@ -76,10 +84,4 @@
     --vp-c-border: #111720;
     --vp-c-divider: #1d273c;
     --vp-c-gutter: #181d27;
-
-    --vp-home-hero-image-background-image: linear-gradient(
-		-45deg,
-		#3D506C 50%,
-		#2F415C 50%
-	);
 }

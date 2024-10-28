@@ -6,73 +6,75 @@ next:
   link: '/tut/crash-course/1-introduction'
 
 hero:
-  name: Vide
-  text: ""
+  name: "Vide"
   tagline: A reactive UI and state library for Luau.
   image:
     src: /logo.svg
-    alt: Vide
   actions:
     - theme: brand
-      text: Quick Start
+      text: Crash Course
       link: /tut/crash-course/1-introduction
     - theme: alt
       text: API Reference
       link: /api/reactivity-core
 
 features:
-  - title: Reactively driven
-    details: Powerful and modern primitives inspired by SolidJS to build fluid UI with little friction
-  - title: Declarative and concise
-    details: Syntax built to be minimal and clean while also obvious and easy to understand to anyone
-  - title: Fully Luau Typecheckable
-    details: Ensure you write correct and robust code through the Luau typechecking engine.
+  - title: Reactive State Management
+    details: Built upon Solid and makes building reactive applications simple.
+  - title: Declarative and simple syntax
+    details: Syntax designed to be minimal while also being easy to understand.
+  - title: Fully Luau typecheckable
+    details: Luau's typechecker catches type errors before you even begin testing.
 ---
+
+<div class="advertising">
 
 ## Installation
 
-Vide can be installed through 3 different ways.
+Vide can be installed via Wally and Github. There is currently no official Vide rbxm.
 
 :::tabs
 == Wally
 
+Make sure you have wally installed on your computer.<br>
 Add the following line to your `wally.toml` and then re-install your packages
 ```toml
 [dependencies]
 vide = centau/vide@0.3.1
 ```
 
-== Roblox
+== Git
 
-im so sorry you have to use rojo and build it yourself or ask someone in ross to build a vide rbxm for you :sob:
-cen is too busy working on system verilog
+Make sure you have Git installed on your computer.<br>
+Run the following command in the directory you want to have Vide installed at
+```sh
+git submodule add https://github.com/centau/vide.git
+```
+
+== Build
+
+Download vide onto your computer
+
+```sh
+git clone https://github.com/centau/vide.git & cd vide
+```
+
+then use a syncing tool to build Vide into a rbxm
+
+```sh
+rojo build -o build.rbxm
+```
+
+which you can then insert into Roblox Studio
 
 :::
 
-## Quick Examples
+<script setup>
+import { VPButton } from "vitepress/theme"
+</script>
 
-A simple counter element that counts up when you click on it.
+<div style="display: flex; justify-content: end;">
+<VPButton href="/tut/crash-course/1-introduction" text="Read the crash Course"/>
+</div>
 
-```luau
-local vide = require("vide")
-
-local source = vide.source
-local create = vide.create
-
-local function Counter()
-	local count = source(0)
-
-	return create "TextButton" {
-    Size = UDim2.fromOffset(200, 50),
-		Text = function()
-			return `count: {count()}`
-		end,
-
-		Activated = function()
-			count(count() + 1)
-		end
-	}
-end
-
-return Counter
-```
+</div>

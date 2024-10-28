@@ -1,5 +1,6 @@
 //import { defineConfig } from "vitepress"
 import { withMermaid } from "vitepress-plugin-mermaid";
+import banner from "vite-plugin-banner"
 
 // https://vitepress.dev/reference/site-config
 export default withMermaid({
@@ -11,6 +12,10 @@ export default withMermaid({
 
     themeConfig: {
         logo: "/logo.svg",
+
+        search: {
+            provider: "local"
+        },
 
         // https://vitepress.dev/reference/default-theme-config
         nav: [

@@ -13,7 +13,7 @@ Creates and runs a function in a new stable scope.
 
 - **Type**
 
-    ```lua
+    ```luau
     function root<T...>(fn: (() -> ()) -> T...): (() -> (), T...)
     ```
 
@@ -30,7 +30,7 @@ Creates a new source with the given value.
 
 - **Type**
 
-    ```lua
+    ```luau
     function source<T>(value: T): Source<T>
 
     type Source<T> =
@@ -45,7 +45,7 @@ Creates a new source with the given value.
 
 - **Example**
 
-    ```lua
+    ```luau
     local count = source(0)
 
     count() -- 0
@@ -59,7 +59,7 @@ Runs a side-effect in a new reactive scope on source update.
 
 - **Type**
 
-    ```lua
+    ```luau
     function effect(callback: () -> ())
     ```
 
@@ -72,7 +72,7 @@ Runs a side-effect in a new reactive scope on source update.
 
 - **Example**
 
-    ```lua
+    ```luau
     local num = source(1)
 
     effect(function()
@@ -92,7 +92,7 @@ Derives a new source in a new reactive scope from existing sources.
 
 - **Type**
 
-    ```lua
+    ```luau
     function derive<T>(source: () -> T): () -> T
     ```
 
@@ -108,7 +108,7 @@ Derives a new source in a new reactive scope from existing sources.
 
 - **Example**
 
-    ```lua
+    ```luau
     local count = source(0)
     local text = derive(function() return `count: {count()}` end)
 

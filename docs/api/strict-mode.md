@@ -2,7 +2,7 @@
 
 Strict mode is library-wide and can get set by doing:
 
-```lua
+```luau
 vide.strict = true
 ```
 

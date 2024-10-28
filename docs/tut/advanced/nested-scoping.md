@@ -6,7 +6,7 @@ most common cases, but they do not cover all of them.
 This tutorial will demonstrate how to implement a `show()` control flow function
 using just sources and effects.
 
-```lua
+```luau
 local mount = vide.mount
 local source = vide.source
 local show = vide.show
@@ -61,7 +61,7 @@ effect's reactive scope is destroyed whenever the show effect is rerun.
 
 The same can be achieved without the use of `show()`:
 
-```lua
+```luau
 local mount = vide.mount
 local source = vide.source
 local effect = vide.effect
@@ -126,7 +126,7 @@ may be rerun needlessly and recreate the counter.
 
 Alternatively, instead of using `root()`:
 
-```lua
+```luau
 local mount = vide.mount
 local source = vide.source
 local effect = vide.effect

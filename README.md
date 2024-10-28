@@ -18,7 +18,7 @@ for a quick introduction to the library.
 
 ## Code sample
 
-```lua
+```luau
 local create = vide.create
 local source = vide.source
 

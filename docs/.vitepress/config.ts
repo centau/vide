@@ -1,6 +1,6 @@
 //import { defineConfig } from "vitepress"
 import { withMermaid } from "vitepress-plugin-mermaid";
-import { tabsMarkdownPlugin } from 'vitepress-plugin-tabs'
+import { tabsMarkdownPlugin } from "vitepress-plugin-tabs"
 
 // https://vitepress.dev/reference/site-config
 export default withMermaid({

@@ -5,7 +5,7 @@ Instances are created using `create()`.
 Parentheses `()` can be omitted when calling functions with string or
 table literals for brevity.
 
-```lua
+```luau
 local create = vide.create
 
 return create "ScreenGui" {

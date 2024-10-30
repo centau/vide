@@ -6,7 +6,7 @@ Returns a new source with a value always moving torwards the input source value.
 
 - **Type**
 
-    ```lua
+    ```luau
     function spring<T>(
         source: () -> T & Animatable,
         period: number = 1,

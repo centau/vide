@@ -1,14 +1,13 @@
 {
     "type": "module",
-    
     "scripts": {
         "docs:dev": "vitepress dev",
         "docs:build": "vitepress build",
         "docs:preview": "vitepress preview"
     },
-
     "devDependencies": {
-        "vitepress": "1.0.0-rc.25",
-        "vitepress-plugin-mermaid": "2.0.14"
+        "vitepress": "1.4.1",
+        "vitepress-plugin-mermaid": "2.0.17",
+        "vitepress-plugin-tabs": "^0.5.0"
     }
 }

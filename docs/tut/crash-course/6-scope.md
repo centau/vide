@@ -22,7 +22,7 @@ destroyed, and so on. This is why all scopes must be created within another
 scope, except `root()` which is used to create the initial scope that you can
 manually destroy.
 
-```lua
+```luau
 local root = vide.root
 local source = vide.source
 local effect = vide.effect
@@ -45,7 +45,7 @@ count(1) -- prints "1"
 
 The scope created by `root()` can be destroyed.
 
-```lua
+```luau
 local function setup()
     local count = source(0)
 

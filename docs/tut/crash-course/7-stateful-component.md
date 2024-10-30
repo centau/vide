@@ -5,7 +5,7 @@ store the data, and effects to display the data.
 
 ## Internal State
 
-```lua
+```luau
 local create = vide.create
 local source = vide.source
 local effect = vide.effect
@@ -37,7 +37,7 @@ count source is created inside the component.
 
 External sources can also be passed into components for them to use.
 
-```lua
+```luau
 local function Counter(props: { count: () -> number })
     local count = props.count
 

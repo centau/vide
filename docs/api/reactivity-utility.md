@@ -6,7 +6,7 @@ Runs a callback anytime a scope is reran or destroyed.
 
 - **Type**
 
-    ```lua
+    ```luau
     function cleanup(callback: () -> ())
     function cleanup(obj: Destroyable)
     function cleanup(obj: Disconnectable)
@@ -17,7 +17,7 @@ Runs a callback anytime a scope is reran or destroyed.
 
 - **Example**
 
-    ```lua
+    ```luau
     local data = source(1)
 
     effect(function()
@@ -35,7 +35,7 @@ Runs a given function in a new stable scope.
 
 - **Type**
 
-    ```lua
+    ```luau
     function untrack<T>(source: () -> T): T
     ```
 
@@ -46,7 +46,7 @@ Runs a given function in a new stable scope.
 
 - **Example**
 
-    ```lua
+    ```luau
     local a = source(0)
     local b = source(0)
 
@@ -68,7 +68,7 @@ read can still be tracked inside a reactive scope.
 
 - **Type**
 
-    ```lua
+    ```luau
     function read<T>(value: T | () -> T): T
     ```
 
@@ -79,7 +79,7 @@ trigger effects until after the function finishes running.
 
 - **Type**
 
-    ```lua
+    ```luau
     function batch(fn: () -> ())
     ```
 
@@ -96,7 +96,7 @@ Creates a new context.
 
 - **Type**
 
-    ```lua
+    ```luau
     function context<T>(default: T): Context<T>
 
     type Context<T> =
@@ -113,7 +113,7 @@ Creates a new context.
 
 - **Example**
 
-    ```lua
+    ```luau
     local theme = context()
 
     local function Button()

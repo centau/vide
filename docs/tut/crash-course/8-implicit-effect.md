@@ -3,7 +3,7 @@
 Explicitly creating effects to update properties is tedious. You can
 *implicitly* create an effect to update properties instead.
 
-```lua
+```luau
 local create = vide.create
 local source = vide.source
 
@@ -34,7 +34,7 @@ with a number key instead of string key) can return an instance or an array of
 instances. An effect is automatically created to unparent removed instances and
 parent new instances on source update.
 
-```lua
+```luau
 local items = source {
     create "TextLabel" { Text = "A" }
 }

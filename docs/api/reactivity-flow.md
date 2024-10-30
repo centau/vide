@@ -8,7 +8,7 @@ Shows one of two components depending on an input source.
 
 - **Type**
 
-    ```lua
+    ```luau
     function show<T>(source: () -> unknown, component: () -> T): () -> T?
     function show<T, U>(source: () -> unknown, component: () -> T, fallback: () -> U): () -> T | U
     ```
@@ -32,7 +32,7 @@ Shows one of a set of components depending on an input source and a mapping tabl
 
 - **Type**
 
-    ```lua
+    ```luau
     function switch<K, V>(source: () -> K): (map: Map<K, () -> V>) -> V?
     ```
 
@@ -49,7 +49,7 @@ Shows one of a set of components depending on an input source and a mapping tabl
 
 - **Example**
 
-    ```lua
+    ```luau
     local logged = source(false)
 
     local button = switch(logged) {
@@ -69,7 +69,7 @@ Maps each index in a table source to an object.
 
 - **Type**
 
-    ```lua
+    ```luau
     function indexes<KI, VI, VO>(
         source: () -> Map<KI, VI>,
         transform: (value: () -> VI, index: KI) -> VO
@@ -102,7 +102,7 @@ Maps each index in a table source to an object.
     The intended purpose of this function is to map each index in a table to
     a UI element.
 
-    ```lua
+    ```luau
     type Item = {
         name: string,
         icon: number
@@ -129,7 +129,7 @@ Maps each value in a table source to an object.
 
 - **Type**
 
-    ```lua
+    ```luau
     function values<KI, VI, VO>(
         source: () -> Map<KI, VI>,
         transform: (value: VI, index: () -> KI) -> VO
@@ -169,7 +169,7 @@ Maps each value in a table source to an object.
     The intended purpose of this function is to map each value in a table to
     a UI element.
 
-    ```lua
+    ```luau
     type Item = {
         name: string,
         icon: number

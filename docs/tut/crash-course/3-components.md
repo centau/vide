@@ -10,7 +10,7 @@ together.
 
 ::: code-group
 
-```lua [Button.luau]
+```luau [Button.luau]
 local create = vide.create
 
 local function Button(props: {
@@ -34,7 +34,7 @@ end
 return Button
 ```
 
-```lua [Menu.luau]
+```luau [Menu.luau]
 local create = vide.create
 
 local Button = require(Button)

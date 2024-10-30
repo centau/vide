@@ -2,7 +2,7 @@
 
 We have seen the basic way to derive a source:
 
-```lua
+```luau
 local count = source(0)
 
 local text = function()
@@ -18,7 +18,7 @@ However, in some cases where this source could be used by multiple effects at
 the same time, the function wrapping the source will needlessly rerun to convert
 the count into a string for each effect using it.
 
-```lua
+```luau
 local source = vide.source
 local effect = vide.effect
 
@@ -39,7 +39,7 @@ To avoid this, you can use `derive()` to derive a new source instead. This will
 run a function in a reactive scope only when a source used inside updated.
 Reading this derived source multiple times will just return a cached result.
 
-```lua
+```luau
 local source = vide.source
 local effect = vide.effect
 local derive = vide.derive

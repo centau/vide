@@ -1,6 +1,5 @@
 //import { defineConfig } from "vitepress"
 import { withMermaid } from "vitepress-plugin-mermaid";
-import { tabsMarkdownPlugin } from "vitepress-plugin-tabs"
 
 // https://vitepress.dev/reference/site-config
 export default withMermaid({
@@ -9,12 +8,6 @@ export default withMermaid({
     description: "A reactive UI library for Luau.",
     base: "/vide/",
     head: [["link", { rel: "icon", href: "/vide/logo.svg" }]],
-    
-    markdown: {
-        config(md) {
-            md.use(tabsMarkdownPlugin)
-        }
-    },
 
     themeConfig: {
         logo: "/logo.svg",

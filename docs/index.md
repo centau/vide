@@ -13,7 +13,7 @@ hero:
     src: /logo.svg
   actions:
     - theme: brand
-      text: Crash Course
+      text: Tutorials
       link: /tut/crash-course/1-introduction
     - theme: alt
       text: API Reference

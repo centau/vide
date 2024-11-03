@@ -1,7 +1,3 @@
-.home > * > .plugin-tabs--tab-list {
-	background-color: var(--vp-c-bg-alt);
-}
-
 .home > * > .VPNavBar:not(.top) {
 	backdrop-filter: blur(0.5rem);
 	background-color: transparent !important;
@@ -15,4 +11,9 @@
 	display: flex;
 	justify-content: center;
 	flex-direction: column;
+}
+
+.VPHome {
+	margin-top: auto !important;
+	margin-bottom: auto !important; 
 }

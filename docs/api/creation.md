@@ -9,7 +9,7 @@ target instance.
 
 - **Type**
   
-    ```lua
+    ```luau
     function mount<T>(component: () -> T, target: Instance?): () -> ()
     ```
 
@@ -25,7 +25,7 @@ target instance.
 
 - **Example**
 
-    ```lua
+    ```luau
     local function App()
         return create "ScreenGui" {
             create "TextLabel" { Text = "Vide" }
@@ -41,7 +41,7 @@ Creates a new UI element, applying any given properties.
 
 - **Type**
 
-    ```lua
+    ```luau
     function create(class: string): (Properties) -> Instance
     function create(instance: Instance): (Properties) -> Instance
 
@@ -76,7 +76,7 @@ Creates a new UI element, applying any given properties.
 
     Basic element creation.
 
-    ```lua
+    ```luau
     local frame = create "Frame" {
         Name = "NewFrame",
         Position = UDim2.fromScale(1, 0)
@@ -85,7 +85,7 @@ Creates a new UI element, applying any given properties.
 
     A component using property nesting.
 
-    ```lua
+    ```luau
     type Layout = {
         Layout = {
             Position: UDim2?,
@@ -116,7 +116,7 @@ instances.
 
 - **Type**
 
-    ```lua
+    ```luau
     function action((Instance) -> (), priority: number = 1): Action
     ```
 
@@ -133,7 +133,7 @@ instances.
 
     An action to listen to changed properties:
 
-    ```lua
+    ```luau
     local function changed(property: string, callback: (new) -> ())
         return action(function(instance)
             local con - instance:GetPropertyChangedSignal(property):Connect(function()
@@ -161,7 +161,7 @@ A wrapper for `action()` to listen for property changes.
 
 - **Type**
 
-    ```lua
+    ```luau
     function changed(property: string, callback: (...unknown) -> ()): Action
     ```
 

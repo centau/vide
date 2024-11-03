@@ -73,7 +73,7 @@ relationships between effects and the sources they depend on.
 
 ### Code
 
-```lua
+```luau
 local count = source(0)
 
 root(function()

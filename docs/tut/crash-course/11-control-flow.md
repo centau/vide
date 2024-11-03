@@ -14,7 +14,7 @@ instance.
 update to display the current value at that index. Each table index is given a
 single corresponding UI element.
 
-```lua
+```luau
 local list = source {
     "finish the crash course",
     "star Vide's GitHub"
@@ -90,7 +90,7 @@ end
 When you edit a table in a source, you must set that table again to actually
 update the source.
 
-```lua
+```luau
 local src = source { 1, 2 }
 local data = src()
 table.insert(data, 3) -- no effects will run

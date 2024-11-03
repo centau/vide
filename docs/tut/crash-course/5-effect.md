@@ -5,7 +5,7 @@ A source and effect is analogous to a signal and connection.
 
 Effects are created using `effect()`.
 
-```lua
+```luau
 local source = vide.source
 local effect = vide.effect
 
@@ -26,7 +26,7 @@ that source is updated.
 Derived sources are also tracked, it doesn't matter how deeply nested
 inside a function a source is.
 
-```lua
+```luau
 local source = vide.source
 local effect = vide.effect
 

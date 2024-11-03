@@ -3,11 +3,11 @@
 Actions in Vide are special callbacks that you can pass along with properties,
 to run some code on an instance receiving them.
 
-```lua
+```luau
 local action = vide.action
 ```
 
-```lua
+```luau
 create "TextLabel" {
     Text = "test",
 
@@ -22,7 +22,7 @@ create "TextLabel" {
 Actions can be wrapped with functions for reuse. Below is an example of an
 action used to listen for property changes:
 
-```lua
+```luau
 local action = vide.action
 local effect = vide.effect
 local cleanup = vide.cleanup

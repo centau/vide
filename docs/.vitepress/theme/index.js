@@ -1,4 +1,8 @@
 // .vitepress/theme/index.js
 import DefaultTheme from 'vitepress/theme'
 import './vars.css'
-export default DefaultTheme
+import './home.css'
+
+export default {
+	extends: DefaultTheme,
+}

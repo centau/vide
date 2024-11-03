@@ -5,7 +5,7 @@ Vide's reactivity.
 
 A source can be created using `source()`.
 
-```lua
+```luau
 local source = vide.source
 
 local count = source(0)
@@ -16,13 +16,13 @@ The value passed to `source()` is the initial value of the source.
 The value of a source can be set by calling it with an argument, and can be read
 by calling it with no arguments.
 
-```lua
+```luau
 count(count() + 1) -- increment count by 1
 ```
 
 Sources can be *derived* by wrapping them in functions.
 
-```lua
+```luau
 local count = source(0)
 
 local text = function()

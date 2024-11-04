@@ -1,32 +1,40 @@
-# Reactivity API: Core
+# Reactivity: Core
 
-<br/>
+## Scopes
+
+Vide code can run in one of two scopes: <Badge type="info" text="STABLE"><a href="/vide/api/reactivity-core#Scopes">STABLE</a></Badge> or <Badge type="tip" text="STABLE"><a href="/vide/api/reactivity-core#Scopes">REACTIVE</a></Badge>.
+
+- Reactive scopes rerun if a source read within updates.
+- Stable scopes never rerun.
+- Reactive scopes cannot be created directly within another reactive scope.
+- When a scope is destroyed, all scopes created within are also destroyed.
+
+Different functions in Vide's API will run code in different scopes.
 
 :::warning
 Yielding is not allowed in any stable or reactive scope. Strict mode will check
 for this.
 :::
 
-## root()
+## root() <Badge type="info" text="STABLE"><a href="/vide/api/reactivity-core#Scopes">STABLE</a></Badge>
 
-Creates and runs a function in a new stable scope.
+Runs a function in a new stable scope.
 
 - **Type**
 
     ```luau
-    function root<T...>(fn: (() -> ()) -> T...): (() -> (), T...)
+    function root<T...>(fn: (Destructor) -> T...): (Destructor, T...)
+
+    type Destructor = () -> ()
     ```
 
 - **Details**
 
-    Returns a function to destroy the root scope. Also passes this function as
-    the first argument into its callback.
-
-    All values returned by the callback are also returned following the destructor.
+    Returns a destructor and any values returned by the callback.
 
 ## source()
 
-Creates a new source with the given value.
+Creates a new source.
 
 - **Type**
 
@@ -40,71 +48,64 @@ Creates a new source with the given value.
 
 - **Details**
 
-    Calling the returned source with no argument will return its stored value,
-    calling with an argument will set a new value.
+    Call the returned source with no argument to read its value.
+    Call the returned source with an argument to set its value.
 
 - **Example**
 
     ```luau
     local count = source(0)
-
-    count() -- 0
-
-    count(count() + 1) -- 1
+    print(count())-- 0
+    count(count() + 1)
+    print(count()) -- 1
     ```
 
-## effect()
+## effect() <Badge type="tip" text="STABLE"><a href="/vide/api/reactivity-core#Scopes">REACTIVE</a></Badge>
 
-Runs a side-effect in a new reactive scope on source update.
+Runs a function in a new reactive scope.
 
 - **Type**
 
     ```luau
-    function effect(callback: () -> ())
+    function effect(fn: () -> ())
     ```
 
 - **Details**
 
-    Any time a source referenced in the callback is updated, the callback will
-    be reran.
-
-    The callback is ran once immediately.
+    The function is ran once immediately.
 
 - **Example**
 
     ```luau
-    local num = source(1)
+    local count = source(1)
 
     effect(function()
-        print(num())
+        print(count())
     end)
 
     -- prints 1
 
-    num(num() + 1)
+    count(2)
 
     -- prints 2
     ```
 
-## derive()
+## derive() <Badge type="tip" text="STABLE"><a href="/vide/api/reactivity-core#Scopes">REACTIVE</a></Badge>
 
-Derives a new source in a new reactive scope from existing sources.
+Runs a function in a new reactive scope to compute a value for new source.
 
 - **Type**
 
     ```luau
-    function derive<T>(source: () -> T): () -> T
+    function derive<T>(fn: () -> T): () -> T
     ```
 
 - **Details**
 
-    The derived source will have its value recalculated when any source source
-    it derives from is updated.
+    Anytime the reactive scope reruns, the output source value is set to what is
+    returned.
 
-    Anytime its value is recalculated it is also cached, subsequent calls will
-    retun this cached value until it recalculates again.
-
-    The callback is ran once immediately.
+    The function is ran once immediately.
 
 - **Example**
 
@@ -112,11 +113,43 @@ Derives a new source in a new reactive scope from existing sources.
     local count = source(0)
     local text = derive(function() return `count: {count()}` end)
 
-    text() -- "count: 0"
+    print(text()) -- "count: 0"
 
     count(1)
 
-    text() -- "count: 1"
+    print(text()) -- "count: 1"
     ```
 
---------------------------------------------------------------------------------
+    A `derive()` should be used instead of a pure function when you expect it to
+    be read multiple times between updates, because `derive()` will cache the
+    result to prevent recomputing it on every read.
+
+    ::: code-group
+
+    ```luau [Pure Function]
+    local count = source(0)
+
+    local text = function()
+        print "ran"
+        return `count: {count()}`
+    end
+
+    count(1)
+    print(text()) -- prints "ran" followed by "count: 1"
+    print(text()) -- prints "ran" followed by "count: 1"
+    ```
+
+    ```luau [Derived Source]
+    local count = source(0)
+
+    local text = derive(function() -- [!code highlight]
+        print "ran"
+        return `count: {count()}`
+    end) -- [!code highlight]
+
+    count(1) -- prints "ran"
+    print(text()) -- prints "count: 1"
+    print(text()) -- prints "count: 1"
+    ```
+
+    :::

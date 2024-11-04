@@ -31,6 +31,11 @@
 	--vp-c-divider: #dfe2e6;
 	--vp-c-gutter: #dfe2e6;
 	--vp-plugin-tabs-tab-bg: var(--vp-c-bg);
+
+    --vp-badge-info-bg: #122d26;
+    --vp-badge-info-text: #6bdbbd;
+    --vp-badge-tip-bg: #132741;
+    --vp-badge-tip-text: #70abfa;
 }
 
 .dark {
@@ -44,3 +49,4 @@
 	--vp-c-divider: #1d273c;
 	--vp-c-gutter: #181d27;
 }
+

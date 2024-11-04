@@ -17,3 +17,9 @@
 	margin-top: auto !important;
 	margin-bottom: auto !important; 
 }
+
+.VPBadge a {
+    text-decoration: none;
+    color: inherit
+ }
+ 

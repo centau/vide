@@ -6,10 +6,16 @@ Vide is heavily inspired by [Solid](https://www.solidjs.com/).
 
 ## Why Vide?
 
-Vide provides a reactive and declarative API to simplify managing UI.
+Vide's reactive and declarative API aims to let you program UI as simply as
+possible, with a strong focus on how data flows through your application.
 
-Some of the main focuses behind Vide's design choices:
+Some of Vide's main design choices:
 
-- Minimal syntax
-- Complete typechecking
-- Independence from instances
+- Syntax minimal.
+- Data oriented.
+- Typechecking compatible.
+- Instance independent.
+
+Vide's reactivity operates with the concept
+of scopes which carries a learning curve, though is what makes Vide's minimal
+syntax possible. The crash course will introduce these concepts gradually.

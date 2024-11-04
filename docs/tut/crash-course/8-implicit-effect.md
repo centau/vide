@@ -3,7 +3,9 @@
 Explicitly creating effects to update properties is tedious. You can
 *implicitly* create an effect to update properties instead.
 
-```luau
+::: code-group
+
+```luau [Implicit Effect]
 local create = vide.create
 local source = vide.source
 
@@ -21,6 +23,30 @@ local function Counter()
     }
 end
 ```
+
+```luau [Explicit Effect]
+local create = vide.create
+local source = vide.source
+local effect = vide.effect
+
+local function Counter()
+    local count = source(0)
+
+    local instance = create "TextButton" {
+        Activated = function()
+            count(count() + 1)
+        end
+    }
+
+    effect(function()
+        instance.Text = "count: " .. count()
+    end)
+
+    return instance
+end
+```
+
+:::
 
 This example is equivalent to the example seen on the previous page.
 
@@ -46,12 +72,12 @@ local function List(props: { children: () -> { Instance } })
     }
 end
 
-local list = List { children = items } -- creates a list with a single text label "A"
+local list = List { children = items } -- creates a list with text label "A"
 
 items {
     create "TextLabel" { Text = "B" },
     create "TextLabel" { Text = "C" }
 }
 
--- this will automatically unparent the text label "A", and parent the labels "B" and "C"
+-- this will automatically unparent text label "A", and parent labels "B" and "C"
 ```

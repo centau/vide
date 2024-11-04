@@ -9,9 +9,9 @@ destroyed, or when a stable scope is destroyed.
 local root = vide.root
 local source = vide.source
 local effect = vide.effect
+local cleanup = vide.cleanup
 
 local count = source(0)
-
 
 local destroy = root(function()
     effect(function()

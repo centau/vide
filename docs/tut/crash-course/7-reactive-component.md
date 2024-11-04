@@ -1,9 +1,7 @@
-# Stateful Components
+# Reactive Components
 
-Stateful components in Vide are created using sources and effects - sources to
+Reactive components in Vide are created using sources and effects - sources to
 store the data, and effects to display the data.
-
-## Internal State
 
 ```luau
 local create = vide.create
@@ -32,8 +30,6 @@ its internal count, and automatically update its text to reflect that count.
 
 Each instance of `Counter()` will maintain its own independent count, since the
 count source is created inside the component.
-
-## External State
 
 External sources can also be passed into components for them to use.
 

@@ -23,6 +23,7 @@ local count = source(0)
 
 local ran = 0
 effect(function()
+    count()
     ran += 1
 end)
 

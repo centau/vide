@@ -76,7 +76,6 @@ between reruns, we cannot use `untrack()` anymore which automatically destroys
 on rerun; we must use `root()` where the lifetime of each scope is managed
 manually and independently.
 
-
 ```lua
 local function indexes<I, VI, VO>(
     input: () -> Map<I, VI>,
@@ -88,6 +87,13 @@ local function indexes<I, VI, VO>(
         source: (VI) -> VI,
         destroy: () -> ()
     }?>
+
+    -- destroy all scopes if the parent scope is destroyed
+    cleanup(function()
+        for _, cache in index_caches do
+            assert(cache).destroy()
+        end
+    end)
 
     return derive(function()
         local new_input = input()
@@ -140,5 +146,3 @@ end
 
 Though the above functions are already provided to you by Vide, this serves as
 an example for how you may create your own dynamic scope functions.
-
-

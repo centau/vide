@@ -15,6 +15,7 @@ local effect = require(script.effect)
 local derive = require(script.derive)
 local cleanup = require(script.cleanup)
 local untrack = require(script.untrack)
+local parent = require(script._parent)
 local read = require(script.read)
 local batch = require(script.batch)
 local context = require(script.context)
@@ -68,6 +69,7 @@ local vide = {
     -- util
     cleanup = cleanup,
     untrack = untrack,
+    parent = parent,
     read = read,
     batch = batch,
     context = context,

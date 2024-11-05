@@ -9,7 +9,7 @@ local push_scope = graph.push_scope
 local pop_scope = graph.pop_scope
 local set_context = graph.set_context
 
-export type Context<T> = (() -> T) & (<U>(T, () -> U) -> U)
+export type Context<T> = (() -> T) & (<U>(T, () -> U) -> U)  & ((T, () -> ()) -> ())
 
 local nil_symbol = newproxy()
 local count = 0

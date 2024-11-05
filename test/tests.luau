@@ -1736,6 +1736,95 @@ TEST("untrack()", wrap_root(function()
     end
 end))
 
+TEST("parent()", function()
+    local root = vide.root
+    local source = vide.source
+    local effect = vide.effect
+    local parent = vide.parent
+    local context = vide.context
+    local cleanup = vide.cleanup
+    local untrack = vide.untrack
+
+    local ctx = context(0)
+
+    do CASE "respects contexts"
+        root(function()
+            ctx(1, function()
+                CHECK(parent(function()
+                    return ctx()
+                end) == 0)
+
+                ctx(2, function()
+                    CHECK(parent(function()
+                        return ctx()
+                    end) == 1)
+                    CHECK(ctx() == 2)
+
+                    effect(function()
+                        ctx(3, function()
+                            CHECK(parent(function()
+                                return ctx()
+                            end) == 2)
+                            CHECK(ctx() == 3)
+                        end)
+                    end)
+                end)
+            end)
+        end)
+    end
+
+    do CASE "proto indexes()"
+        local src = source(0)
+        local val = source(0)
+
+        local component_cleanup_count = 0
+        local component_effect_cleanup_count = 0
+
+        local destroy = root(function()
+            local function component()
+                CHECK(ctx() == 1)
+    
+                cleanup(function()
+                    component_cleanup_count += 1
+                end)
+
+                effect(function()
+                    val()
+
+                    cleanup(function()
+                        component_effect_cleanup_count += 1
+                    end)
+                end)
+
+                return nil
+            end
+
+            ctx(1, function()
+                effect(function()
+                    src()
+                    parent(function()
+                        untrack(component)
+
+                        return nil
+                    end)
+                end)
+            end)
+        end)
+
+        src(1)
+        CHECK(component_cleanup_count == 0)
+        CHECK(component_effect_cleanup_count == 0)
+
+        val(2)
+        CHECK(component_cleanup_count == 1) -- todo: a way to independently destroy child scopes
+        CHECK(component_effect_cleanup_count == 2)
+
+        destroy()
+        CHECK(component_cleanup_count == 2)
+        CHECK(component_effect_cleanup_count == 3)
+    end
+end)
+
 TEST("events", function()
     local create = vide.create
 

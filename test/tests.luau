@@ -1825,6 +1825,43 @@ TEST("parent()", function()
     end
 end)
 
+TEST("sibling()", function()
+    local root = vide.root
+    local source = vide.source
+    local effect = vide.effect
+    local sibling = vide.sibling
+    local context = vide.context
+    local cleanup = vide.cleanup
+    local untrack = vide.untrack
+
+    local ctx = context(0)
+    local src = source(0)
+
+    local cleanup_count = 0
+    local ran = false
+
+    local destroy = root(function()
+        ctx(1, function()
+            effect(function()
+                src()
+                if not ran then ran = true
+                    sibling(function()
+                        effect(function()
+                            cleanup(function() cleanup_count += 1 end)
+                            CHECK(ctx() == 1)
+                        end)
+                    end)
+                end
+            end)
+        end)
+    end)
+
+    src(1)
+    CHECK(cleanup_count == 0)
+    destroy()
+    CHECK(cleanup_count == 1)
+end)
+
 TEST("events", function()
     local create = vide.create
 

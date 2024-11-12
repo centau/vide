@@ -56,16 +56,16 @@ export default withMermaid({
                         { text: "Implicit Effects", link: "/tut/crash-course/8-implicit-effect" },
                         { text: "Derived Sources", link: "/tut/crash-course/9-derived-source" },
                         { text: "Cleanup", link: "/tut/crash-course/10-cleanup" },
-                        { text: "Dynamic Scoping", link: "/tut/crash-course/11-dynamic-scope" },
+                        { text: "Dynamic Scopes", link: "/tut/crash-course/11-dynamic-scopes" },
                         { text: "Actions", link: "/tut/crash-course/12-actions" },
                         { text: "Strict Mode", link: "/tut/crash-course/13-strict-mode" },
                         { text: "Concepts Summary", link: "/tut/crash-course/14-concepts" }
                     ]
                 },
                 {
-                    text: "Dynamic Scoping",
+                    text: "Advanced",
                     items: [
-                        { text: "Custom Scopes", link: "/tut/advanced/custom"}
+                        { text: "Dynamic Scopes", link: "/tut/advanced/dynamic-scopes"}
                     ]
                 },
                 {

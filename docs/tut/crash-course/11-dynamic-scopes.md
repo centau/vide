@@ -1,4 +1,4 @@
-# Dynamic Scoping
+# Dynamic Scopes
 
 Eventually you may need a way to dynamically create and destroy UI elements
 resulting from source updates. Vide provides functions to help you do this,

@@ -32,7 +32,7 @@ Shows one of a set of components depending on a source and a mapping table.
 - **Type**
 
     ```luau
-    function switch<K, V>(source: () -> K): (map: Map<K, () -> V>) () -> V?
+    function switch<K, V>(source: () -> K): (map: Map<K, () -> V>): () -> V?
     ```
 
 - **Details**

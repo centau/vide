@@ -53,7 +53,7 @@ effects depending on it.
 
 You can also read from a source within an effect without the effect tracking it.
 
-```lua
+```luau
 local source = vide.source
 local effect = vide.effect
 local untrack = vide.untrack

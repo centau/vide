@@ -34,14 +34,10 @@ count source is created inside the component.
 External sources can also be passed into components for them to use.
 
 ```luau
-local function Counter(props: { count: () -> number })
+local function CountDisplay(props: { count: () -> number })
     local count = props.count
 
-    local instance = create "TextButton" {
-        Activated = function()
-            count(count() + 1)
-        end
-    }
+    local instance = create "TextLabel" {}
 
     effect(function()
         instance.Text = "count: " .. count()
@@ -52,11 +48,11 @@ end
 
 local count = source(0)
 
-Counter {
+CountDisplay {
     count = count
 }
 
-count(1) -- the Counter component will update to display this count
+count(1) -- the CountDisplay component will update to display this count
 ```
 
 Sources can be created internally or passed in from externally, there are no

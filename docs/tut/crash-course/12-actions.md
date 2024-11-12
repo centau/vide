@@ -26,9 +26,9 @@ local source = vide.source
 local effect = vide.effect
 local cleanup = vide.cleanup
 
-local function changed(prop: string, callback: (new) -> ())
+local function changed(property: string, callback: (new) -> ())
     return action(function(instance)
-        local connection = instance:GetPropertyChangedSignal(prop):Connect(function()
+        local connection = instance:GetPropertyChangedSignal(property):Connect(function()
             callback(instance[property])
         end)
 

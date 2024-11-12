@@ -35,8 +35,6 @@ local function setup()
     effect(function()
         print(count())
     end)
-
-    return count
 end
 
 setup() -- error, effect() tried to create a reactive scope with no stable scope

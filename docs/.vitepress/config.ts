@@ -65,7 +65,7 @@ export default withMermaid({
                 {
                     text: "Dynamic Scoping",
                     items: [
-                        { text: "Custom Scopes", link: "/tut/dynamic-scoping/custom"}
+                        { text: "Custom Scopes", link: "/tut/advanced/custom"}
                     ]
                 },
                 {

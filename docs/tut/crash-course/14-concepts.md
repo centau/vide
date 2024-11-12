@@ -69,7 +69,7 @@ local count = source(0)
 
 root(function()
     local text = derive(function()
-        return "count: " .. text()
+        return "count: " .. count()
     end)
 
     effect(function()

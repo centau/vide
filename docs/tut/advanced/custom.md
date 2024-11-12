@@ -57,7 +57,7 @@ as a guard against unintentional rerendering of UI.
 
 ## Recreating [`switch()`](/api/reactivity-dynamic#switch-reactive)
 
-```lua
+```luau
 local function switch(key)
     return function(map)
         return derive(function()
@@ -76,7 +76,7 @@ between reruns, we cannot use `untrack()` anymore which automatically destroys
 on rerun; we must use `root()` where the lifetime of each scope is managed
 manually and independently.
 
-```lua
+```luau
 local function indexes<I, VI, VO>(
     input: () -> Map<I, VI>,
     transform: (value: () -> VI, index: I) -> VO

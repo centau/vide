@@ -257,40 +257,6 @@ local Vector2 = { __type = "Vector2" } :: any do
     end
 end
 
-local Vector3 = { __type = "Vector3" } :: any do
-    local function new(x, y, z)
-        return setmetatable({ X = x, Y = y, Z = z }, Vector3)
-    end
-
-    function Vector3.new(x, y, z)
-        return new(x or 0, y or 0, z or 0)
-    end
-
-    function Vector3.__add(a, b)
-        return new(a.X + b.X, a.Y + b.Y, a.Z + b.Z)
-    end
-
-    function Vector3.__sub(a, b)
-        return new(a.X - b.X, a.Y - b.Y, a.Z - b.Z)
-    end
-
-    function Vector3.__mul(a, b)
-        return new(a.X * b, a.Y * b, a.Z * b)
-    end
-
-    function Vector3.__unm(v)
-        return new(-v.X, -v.Y, -v.Z)
-    end
-
-    function Vector3.__eq(a, b)
-        return a.X == b.X and a.Y == b.Y
-    end
-
-    function Vector3.__index(v)
-        return (v.X^2 + v.Y^2 + v.Z^2)^0.5
-    end
-end
-
 local UDim2 = { __type = "UDim2" } :: any do
     function UDim2.new(sx, ox, sy, oy)
         return table_to_proxy(setmetatable({ x = { scale = sx, offset = ox }, y = { scale = sy, offset = oy } }, UDim2))
@@ -330,7 +296,6 @@ return {
     Instance = Instance :: typeof(Instance),
     Color3 = Color3 :: typeof(Color3),
     Vector2 = Vector2 :: typeof(Vector2),
-    Vector3 = Vector3 :: typeof(Vector3),
     UDim2 = UDim2 :: typeof(UDim2),
     Enum = Enum :: typeof(Enum),
     typeof = typeof :: typeof(typeof)

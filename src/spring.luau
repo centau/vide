@@ -1,5 +1,3 @@
-local Vector3 = game and Vector3 or require "../test/mock".Vector3 :: never
-
 --[[
 
 Supported datatypes:
@@ -36,8 +34,8 @@ local TOLERANCE = 0.0001
 
 type Vec3 = Vector3
 
-local function Vec3(x: number?, y: number?, z: number?)
-    return Vector3.new(x, y, z)
+local function Vec3(x: number?, y: number?, z: number?): Vec3
+    return vector.create(x, y, z)
 end
 
 local ZERO = Vec3(0, 0, 0)
@@ -276,7 +274,7 @@ local function update_spring_sources()
             x0_456 - x1_456
 
         -- todo: can this false positive?
-        if (v_123 + v_456 + dx_123 + dx_456).Magnitude < TOLERANCE then
+        if vector.magnitude(v_123 + v_456 + dx_123 + dx_456) < TOLERANCE then
             -- close enough to target, unshedule spring and set value to target
             table.insert(remove_queue, data)
             output.cache = data.source_value

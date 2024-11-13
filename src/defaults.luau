@@ -1,11 +1,10 @@
 local Enum = game and Enum or require "../test/mock".Enum :: never
 local Color3 = game and Color3 or require "../test/mock".Color3 :: never
-local Vector3 = game and Vector3 or require "../test/mock".Vector3 :: never
 
 return {
     Part = {
         Material = Enum.Material.SmoothPlastic,
-        Size = Vector3.new(1, 1, 1),
+        Size = vector.create(1, 1, 1),
         Anchored = true
     },
 

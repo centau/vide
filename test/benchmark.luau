@@ -504,85 +504,78 @@ ROOT_BENCH(`get context (depth={depth})`, function()
     end)
 end)
 
-N *= 1024
+TITLE "spring()"
+
+ROOT_BENCH("spring update", function()
+    local root, source, spring = vide.root, vide.source, vide.spring
+
+    local src = source(0)
+
+    root(function()
+        for i = 1, N do
+            spring(src)
+        end
+
+        START(N)
+
+        src(1)
+
+        return nil
+    end)
+end)
+
+ROOT_BENCH("spring step", function()
+    local root, source, spring = vide.root, vide.source, vide.spring
+
+    local src = source(0)
+
+    root(function()
+        for i = 1, N do
+            spring(src)
+        end
+
+        src(1)
+
+        START(N)
+
+        vide.step(1/60)
+
+        return nil
+    end)
+end)
 
 TITLE "aggregate"
 
 do
     -- the purpose of the two following benchmarks is to measure the overhead of
     -- aggregate construction
-    ROOT_BENCH("set explicit mock vector2", function()
+    ROOT_BENCH("set explicit vector", function()
         local apply = require "../src/apply"
-        local Vector2 = require "../test/mock".Vector2
 
         local label = create "TextLabel" {
-            AnchorPoint = Vector2.new(1, 1)
+            AnchorPoint = vector.create(1, 1, 1)
         }
 
         for i = 1, START(N) do
             apply(label, {
-                AnchorPoint = Vector2.new(i, i)
+                AnchorPoint = vector.create(i, i, i)
             })
         end
     end)
 
-    ROOT_BENCH("set aggregate mock vector2", function()
+    ROOT_BENCH("set aggregate vector", function()
         local apply = require "../src/apply"
-        local Vector2 = require "../test/mock".Vector2
 
         local label = create "TextLabel" {
-            AnchorPoint = Vector2.new(1, 1)
+            AnchorPoint = vector.create(1, 1, 1)
         }
 
         for i = 1, START(N) do
             apply(label, {
-                AnchorPoint = { i, i }
+                AnchorPoint = { i, i, i }
             })
         end
     end)
 end
-
--- innacurate due to no Vector3 in vanilla Luau
--- mock vector is 200x slower than native vector 
-
--- ROOT_BENCH("spring update", function()
---     local root, source, spring = vide.root, vide.source, vide.spring
-
---     local src = source(0)
-
---     root(function()
---         for i = 1, N do
---             spring(src)
---         end
-
---         START(N)
-
---         src(1)
-
---         return nil
---     end)
--- end)
-
--- N /= 1024
-
--- ROOT_BENCH("spring step", function()
---     local root, source, spring = vide.root, vide.source, vide.spring
-
---     local src = source(0)
-
---     root(function()
---         for i = 1, N do
---             spring(src)
---         end
-
---         src(1)
-
---         START(N)
-
---         vide.step(1/60)
-
---         return nil
---     end)
--- end)
 
 return nil

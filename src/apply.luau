@@ -70,11 +70,13 @@ for name, class in {
     UDim = UDim,
     UDim2 = UDim2,
     Vector2 = Vector2,
-    Vector3 = Vector3,
     Rect = Rect
 } :: Map<string, { [string]: any }> do
     aggregates[name] = class.new
 end
+
+aggregates.Vector3 = vector.create
+aggregates.vector = vector.create
 
 -- applies table of nested properties to an instance using full vide semantics
 local function apply<T>(instance: T & Instance, properties: { [unknown]: unknown }): T

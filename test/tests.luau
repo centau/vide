@@ -2483,11 +2483,14 @@ end))
 TEST("strict", wrap_root(function()
     vide.strict = true
 
+    local root = vide.root
+    local show = vide.show
     local create = vide.create
     local source = vide.source
     local derive = vide.derive
     local effect = vide.effect
     local indexes, values = vide.indexes, vide.values
+    local untrack = vide.untrack
 
     do CASE "error on derived callback yield"
         local src = source(1)
@@ -2627,6 +2630,56 @@ TEST("strict", wrap_root(function()
 
         CHECK(count == 4)
     end
+
+    do CASE "destruction of active scope"
+        local src = source(false)
+
+        root(function()
+            show(src, function()
+                src(false)
+                return {}
+            end)
+        end)
+
+        local ok = pcall(function()
+            src(true)
+        end)
+
+        CHECK(not ok)
+    end
+
+    -- todo: review intended behavior here
+    -- do CASE "destruction of active scope in indexes"
+    --     local src = source {}
+
+    --     local tmp
+    --     root(function()
+    --         effect(function()
+    --             untrack(function()
+    --                 tmp = indexes(src, function()
+    --                     vide.cleanup(function() print "test" end)
+    --                     src {}
+    --                     print "updated"
+    --                     vide.cleanup(function() print "test2" end)
+    --                     print "end"
+    --                     return {}
+    --                 end)
+    --                 return nil
+    --             end)
+    --         end)
+    --     end)
+
+    --     print "setting"
+
+    --     local ok = pcall(function()
+    --         src { 1 }
+    --         print "done"
+    --     end)
+
+    --     print(#tmp())
+
+    --     CHECK(not ok)
+    -- end
 end))
 
 local ok = FINISH()

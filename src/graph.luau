@@ -108,6 +108,10 @@ local function unparent<T>(node: Node<T>)
 end
 
 local function destroy<T>(node: Node<T>)
+    if flags.strict and table.find(scopes, node) then
+        throw("attempt to destroy an active scope")
+    end
+
     flush_cleanups(node)
     unparent(node)
     
@@ -296,5 +300,7 @@ return table.freeze {
     flush_update_queue = flush_update_queue,
     get_update_queue_length = get_update_queue_length,
     set_context = set_context,
-    scopes = scopes
+    scopes = scopes,
+
+    q = update_queue
 }

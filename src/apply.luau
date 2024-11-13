@@ -1,13 +1,12 @@
-if not game then script = require "test/relative-string" end
-local typeof = game and typeof or require "test/mock".typeof :: never
-local Vector2 = game and Vector2 or require "test/mock".Vector2 :: never
-local UDim2 = game and UDim2 or require "test/mock".UDim2 :: never
+local typeof = game and typeof or require "../test/mock".typeof :: never
+local Vector2 = game and Vector2 or require "../test/mock".Vector2 :: never
+local UDim2 = game and UDim2 or require "../test/mock".UDim2 :: never
 
-local flags = require(script.Parent.flags)
-local throw = require(script.Parent.throw)
-local bind = require(script.Parent.bind)
-local _, is_action = require(script.Parent.action)()
-local graph = require(script.Parent.graph)
+local flags = require "./flags"
+local throw = require "./throw"
+local bind = require "./bind"
+local _, is_action = require "./action"()
+local graph = require "./graph"
 type Node<T> = graph.Node<T>
 
 type Array<V> = { V }

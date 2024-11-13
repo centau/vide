@@ -1,12 +1,12 @@
-local testkit = require("test/testkit")
+local testkit = require "./testkit"
 local TEST, CASE, CHECK, FINISH = testkit.test()
 
-local mock = require "test/mock"
+local mock = require "./mock"
 local Instance, Signal = mock.Instance, mock.Signal
 local Vector2, UDim2 = mock.Vector2, mock.UDim2
 
-local vide = require "src/init"
-local graph = require "src/graph"
+local vide = require "../src/init"
+local graph = require "../src/graph"
 type Node<T> = graph.Node<T>
 
 type Map<K, V> = { [K] : V }
@@ -722,7 +722,7 @@ TEST("create()", wrap_root(function()
     local cleanup = vide.cleanup
 
     do CASE "apply default properties"
-        local defaults = require("src/defaults")
+        local defaults = require "../src/defaults"
         local frame = create "Frame" {} :: Instance & { BorderSizePixel: any, BorderColor3: any }
         CHECK(frame.BorderSizePixel == defaults.Frame.BorderSizePixel)
         CHECK(frame.BorderColor3 == defaults.Frame.BorderColor3)
@@ -1169,7 +1169,7 @@ TEST("switch()", wrap_root(function()
     end
 
     do CASE "reactive stack resets after error"
-    local scopes = require "src/graph".scopes
+    local scopes = require "../src/graph".scopes
         local input = source(1)
 
         local n0 = scopes.n
@@ -1328,7 +1328,7 @@ TEST("indexes()", wrap_root(function()
     end
 
     do CASE "reactive stack resets after error"
-        local scopes = require "src/graph".scopes
+        local scopes = require "../src/graph".scopes
 
         local input = source { 1 }
 
@@ -1507,7 +1507,7 @@ TEST("values()", wrap_root(function()
     end
 
     do CASE "reactive stack resets after error"
-        local scopes = require "src/graph".scopes
+        local scopes = require "../src/graph".scopes
 
         local input = source { 1 }
 
@@ -2260,7 +2260,7 @@ TEST("context()", function()
 end)
 
 TEST("nested effects cases", function()
-    local vide = require "src/init"
+    local vide = require "../src/init"
     local source = vide.source
     local effect = vide.effect
     local untrack = vide.untrack

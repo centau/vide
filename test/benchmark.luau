@@ -1,7 +1,7 @@
-local testkit = require("test/testkit")
+local testkit = require("./testkit")
 local BENCH, START = testkit.benchmark()
 
-local vide = require "src/init"
+local vide = require "../src/init"
 local source = vide.source
 local derive = vide.derive
 local effect = vide.effect
@@ -200,7 +200,7 @@ end)
 TITLE "property apply"
 
 ROOT_BENCH("apply 0 properties", function()
-    local apply = require "src/apply"
+    local apply = require "../src/apply"
     local instance = create("Frame") {}
 
     for i = 1, START(N) do
@@ -209,7 +209,7 @@ ROOT_BENCH("apply 0 properties", function()
 end)
 
 ROOT_BENCH("apply 8 properties", function()
-    local apply = require "src/apply"
+    local apply = require "../src/apply"
     local instance = create("Frame") {}
 
     for i = 1, START(N) do
@@ -227,7 +227,7 @@ ROOT_BENCH("apply 8 properties", function()
 end)
 
 ROOT_BENCH("bind property", function()
-    local apply = require "src/apply"
+    local apply = require "../src/apply"
 
     local instance = create("Frame") {}
     local src = source(1)
@@ -242,7 +242,7 @@ ROOT_BENCH("bind property", function()
 end)
 
 ROOT_BENCH("update binding", function()
-    local apply = require "src/apply"
+    local apply = require "../src/apply"
 
     local instance = create("Frame") {}
     local src = source(1)
@@ -512,8 +512,8 @@ do
     -- the purpose of the two following benchmarks is to measure the overhead of
     -- aggregate construction
     ROOT_BENCH("set explicit mock vector2", function()
-        local apply = require "src/apply"
-        local Vector2 = require "test/mock".Vector2
+        local apply = require "../src/apply"
+        local Vector2 = require "../test/mock".Vector2
 
         local label = create "TextLabel" {
             AnchorPoint = Vector2.new(1, 1)
@@ -527,8 +527,8 @@ do
     end)
 
     ROOT_BENCH("set aggregate mock vector2", function()
-        local apply = require "src/apply"
-        local Vector2 = require "test/mock".Vector2
+        local apply = require "../src/apply"
+        local Vector2 = require "../test/mock".Vector2
 
         local label = create "TextLabel" {
             AnchorPoint = Vector2.new(1, 1)

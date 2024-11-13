@@ -1,8 +1,6 @@
-if not game then script = require "test/relative-string" end
-
-local flags = require(script.Parent.flags)
-local throw = require(script.Parent.throw)
-local graph = require(script.Parent.graph)
+local flags = require "./flags"
+local throw = require "./throw"
+local graph = require "./graph"
 
 local function batch(setter: () -> ())
     local already_batching = flags.batch

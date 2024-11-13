@@ -1,7 +1,5 @@
-if not game then script = require "test/relative-string" end
-
-local throw = require(script.Parent.throw)
-local flags = require(script.Parent.flags)
+local throw = require "./throw"
+local flags = require "./flags"
 
 export type SourceNode<T> = {
     cache: T,

@@ -1,7 +1,7 @@
-if not game then script = require "test/relative-string" end
+if not game then script = require "../test/relative-string" end
 
-local throw = require(script.Parent.throw)
-local graph = require(script.Parent.graph)
+local throw = require "./throw"
+local graph = require "./graph"
 type Node<T> = graph.Node<T>
 local create_node = graph.create_node
 local get_scope = graph.get_scope

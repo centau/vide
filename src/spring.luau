@@ -1,5 +1,4 @@
-if not game then script = require "test/relative-string" end
-local Vector3 = game and Vector3 or require "test/mock".Vector3 :: never
+local Vector3 = game and Vector3 or require "../test/mock".Vector3 :: never
 
 --[[
 
@@ -21,8 +20,8 @@ Unsupported datatypes:
 
 ]]
 
-local throw = require(script.Parent.throw)
-local graph = require(script.Parent.graph)
+local throw = require "./throw"
+local graph = require "./graph"
 type Node<T> = graph.Node<T>
 type SourceNode<T> = graph.SourceNode<T>
 local create_node = graph.create_node

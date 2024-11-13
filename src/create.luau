@@ -1,10 +1,10 @@
-if not game then script = require "test/relative-string" end
-local typeof = game and typeof or require "test/mock".typeof:: never
-local Instance = game and Instance or require "test/mock".Instance :: never
+if not game then script = require "../test/relative-string" end
+local typeof = game and typeof or require "../test/mock".typeof :: never
+local Instance = game and Instance or require "../test/mock".Instance :: never
 
-local throw = require(script.Parent.throw)
-local defaults = require(script.Parent.defaults)
-local apply = require(script.Parent.apply)
+local throw = require "./throw"
+local defaults = require "./defaults"
+local apply = require "./apply"
 
 local ctor_cache = {} :: { [string]: () -> Instance }
 

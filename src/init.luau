@@ -4,28 +4,26 @@
 
 local version = { major = 0, minor = 3, patch = 1 }
 
-if not game then script = require "test/relative-string" end
-
-local root = require(script.root)
-local mount = require(script.mount)
-local create = require(script.create)
-local apply = require(script.apply)
-local source = require(script.source)
-local effect = require(script.effect)
-local derive = require(script.derive)
-local cleanup = require(script.cleanup)
-local untrack = require(script.untrack)
-local read = require(script.read)
-local batch = require(script.batch)
-local context = require(script.context)
-local switch = require(script.switch)
-local show = require(script.show)
-local indexes, values = require(script.maps)()
-local spring, update_springs = require(script.spring)()
-local action = require(script.action)()
-local changed = require(script.changed)
-local throw = require(script.throw)
-local flags = require(script.flags)
+local root = require "./root"
+local mount = require "./mount"
+local create = require "./create"
+local apply = require "./apply"
+local source = require "./source"
+local effect = require "./effect"
+local derive = require "./derive"
+local cleanup = require "./cleanup"
+local untrack = require "./untrack"
+local read = require "./read"
+local batch = require "./batch"
+local context = require "./context"
+local switch = require "./switch"
+local show = require "./show"
+local indexes, values = require "./maps"()
+local spring, update_springs = require "./spring"()
+local action = require "./action"()
+local changed = require "./changed"
+local throw = require "./throw"
+local flags = require "./flags"
 
 export type Source<T> = source.Source<T>
 export type source<T> = Source<T>

@@ -1,8 +1,7 @@
-if not game then script = require "test/relative-string" end
-local typeof = game and typeof or require "test/mock".typeof :: never
+local typeof = game and typeof or require "../test/mock".typeof :: never
 
-local throw = require(script.Parent.throw)
-local graph = require(script.Parent.graph)
+local throw = require "./throw"
+local graph = require "./graph"
 local get_scope = graph.get_scope
 local push_cleanup = graph.push_cleanup
 

@@ -1,6 +1,4 @@
-if not game then script = require "test/relative-string" end
-
-local graph = require(script.Parent.graph)
+local graph = require "./graph"
 type Node<T> = graph.Node<T>
 local create_source_node = graph.create_source_node
 local push_child_to_scope = graph.push_child_to_scope

@@ -721,6 +721,19 @@ TEST("create()", wrap_root(function()
     local source = vide.source
     local cleanup = vide.cleanup
 
+    do CASE "create(\"ClassName\", props) syntax"
+        local frame = create("Frame", { BackgroundTransparency = 0.5, Name = "Foo" })
+        CHECK(frame.BackgroundTransparency == 0.5)
+        CHECK(frame.Name == "Foo")
+    end
+
+    do CASE "create(Instance, props) syntax"
+        local frame0 = create("Frame", { BackgroundTransparency = 0.5, Name = "Foo" })
+        local frame = create(frame0, { BackgroundTransparency = 1 })
+        CHECK(frame.BackgroundTransparency == 1)
+        CHECK(frame.Name == "Foo")
+    end
+
     do CASE "apply default properties"
         local defaults = require "../src/defaults"
         local frame = create "Frame" {} :: Instance & { BorderSizePixel: any, BorderColor3: any }

@@ -20,8 +20,8 @@ setmetatable(ctor_cache :: any, {
         end
 
         local function ctor(properties: Props): Instance
-            return apply(instance:Clone(), properties)    
-        end  
+            return apply(instance:Clone(), properties)
+        end
 
         self[class] = ctor
         return ctor
@@ -40,44 +40,53 @@ local function clone_instance(instance: Instance)
     end
 end
 
-local function create(class_or_instance: string|Instance): (Props) -> Instance
-    if type(class_or_instance) == "string" then
-        return create_instance(class_or_instance)
-    elseif typeof(class_or_instance) == "Instance" then
-        return clone_instance(class_or_instance)
-    else
-        throw("bad argument #1, expected string or instance, got " .. typeof(class_or_instance))
-        return nil :: never
-    end
+local function create(class_or_instance: string | Instance, props: Props?): ((Props) -> Instance) | Instance
+	local result: (Props) -> Instance
+	if type(class_or_instance) == "string" then
+		result = create_instance(class_or_instance)
+	elseif typeof(class_or_instance) == "Instance" then
+		result = clone_instance(class_or_instance)
+	else
+		throw("bad argument #1, expected string or instance, got " .. typeof(class_or_instance))
+		return nil :: never
+	end
+	if props then
+		return result(props)
+	end
+	return result
 end
 
 type Props = { [any]: any }
-return (create :: any) :: 
-( <T>(T & Instance) -> (Props) -> T ) &
-( ("Folder") -> (Props) -> Folder ) &
-( ("BillboardGui") -> (Props) -> BillboardGui ) &
-( ("CanvasGroup") -> (Props) -> CanvasGroup ) &
-( ("Frame") -> (Props) -> Frame ) &
-( ("ImageButton") -> (Props) -> ImageButton ) &
-( ("ImageLabel") -> (Props) -> ImageLabel ) &
-( ("ScreenGui") -> (Props) -> ScreenGui ) &
-( ("ScrollingFrame") -> (Props) -> ScrollingFrame ) &
-( ("SurfaceGui") -> (Props) -> SurfaceGui ) &
-( ("TextBox") -> (Props) -> TextBox ) &
-( ("TextButton") -> (Props) -> TextButton ) &
-( ("TextLabel") -> (Props) -> TextLabel ) &
-( ("UIAspectRatioConstraint") -> (Props) -> UIAspectRatioConstraint ) &
-( ("UICorner") -> (Props) -> UICorner ) &
-( ("UIGradient") -> (Props) -> UIGradient ) &
-( ("UIGridLayout") -> (Props) -> UIGridLayout ) &
-( ("UIListLayout") -> (Props) -> UIListLayout ) &
-( ("UIPadding") -> (Props) -> UIPadding ) &
-( ("UIPageLayout") -> (Props) -> UIPageLayout ) &
-( ("UIScale") -> (Props) -> UIScale ) &
-( ("UISizeConstraint") -> (Props) -> UISizeConstraint ) &
-( ("UIStroke") -> (Props) -> UIStroke ) &
-( ("UITableLayout") -> (Props) -> UITableLayout ) &
-( ("UITextSizeConstraint") -> (Props) -> UITextSizeConstraint ) &
-( ("VideoFrame") -> (Props) -> VideoFrame ) &
-( ("ViewportFrame") -> (Props) -> ViewportFrame ) &
-( (string) -> (Props) -> Instance )
+
+type Create<Name, Instance> = ((Name, Props) -> Instance) & ((Name) -> (Props) -> Instance)
+
+return (create :: any) ::
+	& ( <T>(T & Instance) -> (Props) -> T )
+	& ( <T>(T & Instance, Props) -> T )
+	& Create<"Folder", Folder>
+	& Create<"BillboardGui", BillboardGui>
+	& Create<"CanvasGroup", CanvasGroup>
+	& Create<"Frame", Frame>
+	& Create<"ImageButton", ImageButton>
+	& Create<"ImageLabel", ImageLabel>
+	& Create<"ScreenGui", ScreenGui>
+	& Create<"ScrollingFrame", ScrollingFrame>
+	& Create<"SurfaceGui", SurfaceGui>
+	& Create<"TextBox", TextBox>
+	& Create<"TextButton", TextButton>
+	& Create<"TextLabel", TextLabel>
+	& Create<"UIAspectRatioConstraint", UIAspectRatioConstraint>
+	& Create<"UICorner", UICorner>
+	& Create<"UIGradient", UIGradient>
+	& Create<"UIGridLayout", UIGridLayout>
+	& Create<"UIListLayout", UIListLayout>
+	& Create<"UIPadding", UIPadding>
+	& Create<"UIPageLayout", UIPageLayout>
+	& Create<"UIScale", UIScale>
+	& Create<"UISizeConstraint", UISizeConstraint>
+	& Create<"UIStroke", UIStroke>
+	& Create<"UITableLayout", UITableLayout>
+	& Create<"UITextSizeConstraint", UITextSizeConstraint>
+	& Create<"VideoFrame", VideoFrame>
+	& Create<"ViewportFrame", ViewportFrame>
+	& Create<string, Instance>

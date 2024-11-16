@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 --------------------------------------------------------------------------------
 
+## [Unreleased]
+
+### Added
+
+- `create("ClassName", { props })` and `create(Instance, { props })` syntax.
+
+--------------------------------------------------------------------------------
+
 ## [0.3.1] - 2024-10-09
 
 ### Added

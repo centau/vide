@@ -721,6 +721,23 @@ TEST("create()", wrap_root(function()
     local source = vide.source
     local cleanup = vide.cleanup
 
+    do CASE "create(\"ClassName\", props) syntax"
+        local frame = create("Frame", { BackgroundTransparency = 0.5, Size = UDim2.fromScale(1, 1) })
+        CHECK(typeof(frame) == "Instance")
+        CHECK(frame:IsA("Frame"))
+        CHECK(frame.BackgroundTransparency == 0.5)
+        CHECK(frame.Size == UDim2.fromScale(1, 1))
+    end
+
+    do CASE "create(Instance, props) syntax"
+        local frame0 = create("Frame", { BackgroundTransparency = 0.5, Size = UDim2.fromScale(1, 1) })
+        local frame = create(frame0, { BackgroundTransparency = 1 })
+        CHECK(typeof(frame) == "Instance")
+        CHECK(frame:IsA("Frame"))
+        CHECK(frame.BackgroundTransparency == 1)
+        CHECK(frame.Size == UDim2.fromScale(1, 1))
+    end
+
     do CASE "apply default properties"
         local defaults = require "../src/defaults"
         local frame = create "Frame" {} :: Instance & { BorderSizePixel: any, BorderColor3: any }

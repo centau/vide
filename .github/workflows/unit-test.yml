@@ -14,7 +14,7 @@ jobs:
         uses: robinraju/release-downloader@v1.6
         with: 
           repository: Roblox/luau
-          tag: "0.620"
+          tag: "0.651"
           fileName: luau-ubuntu.zip
           out-file-path: bin
 

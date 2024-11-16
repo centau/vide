@@ -1,5 +1,3 @@
-if not game then script = require "../test/relative-string" end
-
 local throw = require "./throw"
 local graph = require "./graph"
 type Node<T> = graph.Node<T>

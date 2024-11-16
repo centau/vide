@@ -1,7 +1,7 @@
 local testkit = require("./testkit")
 local BENCH, START = testkit.benchmark()
 
-local vide = require "../src/init"
+local vide = require "../../vide"
 local source = vide.source
 local derive = vide.derive
 local effect = vide.effect

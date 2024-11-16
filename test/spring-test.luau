@@ -1,4 +1,4 @@
-local vide = require "../src/init"
+local vide = require "../../vide"
 local testkit = require("../test/testkit")
 
 local program_time = os.clock()

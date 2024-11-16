@@ -1,4 +1,3 @@
-if not game then script = require "../test/relative-string" end
 local typeof = game and typeof or require "../test/mock".typeof :: never
 local Instance = game and Instance or require "../test/mock".Instance :: never
 

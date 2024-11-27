@@ -61,6 +61,8 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
             local cv = input_cache[i]
 
             if cv ~= v then
+                input_cache[i] = v
+
                 if cv == nil then -- create new scope and run transform
                     local scope = create_node(subowner, false, false)
                     scopes[i] = scope :: Node<any>
@@ -87,8 +89,6 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
                     input_nodes[i].cache = v
                     update_descendants(input_nodes[i])
                 end
-
-                input_cache[i] = v
             end
         end
 

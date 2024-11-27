@@ -2646,10 +2646,12 @@ TEST("strict", wrap_root(function()
 
     do CASE "destruction of active scope"
         local src = source(false)
+        local count = 0
 
         root(function()
             show(src, function()
                 src(false)
+                vide.cleanup(function() count += 1 end)
                 return {}
             end)
         end)
@@ -2661,38 +2663,59 @@ TEST("strict", wrap_root(function()
         CHECK(not ok)
     end
 
-    -- todo: review intended behavior here
-    -- do CASE "destruction of active scope in indexes"
-    --     local src = source {}
+    do CASE "destruction of active scope in indexes"
+        local src = source {}
 
-    --     local tmp
-    --     root(function()
-    --         effect(function()
-    --             untrack(function()
-    --                 tmp = indexes(src, function()
-    --                     vide.cleanup(function() print "test" end)
-    --                     src {}
-    --                     print "updated"
-    --                     vide.cleanup(function() print "test2" end)
-    --                     print "end"
-    --                     return {}
-    --                 end)
-    --                 return nil
-    --             end)
-    --         end)
-    --     end)
+        local count_1 = 0
+        local count_2 = 0
 
-    --     print "setting"
+        root(function()
+            effect(function()
+                untrack(function()
+                    indexes(src, function()
+                        vide.cleanup(function() count_1 += 1 end)
+                        src {}
+                        vide.cleanup(function() count_2 += 1 end)
+                        return {}
+                    end)
+                    return nil
+                end)
+            end)
+        end)
 
-    --     local ok = pcall(function()
-    --         src { 1 }
-    --         print "done"
-    --     end)
+        local ok = pcall(function()
+            src { 1 }
+        end)
 
-    --     print(#tmp())
+        CHECK(not ok)
+    end
 
-    --     CHECK(not ok)
-    -- end
+    do CASE "destruction of active scope in values"
+        local src = source {}
+
+        local count_1 = 0
+        local count_2 = 0
+
+        root(function()
+            effect(function()
+                untrack(function()
+                    values(src, function()
+                        vide.cleanup(function() count_1 += 1 end)
+                        src {}
+                        vide.cleanup(function() count_2 += 1 end)
+                        return {}
+                    end)
+                    return nil
+                end)
+            end)
+        end)
+
+        local ok = pcall(function()
+            src { {} }
+        end)
+
+        CHECK(not ok)
+    end
 end))
 
 local ok = FINISH()

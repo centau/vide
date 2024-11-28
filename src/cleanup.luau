@@ -8,6 +8,7 @@ local push_cleanup = graph.push_cleanup
 local function helper(obj: any)
     return
         if typeof(obj) == "RBXScriptConnection" then function() obj:Disconnect() end
+        elseif type(obj) == "thread" then function() task.cancel(obj) end
         elseif typeof(obj) == "Instance" then function() obj:Destroy() end
         elseif obj.destroy then function() obj:destroy() end
         elseif obj.disconnect then function() obj:disconnect() end
@@ -35,6 +36,7 @@ type Disconnectable = { disconnect: (any) -> () } | { Disconnect: (any) -> () }
 
 return cleanup ::
     ( (callback: () -> ()) -> () ) &
+    ( (thread: thread) -> () ) &
     ( (instance: Destroyable) -> () ) &
     ( (connection: Disconnectable) -> () ) &
     ( (instance: Instance) -> () ) &

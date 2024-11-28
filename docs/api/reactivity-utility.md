@@ -7,7 +7,7 @@ Queues a callback to run when a scope is reran or destroyed.
 - **Type**
 
     ```luau
-    function cleanup(v: Function | Disconnectable | Destroyable)
+    function cleanup(v: Function | Disconnectable | Destroyable | thread)
 
     type Function = () -> ()
     type Destroyable = { destroy: () -> () }

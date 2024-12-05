@@ -30,11 +30,12 @@ local update_descendants = graph.update_descendants
 local push_child_to_scope = graph.push_child_to_scope
 
 local UPDATE_RATE = 120
-local TOLERANCE = 0.0001
+local TOLERANCE = 0.001
+local TOLERANCE_VECTOR = vector.create(TOLERANCE, TOLERANCE, TOLERANCE)
 
 type Vec3 = Vector3
 
-local function Vec3(x: number?, y: number?, z: number?): Vec3
+local function Vec3(x: number, y: number, z: number): Vec3
     return vector.create(x, y, z)
 end
 
@@ -268,13 +269,16 @@ local function update_spring_sources()
         x0_456, x1_456, v_456 =
             data.x0_123, data.x1_123, data.v_123,
             data.x0_456, data.x1_456, data.v_456
-    
-        local dx_123, dx_456 =
-            x0_123 - x1_123,
-            x0_456 - x1_456
 
-        -- todo: can this false positive?
-        if vector.magnitude(v_123 + v_456 + dx_123 + dx_456) < TOLERANCE then
+        local max_difference = vector.max(
+            vector.abs(x0_123 - x1_123 :: any),
+            vector.abs(x0_456 - x1_456 :: any),
+            vector.abs(v_123 :: any),
+            vector.abs(v_456 :: any),
+            TOLERANCE_VECTOR
+        )
+
+        if max_difference == TOLERANCE_VECTOR then
             -- close enough to target, unshedule spring and set value to target
             table.insert(remove_queue, data)
             output.cache = data.source_value

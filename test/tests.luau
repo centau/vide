@@ -759,16 +759,33 @@ TEST("create()", wrap_root(function()
         CHECK(text.Text == "test")
     end
 
-    do CASE "nested precedence"
+    do CASE "nested deferred"
         local text = create "TextLabel" {
             {
+                { Text = "2" },
                 Text = "1",
-
-                { Text = "2" }
             }
         }
 
         CHECK(text.Text == "2")
+    end
+
+    do CASE "nested not deferred"
+        vide.defer_nested_properties = false
+
+        local t = {}
+    
+        create "TextLabel" {
+            {
+                { function() table.insert(t, 1) end } :: any,
+                function() table.insert(t, 2) end,
+            }
+        }
+
+        CHECK(t[1] == 1)
+        CHECK(t[2] == 2)
+
+        vide.defer_nested_properties = true
     end
 
     do CASE "independent"

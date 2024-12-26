@@ -75,6 +75,7 @@ local vide = {
 
     -- flags
     strict = (nil :: any) :: boolean,
+    defer_nested_properties = (nil :: any) :: boolean,
 
     -- temporary
     apply = function(instance: Instance)
@@ -96,18 +97,18 @@ local vide = {
 
 setmetatable(vide :: any, {
     __index = function(_, index: unknown): ()
-        if index == "strict" then
-            return flags.strict
-        else
+        if flags[index] == nil then
             throw(`{tostring(index)} is not a valid member of vide`)
+        else
+            return flags[index]
         end
     end,
 
     __newindex = function(_, index: unknown, value: unknown)
-        if index == "strict" then
-            flags.strict = value :: boolean
-        else
+        if flags[index] == nil then
             throw(`{tostring(index)} is not a valid member of vide`)
+        else
+            flags[index] = value
         end
     end
 })

@@ -62,22 +62,6 @@ local function return_caches(caches: typeof(free_caches) )
     free_caches = caches
 end
 
--- map of datatype names to class default constructor for aggregate init
-local aggregates = {}
-for name, class in {
-    CFrame = CFrame,
-    Color3 = Color3,
-    UDim = UDim,
-    UDim2 = UDim2,
-    Vector2 = Vector2,
-    Rect = Rect
-} :: Map<string, { [string]: any }> do
-    aggregates[name] = class.new
-end
-
-aggregates.Vector3 = vector.create
-aggregates.vector = vector.create
-
 -- applies table of nested properties to an instance using full vide semantics
 local function apply<T>(instance: T & Instance, properties: { [unknown]: unknown }): T
     if not properties then
@@ -109,13 +93,7 @@ local function apply<T>(instance: T & Instance, properties: { [unknown]: unknown
                     nested_debug[depth][property] = true
                 end
 
-                if type(value) == "table" then -- attempt aggregate init
-                    local ctor = aggregates[typeof((instance :: any)[property])]
-                    if ctor == nil then
-                        throw(`cannot aggregate type {typeof(value)} for property {property}`)
-                    end
-                    (instance :: any)[property] = ctor(unpack(value :: {}))
-                elseif type(value) == "function" then 
+                if type(value) == "function" then 
                     if typeof((instance :: any)[property]) == "RBXScriptSignal" then
                         events[property] = value  :: () -> () -- add event to buffer
                     else

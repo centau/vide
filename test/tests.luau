@@ -759,21 +759,6 @@ TEST("create()", wrap_root(function()
         CHECK(text.Text == "test")
     end
 
-    do CASE "aggregate construction"
-        local template = create "TextLabel" {
-            AnchorPoint = Vector2.new(),
-            Position = UDim2.new()
-        }
-
-        local text = create(template) {
-            AnchorPoint = { 1, 2 },
-            Position = { 3, 4 }
-        }
-
-        CHECK(text.AnchorPoint == Vector2.new(1, 2))
-        CHECK(text.Position == UDim2.new(3, 4))
-    end
-
     do CASE "nested precedence"
         local text = create "TextLabel" {
             {

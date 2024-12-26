@@ -544,38 +544,4 @@ ROOT_BENCH("spring step", function()
     end)
 end)
 
-TITLE "aggregate"
-
-do
-    -- the purpose of the two following benchmarks is to measure the overhead of
-    -- aggregate construction
-    ROOT_BENCH("set explicit vector", function()
-        local apply = require "../src/apply"
-
-        local label = create "TextLabel" {
-            AnchorPoint = vector.create(1, 1, 1)
-        }
-
-        for i = 1, START(N) do
-            apply(label, {
-                AnchorPoint = vector.create(i, i, i)
-            })
-        end
-    end)
-
-    ROOT_BENCH("set aggregate vector", function()
-        local apply = require "../src/apply"
-
-        local label = create "TextLabel" {
-            AnchorPoint = vector.create(1, 1, 1)
-        }
-
-        for i = 1, START(N) do
-            apply(label, {
-                AnchorPoint = { i, i, i }
-            })
-        end
-    end)
-end
-
 return nil

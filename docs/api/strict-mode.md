@@ -20,7 +20,7 @@ Currently, strict mode will:
 4. Checks for `values()` input having duplicate values.
 5. Checks for duplicate nested properties at same depth.
 6. Checks for destruction of an active scope.
-7. Better error reporting and stack traces + creation traces of property bindings.
+7. Better error reporting and stack traces.
 
 By rerunning reactive scopes twice each time they update, it helps ensure that
 computations are pure, and that any cleanup is done correctly.

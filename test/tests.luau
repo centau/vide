@@ -996,6 +996,48 @@ TEST("create()", wrap_root(function()
         CHECK(not obj:FindFirstChild("e"))
     end
 
+    do CASE "nested children source effect"
+        local a = create "Frame" { Name = "a" } :: Instance
+        local b = create "Frame" { Name = "b" } :: Instance
+        local c = create "Frame" { Name = "c" } :: Instance
+
+        local nested_children = source { b, c }
+        local children = source { a :: Instance | () -> { Instance }, nested_children }
+
+        local parent = create "Frame" {
+            Name = "parent",
+            children
+        }
+
+        CHECK(parent:FindFirstChild "a")
+        CHECK(parent:FindFirstChild "b")
+        CHECK(parent:FindFirstChild "c")
+        nested_children {}
+        CHECK(parent:FindFirstChild "a")
+        CHECK(not parent:FindFirstChild "b")
+        CHECK(not parent:FindFirstChild "c")
+        nested_children { b }
+        CHECK(parent:FindFirstChild "a")
+        CHECK(parent:FindFirstChild "b")
+        CHECK(not parent:FindFirstChild "c")
+        children { a }
+        CHECK(parent:FindFirstChild "a")
+        CHECK(not parent:FindFirstChild "b")
+        CHECK(not parent:FindFirstChild "c")
+        nested_children { b, c }
+        CHECK(parent:FindFirstChild "a")
+        CHECK(not parent:FindFirstChild "b")
+        CHECK(not parent:FindFirstChild "c")
+        children { a :: Instance | () -> { Instance }, nested_children }
+        CHECK(parent:FindFirstChild "a")
+        CHECK(parent:FindFirstChild "b")
+        CHECK(parent:FindFirstChild "c")
+        nested_children { c }
+        CHECK(parent:FindFirstChild "a")
+        CHECK(not parent:FindFirstChild "b")
+        CHECK(parent:FindFirstChild "c")
+    end
+
     do CASE "garbage collection test"
         local wref
 

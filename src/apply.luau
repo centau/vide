@@ -1,10 +1,8 @@
 local typeof = game and typeof or require "../test/mock".typeof :: never
-local Vector2 = game and Vector2 or require "../test/mock".Vector2 :: never
-local UDim2 = game and UDim2 or require "../test/mock".UDim2 :: never
 
 local flags = require "./flags"
 local throw = require "./throw"
-local bind = require "./bind"
+local implicit_effect = require "./implicit_effect"
 local _, is_action = require "./action"()
 local graph = require "./graph"
 type Node<T> = graph.Node<T>
@@ -79,14 +77,14 @@ local function process_properties(properties: Map<unknown, unknown>, instance: I
                     table.insert(cache.events, property) -- add event name to buffer
                     table.insert(cache.events, value :: () -> ()) -- add event listener to buffer
                 else
-                    bind.property(instance, property, value :: () -> ()) -- create implicit effect for property
+                    implicit_effect.property(instance, property, value :: () -> ()) -- create implicit effect for property
                 end
             else
                 (instance :: any)[property] = value -- set property
             end    
         elseif type(property) == "number" then
             if type(value) == "function" then
-                bind.children(instance, value :: () -> ArrayOrV<Instance>) -- bind children
+                implicit_effect.children(instance, value :: () -> ArrayOrV<Instance>) -- bind children
             elseif type(value) == "table" then
                 if is_action(value) then
                     table.insert(cache.actions[(value :: any).priority], (value :: any).callback :: () -> ()) -- add action to buffer
@@ -138,16 +136,14 @@ local function apply<T>(instance: T & Instance, properties: { [unknown]: unknown
         end
     end
 
-    -- finally set parent if any
     if parent then
         if type(parent) == "function" then
-            bind.parent(instance, parent :: () -> Instance)
+            implicit_effect.parent(instance, parent :: () -> Instance)
         else
             instance.Parent = parent :: Instance
         end
     end
 
-    -- clear caches
     table.clear(events)
     for _, queued in next, actions do table.clear(queued) end
     if flags.strict then table.clear(nested_debug) end

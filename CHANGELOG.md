@@ -12,11 +12,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - `create("ClassName", { props })` and `create(Instance, { props })` syntax.
 - `cleanup()` now accepts `thread` types.
+- Implicit effects to set children can now recursively create more implicit
+  effects to set children.
 
 ### Changed
 
 - A scope can no longer be destroyed while it is active. Strict mode will check
   for this.
+- Implicit effects to set children now unparent all children when the effect is
+  destroyed.
 
 ### Removed
 

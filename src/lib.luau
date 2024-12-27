@@ -18,7 +18,6 @@ local indexes, values = require "./maps"()
 local spring, update_springs = require "./spring"()
 local action = require "./action"()
 local changed = require "./changed"
-local throw = require "./throw"
 local flags = require "./flags"
 
 export type Source<T> = source.Source<T>
@@ -98,7 +97,7 @@ local vide = {
 setmetatable(vide :: any, {
     __index = function(_, index: unknown): ()
         if flags[index] == nil then
-            throw(`{tostring(index)} is not a valid member of vide`)
+            error(`{tostring(index)} is not a valid member of vide`, 0)
         else
             return flags[index]
         end
@@ -106,7 +105,7 @@ setmetatable(vide :: any, {
 
     __newindex = function(_, index: unknown, value: unknown)
         if flags[index] == nil then
-            throw(`{tostring(index)} is not a valid member of vide`)
+            error(`{tostring(index)} is not a valid member of vide, 0`)
         else
             flags[index] = value
         end

@@ -1,4 +1,3 @@
-local throw = require "./throw"
 local graph = require "./graph"
 type Node<T> = graph.Node<T>
 type SourceNode<T> = graph.SourceNode<T>
@@ -32,7 +31,7 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
             if component == nil then return nil end
 
             if type(component) ~= "function" then
-                throw "map must map a value to a function"
+                error "map must map a value to a function"
             end
 
             local new_scope = create_node(owner, false, false)
@@ -40,7 +39,7 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
             
             push_scope(new_scope)
         
-            local ok, result = pcall(component)
+            local ok, result = xpcall(component, debug.traceback)
 
             pop_scope()
 

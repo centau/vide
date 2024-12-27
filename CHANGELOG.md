@@ -23,6 +23,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   for this.
 - Implicit effects to set children now unparent all children when the effect is
   destroyed.
+- Error reporting should be improved with better formatting when effects invoke
+  other effects and no more loss of stack traces.
 
 ### Removed
 

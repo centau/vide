@@ -1,4 +1,3 @@
-local throw = require "./throw"
 local graph = require "./graph"
 type Node<T> = graph.Node<T>
 type SourceNode<T> = graph.SourceNode<T>
@@ -114,7 +113,7 @@ local vec6_to_type = {
 
 local invalid_type = {
     __index = function(_, t: string)
-        throw(`cannot spring type {t}`)
+        error(`cannot spring type {t}`, 0)
     end
 }
 
@@ -141,7 +140,7 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
     -- todo: is there a solution other than reducing step size?
     -- todo: this does not catch all solver exploding cases
     if c > UPDATE_RATE*2 then -- solver will explode if this is true
-        throw("spring damping too high, consider reducing damping or increasing period")
+        error("spring damping too high, consider reducing damping or increasing period", 0)
     end
 
     local data: SpringState<T> = {
@@ -262,8 +261,6 @@ local function step_springs(dt: number)
         data.v_123, data.v_456 = v_123, v_456
     end
 end
-
-local remove_queue = {}
 
 local function update_spring_sources()
     for data, output in springs do

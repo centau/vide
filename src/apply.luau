@@ -1,7 +1,6 @@
 local typeof = game and typeof or require "../test/mock".typeof :: never
 
 local flags = require "./flags"
-local throw = require "./throw"
 local implicit_effect = require "./implicit_effect"
 local _, is_action = require "./action"()
 local graph = require "./graph"
@@ -67,7 +66,7 @@ local function process_properties(properties: Map<unknown, unknown>, instance: I
         if type(property) == "string" then
             if flags.strict then -- check for duplicate property assignment at nesting depth
                 if cache.nested_debug[depth][property] then
-                    throw(`duplicate property {property} at depth {depth}`)
+                    error(`duplicate property {property} at depth {depth}`, 0)
                 end
                 cache.nested_debug[depth][property] = true
             end
@@ -104,7 +103,7 @@ end
 -- applies table of nested properties to an instance using full vide semantics
 local function apply<T>(instance: T & Instance, properties: { [unknown]: unknown }): T
     if not properties then
-        throw("attempt to call a constructor returned by create() with no properties")
+        error "attempt to call a constructor returned by create() with no properties"
     end
 
     -- queue parent assignment if any for last

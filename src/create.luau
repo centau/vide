@@ -1,7 +1,6 @@
 local typeof = game and typeof or require "../test/mock".typeof :: never
 local Instance = game and Instance or require "../test/mock".Instance :: never
 
-local throw = require "./throw"
 local defaults = require "./defaults"
 local apply = require "./apply"
 
@@ -10,7 +9,7 @@ local ctor_cache = {} :: { [string]: () -> Instance }
 setmetatable(ctor_cache :: any, {
     __index = function(self, class)
         local ok, instance: Instance = pcall(Instance.new, class :: any)
-        if not ok then throw(`invalid class name, could not create instance of class { class }`) end
+        if not ok then error(`invalid class name, could not create instance of class { class }`, 0) end
 
         local default: { [string]: unknown }? = defaults[class]
         if default then
@@ -35,7 +34,7 @@ end
 local function clone_instance(instance: Instance)
     return function(properties: Props): Instance
         local clone = instance:Clone()
-        if not clone then throw "attempt to clone a non-archivable instance" end
+        if not clone then error "attempt to clone a non-archivable instance" end
         return apply(clone, properties)
     end
 end
@@ -47,7 +46,7 @@ local function create(class_or_instance: string | Instance, props: Props?): ((Pr
 	elseif typeof(class_or_instance) == "Instance" then
 		result = clone_instance(class_or_instance)
 	else
-		throw("bad argument #1, expected string or instance, got " .. typeof(class_or_instance))
+		error("bad argument #1, expected string or instance, got " .. typeof(class_or_instance), 0)
 		return nil :: never
 	end
 	if props then

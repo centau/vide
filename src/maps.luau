@@ -1,4 +1,3 @@
-local throw = require "./throw"
 local flags = require "./flags"
 local graph = require "./graph"
 type Node<T> = graph.Node<T>
@@ -20,7 +19,7 @@ local function check_primitives(t: {})
 
     for _, v in next, t do
         if type(v) == "table" or type(v) == "userdata" or type(v) == "function" then continue end
-        throw("table source map cannot return primitives")
+        error("table source map cannot return primitives", 0)
     end
 end
 
@@ -71,7 +70,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
                     push_scope(scope)
 
-                    local ok, result = pcall(transform, function()
+                    local ok, result = xpcall(transform, debug.traceback, function()
                         push_child_to_scope(node)
                         return node.cache
                     end, i)
@@ -132,7 +131,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
             local cache = {}
             for _, v in next, data do
                 if cache[v] ~= nil then
-                    throw "duplicate table value detected"
+                    error "duplicate table value detected"
                 end
                 cache[v] = true
             end
@@ -154,7 +153,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
     
                 push_scope(scope)
                 
-                local ok, result = pcall(transform, v, function()
+                local ok, result = xpcall(transform, debug.traceback, v, function()
                     push_child_to_scope(node)
                     return node.cache
                 end)

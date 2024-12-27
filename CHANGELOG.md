@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `cleanup()` now accepts `thread` types.
 - Implicit effects to set children can now recursively create more implicit
   effects to set children.
+- `spring()` returns a second value, a setter to set position, velocity and
+  impulse.
 
 ### Changed
 

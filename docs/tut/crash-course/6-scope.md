@@ -7,38 +7,39 @@ But the disconnecting of many signals and connections is tedious and verbose.
 Vide instead operates on the concept of scopes which provides a much cleaner
 API, given that you follow a few rules.
 
-Scopes come in two flavors; stable and reactive.
+Thre are two types of scopes: stable and reactive.
 
-- All scopes must be created within another scope with the exception of `root()`
-- Stable scopes never rerun
-- Reactive scopes can rerun
-- A reactive scope cannot be created within another reactive scope
+- A scope must be created within another scope.
+- Stable scopes never rerun.
+- Reactive scopes can rerun.
+- A reactive scope cannot be created within another reactive scope, only within
+  a stable scope.
 
-`effect()` creates a reactive scope.
+An exception to the first rule is `root()`, which creates the initial scope that
+you destroy manually with a destructor function it returns.
+
 `root()` creates a stable scope.
+`effect()` creates a reactive scope.
 
 Whenever a scope is destroyed, any scope created within that scope is also
-destroyed, and so on. This is why all scopes must be created within another
-scope, except `root()` which is used to create the initial scope that you can
-manually destroy.
+destroyed, and so on.
 
 ```luau
 local root = vide.root
 local source = vide.source
 local effect = vide.effect
 
-local function setup()
-    local count = source(0)
+local count = source(0)
 
+local function setup()
     effect(function()
         print(count())
     end)
-
-    return count
 end
 
-setup() -- will error since effect() tries to create a reactive scope outside of a stable scope
+setup() -- error, effect() tried to create a reactive scope with no stable scope
 
+<<<<<<< HEAD
 local count = root(setup) -- ok since effect() was called within a stable scope
 count(1) -- prints "1"
 ```
@@ -57,12 +58,16 @@ local function setup()
 end
 
 local destroy, count = root(setup)
+=======
+local destroy = root(setup) -- ok since effect() was called in a stable scope
+>>>>>>> 58a31a1b329e922dc86c554e8220012ab7238f1b
 
 count(1) -- prints "1"
+count(2) -- prints "2"
 
 destroy()
 
-count(2) -- effect is destroyed; no longer prints
+count(3) -- reactive scope created by effect() is destroyed, it does not rerun
 ```
 
 Vide's reactivity can be represented graphically, as a *reactive graph*.
@@ -73,12 +78,12 @@ The reactive graph for the above example looks like so:
 %%{init: {
     "theme": "base",
     "themeVariables": {
-        "primaryColor": "#1B1B1F",
+        "primaryColor": "#111720",
         "primaryTextColor": "#fff",
-        "primaryBorderColor": "#1B1B1F",
+        "primaryBorderColor": "#111720",
         "lineColor": "#79B8FF",
-        "tertiaryColor": "#161618",
-        "tertiaryBorderColor": "#161618"
+        "tertiaryColor": "#0d131b",
+        "tertiaryBorderColor": "#0d131b"
     }
 }}%%
 
@@ -90,7 +95,7 @@ subgraph root
 end
 ```
 
-When the stable `root()` is destroyed, the reactive `effect()`
+When the stable `root()` scope is destroyed, the reactive `effect()`
 scope will also be destroyed since it was created within it.
 
 This is important because you may have an effect that updates the property of a

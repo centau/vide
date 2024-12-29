@@ -57,7 +57,8 @@ effect(function() text() end)
 count(1) -- prints "ran" x1
 ```
 
-`derive()` must also be called within a stable scope, just like `effect()`.
+Because `derive()` creates a reactive scope, it must be called within a stable
+scope, just like `effect()`.
 
 If the recalculated value is the same as the old value, the derived source will
 not rerun the effects using it.
@@ -68,12 +69,12 @@ The reactive graph for the above example:
 %%{init: {
     "theme": "base",
     "themeVariables": {
-        "primaryColor": "#1B1B1F",
+        "primaryColor": "#111720",
         "primaryTextColor": "#fff",
-        "primaryBorderColor": "#1B1B1F",
+        "primaryBorderColor": "#111720",
         "lineColor": "#79B8FF",
-        "tertiaryColor": "#161618",
-        "tertiaryBorderColor": "#161618"
+        "tertiaryColor": "#0d131b",
+        "tertiaryBorderColor": "#0d131b"
     }
 }}%%
 
@@ -86,7 +87,7 @@ end
 ```
 
 Deriving a source in this manner is similar to creating an effect to update
-another source. You should never manually do this using an effect however.
+another source. You should avoid doing this using an effect however.
 Improper usage could accidently create infinite loops in the reactive graph.
 Always favour deriving when you need one source to update based on another
 source.

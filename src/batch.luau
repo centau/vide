@@ -1,8 +1,5 @@
-if not game then script = require "test/relative-string" end
-
-local flags = require(script.Parent.flags)
-local throw = require(script.Parent.throw)
-local graph = require(script.Parent.graph)
+local flags = require "./flags"
+local graph = require "./graph"
 
 local function batch(setter: () -> ())
     local already_batching = flags.batch
@@ -13,14 +10,14 @@ local function batch(setter: () -> ())
         from = graph.get_update_queue_length()
     end
 
-    local ok, err: string? = pcall(setter)
+    local ok, err: string? = xpcall(setter, debug.traceback)
 
     if not already_batching then
         flags.batch = false
         graph.flush_update_queue(from)
     end
 
-    if not ok then throw(`error occured while batching updates: {err}`) end
+    if not ok then error(`error occured while batching updates: {err}`, 0) end
 end
 
 return batch

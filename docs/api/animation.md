@@ -1,6 +1,6 @@
-# Animation API
+# Animation
 
-## spring()
+## spring() <Badge type="tip" text="STABLE"><a href="/vide/api/reactivity-core#Scopes">REACTIVE</a></Badge>
 
 Returns a new source with a value always moving torwards the input source value.
 
@@ -11,15 +11,20 @@ Returns a new source with a value always moving torwards the input source value.
         source: () -> T & Animatable,
         period: number = 1,
         damping_ratio: number = 1
-    ): () -> T
+    ): (() -> T, Setter<T>)
 
     type Animatable = number | CFrame | Color3 | UDim | UDim2 | Vector2 | Vector3 | Rect
+
+    type Setter<T> = ({
+        position: T?,
+        velocity: T?,
+        impulse: T?
+    }) -> ()
     ```
 
 - **Details**
 
-    An effect is created to update the new source every frame based on the input
-    source value.
+    Creates a reactive scope internally to detect source updates.
 
     The movement is physically simulated according to a
     [spring](https://en.wikipedia.org/wiki/Simple_harmonic_motion).
@@ -39,3 +44,7 @@ Returns a new source with a value always moving torwards the input source value.
     You can change when the solver runs by calling `vide.step(dt)`, which will
     advance the simulation time by `dt` seconds and automatically stop the
     solver running in heartbeat.
+
+    ::: warning
+    Large periods or damping ratios can break the spring.
+    :::

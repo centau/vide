@@ -1,7 +1,4 @@
-if not game then script = require "test/relative-string" end
-
-local throw = require(script.Parent.throw)
-local flags = require(script.Parent.flags)
+local flags = require "./flags"
 
 export type SourceNode<T> = {
     cache: T,
@@ -24,9 +21,23 @@ export type Node<T> =  {
 
 local scopes = { n = 0 } :: { [number]: Node<any>, n: number } -- scopes stack
 
+local function efn(err: string)
+    local trace = debug.traceback(err, 2)
+
+    if string.find(err, "^effect error stacktrace") then -- if effect error is nested
+        trace = string.gsub("    " .. trace, "\n", function() -- indent entire error
+            return "\n    "
+        end)
+    end
+
+    trace ..= "\nsource update stacktrace:"
+return trace
+end
+
 local function ycall<T, U>(fn: (T) -> U, arg: T): (boolean, string|U)
+
     local thread = coroutine.create(xpcall)
-    local function efn(err: string) return debug.traceback(err, 3) end
+    --local function efn(err: string) return debug.traceback(err, 3) end
     local resume_ok, run_ok, result = coroutine.resume(thread, fn, efn, arg)
 
     assert(resume_ok)
@@ -47,9 +58,9 @@ local function assert_stable_scope(): Node<unknown>
 
     if not scope then
         local caller_name = debug.info(2, "n")
-        return throw(`cannot use {caller_name}() outside a stable or reactive scope`)
+        return error(`cannot use {caller_name}() outside a stable or reactive scope`, 0)
     elseif scope.effect then
-        throw("cannot create a new reactive scope inside another reactive scope")
+        error("cannot create a new reactive scope inside another reactive scope", 0)
     end
 
     return scope
@@ -83,8 +94,8 @@ end
 local function flush_cleanups<T>(node: Node<T>)
     if node.cleanups then
         for _, fn in next, node.cleanups do
-            local ok, err: string? = pcall(fn)
-            if not ok then throw(`cleanup error: {err}`) end
+            local ok, err: string? = xpcall(fn, debug.traceback)
+            if not ok then error(`cleanup error: {err}`, 0) end
         end
 
         table.clear(node.cleanups)
@@ -108,6 +119,10 @@ local function unparent<T>(node: Node<T>)
 end
 
 local function destroy<T>(node: Node<T>)
+    if flags.strict and table.find(scopes, node) then
+        error("attempt to destroy an active scope", 0)
+    end
+
     flush_cleanups(node)
     unparent(node)
     
@@ -148,7 +163,7 @@ local function evaluate_node<T>(node: Node<T>)
             if not ok then
                 table.clear(update_queue)
                 update_queue.n = 0
-                throw(`effect stacktrace:\n{new_value :: string}`)
+                error(`effect error stacktrace\n{new_value :: string}`, 0)
             end
 
             node.cache = new_value :: T
@@ -168,7 +183,7 @@ local function evaluate_node<T>(node: Node<T>)
         if not ok then
             table.clear(update_queue)
             update_queue.n = 0
-            throw(`effect stacktrace:\n{new_value}\n`)
+            error(`effect error:\n{new_value}\n`, 0)
         end
     
         node.cache = new_value
@@ -296,5 +311,7 @@ return table.freeze {
     flush_update_queue = flush_update_queue,
     get_update_queue_length = get_update_queue_length,
     set_context = set_context,
-    scopes = scopes
+    scopes = scopes,
+
+    q = update_queue
 }

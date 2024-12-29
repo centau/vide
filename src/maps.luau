@@ -1,8 +1,5 @@
-if not game then script = require "test/relative-string" end
-
-local throw = require(script.Parent.throw)
-local flags = require(script.Parent.flags)
-local graph = require(script.Parent.graph)
+local flags = require "./flags"
+local graph = require "./graph"
 type Node<T> = graph.Node<T>
 type SourceNode<T> = graph.SourceNode<T>
 local create_node = graph.create_node
@@ -22,7 +19,7 @@ local function check_primitives(t: {})
 
     for _, v in next, t do
         if type(v) == "table" or type(v) == "userdata" or type(v) == "function" then continue end
-        throw("table source map cannot return primitives")
+        error("table source map cannot return primitives", 0)
     end
 end
 
@@ -63,6 +60,8 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
             local cv = input_cache[i]
 
             if cv ~= v then
+                input_cache[i] = v
+
                 if cv == nil then -- create new scope and run transform
                     local scope = create_node(subowner, false, false)
                     scopes[i] = scope :: Node<any>
@@ -71,7 +70,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
 
                     push_scope(scope)
 
-                    local ok, result = pcall(transform, function()
+                    local ok, result = xpcall(transform, debug.traceback, function()
                         push_child_to_scope(node)
                         return node.cache
                     end, i)
@@ -89,8 +88,6 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
                     input_nodes[i].cache = v
                     update_descendants(input_nodes[i])
                 end
-
-                input_cache[i] = v
             end
         end
 
@@ -134,7 +131,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
             local cache = {}
             for _, v in next, data do
                 if cache[v] ~= nil then
-                    throw "duplicate table value detected"
+                    error "duplicate table value detected"
                 end
                 cache[v] = true
             end
@@ -156,7 +153,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
     
                 push_scope(scope)
                 
-                local ok, result = pcall(transform, v, function()
+                local ok, result = xpcall(transform, debug.traceback, v, function()
                     push_child_to_scope(node)
                     return node.cache
                 end)

@@ -1,39 +1,4 @@
-# Element Creation API
-
-<br/>
-
-## mount()
-
-Runs a function in a new stable scope and optionally applies its result to a
-target instance.
-
-- **Type**
-  
-    ```luau
-    function mount<T>(component: () -> T, target: Instance?): () -> ()
-    ```
-
-- **Details**
-
-    The result of the function is applied to a target in the same way
-    properties are using `create()`.
-
-    The function is ran in a new stable scope, just like
-    [root()](reactivity-core.md#root).
-
-    Returns a function that when called will destroy the stable scope.
-
-- **Example**
-
-    ```luau
-    local function App()
-        return create "ScreenGui" {
-            create "TextLabel" { Text = "Vide" }
-        }
-    end
-
-    mount(App, game.StarterGui)
-    ```
+# Element Creation
 
 ## create()
 
@@ -45,7 +10,7 @@ Creates a new UI element, applying any given properties.
     function create(class: string): (Properties) -> Instance
     function create(instance: Instance): (Properties) -> Instance
 
-    type Properties = Map<string|number, any>
+    type Properties = Map<string|number, unknown>
     ```
 
 - **Details**
@@ -77,42 +42,22 @@ Creates a new UI element, applying any given properties.
     Basic element creation.
 
     ```luau
-    local frame = create "Frame" {
-        Name = "NewFrame",
-        Position = UDim2.fromScale(1, 0)
+    local frame = create "TextButton" {
+        Name = "Button",
+        Size = UDim2.fromOffset(200, 160),
+
+        Activated = function()
+            print "clicked"
+        end,
+
+        create "UICorner" {}
     }
-    ```
-
-    A component using property nesting.
-
-    ```luau
-    type Layout = {
-        Layout = {
-            Position: UDim2?,
-            Size: UDim2?,
-            AnchorPoint: Vector2?
-        }
-    }
-
-    type Children = {
-        Children = Array<Instance>
-    }
-
-    function Background(props: Layout & Children & {
-        Color: Color3
-    })
-        return create "Frame" {
-            BackgroundColor3 = props.Color,
-            props.Layout,
-            props.Children
-        }
-    end
     ```
 
 ## action()
 
-Creates a callback that can be passed to `create()` to invoke custom actions on
-instances.
+Creates a special object that can be passed to `create()` to invoke custom
+actions on instances.
 
 - **Type**
 
@@ -122,27 +67,27 @@ instances.
 
 - **Details**
 
-    When passed to `create()`, the given callback is called with the instance
-    being created as the only argument. Actions take precedence over property
-    and child assignments.
+    When passed to `create()`, the function is called with the instance being
+    created as the only argument. Actions take precedence over property and
+    child assignments.
 
     A priority can be optionally specified to ensure certain actions run after
-    other actions. Higher priority numbers are ran after lower priority numbers.
+    other actions. Lower priority values are ran first.
 
 - **Example**
 
     An action to listen to changed properties:
 
     ```luau
-    local function changed(property: string, callback: (new) -> ())
+    local function changed(property: string, fn: (new) -> ())
         return action(function(instance)
-            local con - instance:GetPropertyChangedSignal(property):Connect(function()
-                callback(instance[property])
+            local cn = instance:GetPropertyChangedSignal(property):Connect(function()
+                fn(instance[property])
             end)
 
-            -- disconnect on reactive scope destruction to allow gc of instance
+            -- disconnect on scope destruction to allow gc of instance
             cleanup(function()
-                con:Disconnect()
+                cn:Disconnect()
             end)
         end)
     end
@@ -150,7 +95,7 @@ instances.
     local output = source ""
 
     create "TextBox" {
-        -- will update the `output` source anytime the text property is changed
+        -- will update the output source anytime the text property is changed
         changed("Text", output)
     }
     ```
@@ -162,15 +107,46 @@ A wrapper for `action()` to listen for property changes.
 - **Type**
 
     ```luau
-    function changed(property: string, callback: (...unknown) -> ()): Action
+    function changed(property: string, fn: (unknown) -> ()): Action
     ```
 
 - **Details**
 
-    Will run the given callback any time the property is changed, as well as
-    when the action is initially run.
+    Will run the given function immediately and whenever the property updates.
 
-    The changed connection is disconnected when the scope the action is ran in
-    is destroyed.
+    The function is called with the updated property value.
 
     Runs with an action priority of 1.
+
+## mount() <Badge type="info" text="STABLE"><a href="/vide/api/reactivity-core#Scopes">STABLE</a></Badge>
+
+Runs a function in a new stable scope and optionally applies its result to a
+target instance.
+
+- **Type**
+  
+    ```luau
+    function mount<T>(component: () -> T, target: Instance?): () -> ()
+    ```
+
+- **Details**
+
+    This is a utility for `root()` when parenting a component to an existing
+    instance.
+
+    The result of the function is applied to a target in the same way
+    properties are using `create()`.
+
+    Returns a function that when called will destroy the stable scope.
+
+- **Example**
+
+    ```luau
+    local function App()
+        return create "ScreenGui" {
+            create "TextLabel" { Text = "Vide" }
+        }
+    end
+
+    local destroy = mount(App, game.StarterGui)
+    ```

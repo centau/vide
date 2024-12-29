@@ -1,18 +1,15 @@
-if not game then script = require "test/relative-string" end
-local typeof = game and typeof or require "test/mock".typeof:: never
-local Instance = game and Instance or require "test/mock".Instance :: never
+local typeof = game and typeof or require "../test/mock".typeof :: never
+local Instance = game and Instance or require "../test/mock".Instance :: never
 
-local throw = require(script.Parent.throw)
-local defaults = require(script.Parent.defaults)
-local apply = require(script.Parent.apply)
-local r = require(script.Parent.roblox_types)
+local defaults = require "./defaults"
+local apply = require "./apply"
 
 local ctor_cache = {} :: { [string]: () -> Instance }
 
 setmetatable(ctor_cache :: any, {
     __index = function(self, class)
         local ok, instance: Instance = pcall(Instance.new, class :: any)
-        if not ok then throw(`invalid class name, could not create instance of class { class }`) end
+        if not ok then error(`invalid class name, could not create instance of class { class }`, 0) end
 
         local default: { [string]: unknown }? = defaults[class]
         if default then
@@ -22,8 +19,8 @@ setmetatable(ctor_cache :: any, {
         end
 
         local function ctor(properties: Props): Instance
-            return apply(instance:Clone(), properties)    
-        end  
+            return apply(instance:Clone(), properties)
+        end
 
         self[class] = ctor
         return ctor
@@ -37,20 +34,25 @@ end
 local function clone_instance(instance: Instance)
     return function(properties: Props): Instance
         local clone = instance:Clone()
-        if not clone then throw "attempt to clone a non-archivable instance" end
+        if not clone then error "attempt to clone a non-archivable instance" end
         return apply(clone, properties)
     end
 end
 
-local function create(class_or_instance: string|Instance): (Props) -> Instance
-    if type(class_or_instance) == "string" then
-        return create_instance(class_or_instance)
-    elseif typeof(class_or_instance) == "Instance" then
-        return clone_instance(class_or_instance)
-    else
-        throw("bad argument #1, expected string or instance, got " .. typeof(class_or_instance))
-        return nil :: never
-    end
+local function create(class_or_instance: string | Instance, props: Props?): ((Props) -> Instance) | Instance
+	local result: (Props) -> Instance
+	if type(class_or_instance) == "string" then
+		result = create_instance(class_or_instance)
+	elseif typeof(class_or_instance) == "Instance" then
+		result = clone_instance(class_or_instance)
+	else
+		error("bad argument #1, expected string or instance, got " .. typeof(class_or_instance), 0)
+		return nil :: never
+	end
+	if props then
+		return result(props)
+	end
+	return result
 end
 
 type Props = { [any]: any }

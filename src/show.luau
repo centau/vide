@@ -1,6 +1,4 @@
-if not game then script = require "test/relative-string" end
-
-local switch = require(script.Parent.switch)
+local switch = require "./switch"
 
 local function show<T>(source: () -> any, component: () -> T, fallback: (() -> T)?): () -> T?
     local function truthy()

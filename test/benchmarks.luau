@@ -1,7 +1,7 @@
-local testkit = require("test/testkit")
+local testkit = require("./testkit")
 local BENCH, START = testkit.benchmark()
 
-local vide = require "src/init"
+local vide = require "../../vide"
 local source = vide.source
 local derive = vide.derive
 local effect = vide.effect
@@ -200,7 +200,7 @@ end)
 TITLE "property apply"
 
 ROOT_BENCH("apply 0 properties", function()
-    local apply = require "src/apply"
+    local apply = require "../src/apply"
     local instance = create("Frame") {}
 
     for i = 1, START(N) do
@@ -209,7 +209,7 @@ ROOT_BENCH("apply 0 properties", function()
 end)
 
 ROOT_BENCH("apply 8 properties", function()
-    local apply = require "src/apply"
+    local apply = require "../src/apply"
     local instance = create("Frame") {}
 
     for i = 1, START(N) do
@@ -227,7 +227,7 @@ ROOT_BENCH("apply 8 properties", function()
 end)
 
 ROOT_BENCH("bind property", function()
-    local apply = require "src/apply"
+    local apply = require "../src/apply"
 
     local instance = create("Frame") {}
     local src = source(1)
@@ -242,7 +242,7 @@ ROOT_BENCH("bind property", function()
 end)
 
 ROOT_BENCH("update binding", function()
-    local apply = require "src/apply"
+    local apply = require "../src/apply"
 
     local instance = create("Frame") {}
     local src = source(1)
@@ -504,85 +504,44 @@ ROOT_BENCH(`get context (depth={depth})`, function()
     end)
 end)
 
-N *= 1024
+TITLE "spring()"
 
-TITLE "aggregate"
+ROOT_BENCH("spring update", function()
+    local root, source, spring = vide.root, vide.source, vide.spring
 
-do
-    -- the purpose of the two following benchmarks is to measure the overhead of
-    -- aggregate construction
-    ROOT_BENCH("set explicit mock vector2", function()
-        local apply = require "src/apply"
-        local Vector2 = require "test/mock".Vector2
+    local src = source(0)
 
-        local label = create "TextLabel" {
-            AnchorPoint = Vector2.new(1, 1)
-        }
-
-        for i = 1, START(N) do
-            apply(label, {
-                AnchorPoint = Vector2.new(i, i)
-            })
+    root(function()
+        for i = 1, N do
+            spring(src)
         end
+
+        START(N)
+
+        src(1)
+
+        return nil
     end)
+end)
 
-    ROOT_BENCH("set aggregate mock vector2", function()
-        local apply = require "src/apply"
-        local Vector2 = require "test/mock".Vector2
+ROOT_BENCH("spring step", function()
+    local root, source, spring = vide.root, vide.source, vide.spring
 
-        local label = create "TextLabel" {
-            AnchorPoint = Vector2.new(1, 1)
-        }
+    local src = source(0)
 
-        for i = 1, START(N) do
-            apply(label, {
-                AnchorPoint = { i, i }
-            })
+    root(function()
+        for i = 1, N do
+            spring(src)
         end
+
+        src(1)
+
+        START(N)
+
+        vide.step(1/60)
+
+        return nil
     end)
-end
-
--- innacurate due to no Vector3 in vanilla Luau
--- mock vector is 200x slower than native vector 
-
--- ROOT_BENCH("spring update", function()
---     local root, source, spring = vide.root, vide.source, vide.spring
-
---     local src = source(0)
-
---     root(function()
---         for i = 1, N do
---             spring(src)
---         end
-
---         START(N)
-
---         src(1)
-
---         return nil
---     end)
--- end)
-
--- N /= 1024
-
--- ROOT_BENCH("spring step", function()
---     local root, source, spring = vide.root, vide.source, vide.spring
-
---     local src = source(0)
-
---     root(function()
---         for i = 1, N do
---             spring(src)
---         end
-
---         src(1)
-
---         START(N)
-
---         vide.step(1/60)
-
---         return nil
---     end)
--- end)
+end)
 
 return nil

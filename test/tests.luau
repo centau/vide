@@ -1,12 +1,12 @@
-local testkit = require("test/testkit")
+local testkit = require "./testkit"
 local TEST, CASE, CHECK, FINISH = testkit.test()
 
-local mock = require "test/mock"
+local mock = require "./mock"
 local Instance, Signal = mock.Instance, mock.Signal
 local Vector2, UDim2 = mock.Vector2, mock.UDim2
 
-local vide = require "src/init"
-local graph = require "src/graph"
+local vide = require "../../vide"
+local graph = require "../../vide/src/graph"
 type Node<T> = graph.Node<T>
 
 type Map<K, V> = { [K] : V }
@@ -721,8 +721,21 @@ TEST("create()", wrap_root(function()
     local source = vide.source
     local cleanup = vide.cleanup
 
+    do CASE "create(\"ClassName\", props) syntax"
+        local frame = create("Frame", { BackgroundTransparency = 0.5, Name = "Foo" })
+        CHECK(frame.BackgroundTransparency == 0.5)
+        CHECK(frame.Name == "Foo")
+    end
+
+    do CASE "create(Instance, props) syntax"
+        local frame0 = create("Frame", { BackgroundTransparency = 0.5, Name = "Foo" })
+        local frame = create(frame0, { BackgroundTransparency = 1 })
+        CHECK(frame.BackgroundTransparency == 1)
+        CHECK(frame.Name == "Foo")
+    end
+
     do CASE "apply default properties"
-        local defaults = require("src/defaults")
+        local defaults = require "../src/defaults"
         local frame = create "Frame" {} :: Instance & { BorderSizePixel: any, BorderColor3: any }
         CHECK(frame.BorderSizePixel == defaults.Frame.BorderSizePixel)
         CHECK(frame.BorderColor3 == defaults.Frame.BorderColor3)
@@ -746,31 +759,33 @@ TEST("create()", wrap_root(function()
         CHECK(text.Text == "test")
     end
 
-    do CASE "aggregate construction"
-        local template = create "TextLabel" {
-            AnchorPoint = Vector2.new(),
-            Position = UDim2.new()
-        }
-
-        local text = create(template) {
-            AnchorPoint = { 1, 2 },
-            Position = { 3, 4 }
-        }
-
-        CHECK(text.AnchorPoint == Vector2.new(1, 2))
-        CHECK(text.Position == UDim2.new(3, 4))
-    end
-
-    do CASE "nested precedence"
+    do CASE "nested deferred"
         local text = create "TextLabel" {
             {
+                { Text = "2" },
                 Text = "1",
-
-                { Text = "2" }
             }
         }
 
         CHECK(text.Text == "2")
+    end
+
+    do CASE "nested not deferred"
+        vide.defer_nested_properties = false
+
+        local t = {}
+    
+        create "TextLabel" {
+            {
+                { function() table.insert(t, 1) end } :: any,
+                function() table.insert(t, 2) end,
+            }
+        }
+
+        CHECK(t[1] == 1)
+        CHECK(t[2] == 2)
+
+        vide.defer_nested_properties = true
     end
 
     do CASE "independent"
@@ -981,6 +996,48 @@ TEST("create()", wrap_root(function()
         CHECK(not obj:FindFirstChild("e"))
     end
 
+    do CASE "nested children source effect"
+        local a = create "Frame" { Name = "a" } :: Instance
+        local b = create "Frame" { Name = "b" } :: Instance
+        local c = create "Frame" { Name = "c" } :: Instance
+
+        local nested_children = source { b, c }
+        local children = source { a :: Instance | () -> { Instance }, nested_children }
+
+        local parent = create "Frame" {
+            Name = "parent",
+            children
+        }
+
+        CHECK(parent:FindFirstChild "a")
+        CHECK(parent:FindFirstChild "b")
+        CHECK(parent:FindFirstChild "c")
+        nested_children {}
+        CHECK(parent:FindFirstChild "a")
+        CHECK(not parent:FindFirstChild "b")
+        CHECK(not parent:FindFirstChild "c")
+        nested_children { b }
+        CHECK(parent:FindFirstChild "a")
+        CHECK(parent:FindFirstChild "b")
+        CHECK(not parent:FindFirstChild "c")
+        children { a }
+        CHECK(parent:FindFirstChild "a")
+        CHECK(not parent:FindFirstChild "b")
+        CHECK(not parent:FindFirstChild "c")
+        nested_children { b, c }
+        CHECK(parent:FindFirstChild "a")
+        CHECK(not parent:FindFirstChild "b")
+        CHECK(not parent:FindFirstChild "c")
+        children { a :: Instance | () -> { Instance }, nested_children }
+        CHECK(parent:FindFirstChild "a")
+        CHECK(parent:FindFirstChild "b")
+        CHECK(parent:FindFirstChild "c")
+        nested_children { c }
+        CHECK(parent:FindFirstChild "a")
+        CHECK(not parent:FindFirstChild "b")
+        CHECK(parent:FindFirstChild "c")
+    end
+
     do CASE "garbage collection test"
         local wref
 
@@ -1169,7 +1226,7 @@ TEST("switch()", wrap_root(function()
     end
 
     do CASE "reactive stack resets after error"
-    local scopes = require "src/graph".scopes
+    local scopes = require "../src/graph".scopes
         local input = source(1)
 
         local n0 = scopes.n
@@ -1328,7 +1385,7 @@ TEST("indexes()", wrap_root(function()
     end
 
     do CASE "reactive stack resets after error"
-        local scopes = require "src/graph".scopes
+        local scopes = require "../src/graph".scopes
 
         local input = source { 1 }
 
@@ -1507,7 +1564,7 @@ TEST("values()", wrap_root(function()
     end
 
     do CASE "reactive stack resets after error"
-        local scopes = require "src/graph".scopes
+        local scopes = require "../src/graph".scopes
 
         local input = source { 1 }
 
@@ -2260,7 +2317,7 @@ TEST("context()", function()
 end)
 
 TEST("nested effects cases", function()
-    local vide = require "src/init"
+    local vide = require "../../vide"
     local source = vide.source
     local effect = vide.effect
     local untrack = vide.untrack
@@ -2483,11 +2540,14 @@ end))
 TEST("strict", wrap_root(function()
     vide.strict = true
 
+    local root = vide.root
+    local show = vide.show
     local create = vide.create
     local source = vide.source
     local derive = vide.derive
     local effect = vide.effect
     local indexes, values = vide.indexes, vide.values
+    local untrack = vide.untrack
 
     do CASE "error on derived callback yield"
         local src = source(1)
@@ -2626,6 +2686,79 @@ TEST("strict", wrap_root(function()
         input(false)
 
         CHECK(count == 4)
+    end
+
+    do CASE "destruction of active scope"
+        local src = source(false)
+        local count = 0
+
+        root(function()
+            show(src, function()
+                src(false)
+                vide.cleanup(function() count += 1 end)
+                return {}
+            end)
+        end)
+
+        local ok = pcall(function()
+            src(true)
+        end)
+
+        CHECK(not ok)
+    end
+
+    do CASE "destruction of active scope in indexes"
+        local src = source {}
+
+        local count_1 = 0
+        local count_2 = 0
+
+        root(function()
+            effect(function()
+                untrack(function()
+                    indexes(src, function()
+                        vide.cleanup(function() count_1 += 1 end)
+                        src {}
+                        vide.cleanup(function() count_2 += 1 end)
+                        return {}
+                    end)
+                    return nil
+                end)
+            end)
+        end)
+
+        local ok = pcall(function()
+            src { 1 }
+        end)
+
+        CHECK(not ok)
+    end
+
+    do CASE "destruction of active scope in values"
+        local src = source {}
+
+        local count_1 = 0
+        local count_2 = 0
+
+        root(function()
+            effect(function()
+                untrack(function()
+                    values(src, function()
+                        vide.cleanup(function() count_1 += 1 end)
+                        src {}
+                        vide.cleanup(function() count_2 += 1 end)
+                        return {}
+                    end)
+                    return nil
+                end)
+            end)
+        end)
+
+        local ok = pcall(function()
+            src { {} }
+        end)
+
+        CHECK(not ok)
     end
 end))
 

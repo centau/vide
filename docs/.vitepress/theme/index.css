@@ -1,0 +1,25 @@
+.home > * > .VPNavBar:not(.top) {
+	backdrop-filter: blur(0.5rem);
+	background-color: transparent !important;
+}
+
+.home > * > .VPNavBar > .divider {
+	opacity: 0;
+}
+
+.home > .VPContent {
+	display: flex;
+	justify-content: center;
+	flex-direction: column;
+}
+
+.VPHome {
+	margin-top: auto !important;
+	margin-bottom: auto !important; 
+}
+
+.VPBadge a {
+    text-decoration: none;
+    color: inherit
+ }
+ 

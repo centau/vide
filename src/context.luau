@@ -1,7 +1,4 @@
-if not game then script = require "test/relative-string" end
-
-local throw = require(script.Parent.throw)
-local graph = require(script.Parent.graph)
+local graph = require "./graph"
 type Node<T> = graph.Node<T>
 local create_node = graph.create_node
 local get_scope = graph.get_scope
@@ -46,10 +43,10 @@ local function context<T>(...: T): Context<T>
             if has_default ~= nil then
                 return default_value
             else
-                throw("attempt to get context when no context is set and no default context is set")
+                error("attempt to get context when no context is set and no default context is set", 0)
             end
         else -- set
-            if not scope then return throw("attempt to set context outside of a vide scope") end
+            if not scope then return error("attempt to set context outside of a vide scope", 0) end
 
             local value, component = ...
             
@@ -64,7 +61,7 @@ local function context<T>(...: T): Context<T>
             pop_scope()
 
             if not ok then
-                throw(`error while running context:\n\n{result}`)
+                error(`error while running context:\n\n{result}`, 0)
             end
 
             return result

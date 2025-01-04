@@ -819,6 +819,20 @@ TEST("create()", wrap_root(function()
         CHECK(frame:FindFirstChild "G")
     end
 
+    do CASE "set false as child"
+        create "Frame" {
+            false
+        }
+
+        create "Frame" {
+            function() return false end
+        }
+
+        create "Frame" {
+            function() return { false } end
+        }
+    end
+
     do CASE "binding properties to source"
         local name = source("Hi")
         local text = source("Bye")

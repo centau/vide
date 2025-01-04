@@ -93,7 +93,7 @@ local function process_properties(properties: Map<unknown, unknown>, instance: I
                 else
                     process_properties(value :: Map<unknown, unknown>, instance, cache, depth + 1)
                 end
-            else
+            elseif type(value) == "userdata" then
                 (value :: Instance).Parent = instance -- parent child
             end
         end

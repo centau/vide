@@ -1073,20 +1073,73 @@ TEST("show()", wrap_root(function()
     local show = vide.show
     local root = vide.root
 
-    do CASE "main"
-        -- uses switch() internally, more extensive testing of scoping not needed
-        local value = source("truey" :: unknown)
+    do CASE "show component"
+        local input = source(true)
+        local function one() return 1 end
+
+        local output = show(input, one)
+
+        CHECK(output() == 1)
+        input(false)
+        CHECK(output() == nil)
+    end
+
+    do CASE "fallback component"
+        local input = source(true)
         local function one() return 1 end
         local function two() return 2 end
 
-        local output = show(value, one, two)
+        local output = show(input, one, two)
 
         CHECK(output() == 1)
-        value(nil)
+        input(false)
         CHECK(output() == 2)
     end
 
-    do CASE "alt"
+    do CASE "updating truth to truthy does not rerun"
+        local input = source(1)
+        local count = 0
+
+        local function component()
+            count += 1
+            return 1
+        end
+
+        local output = show(input, component)
+
+        CHECK(count == 1)
+        CHECK(output() == 1)
+        input(2)
+        CHECK(count == 1)
+    end
+
+    do CASE "updating source passed to component"
+        local input = source(1 :: number?)
+        local count = 0
+
+        show(input :: () -> number?, function(value: () -> number)
+            vide.cleanup(function() print "destroyed" end)
+            effect(function()
+                local v = value()
+    
+                count += 1
+
+                CHECK(v == count)
+                if v ~= count then error(count) end
+            end)
+
+            return true
+        end)
+
+        input(2)
+        CHECK(count == 2)
+        input(3)
+        CHECK(count == 3)
+        input(nil)
+        CHECK(count == 3)
+    end
+
+    do CASE "alt" -- todo: move test
         local visible = vide.source(true)
         local count = vide.source(0)
 

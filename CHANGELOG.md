@@ -16,6 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   effects to set children.
 - `spring()` returns a second value, a setter to set position, velocity and
   impulse.
+- `show()` now receives a source to its callback returning the current value
+  of the condition.
 
 ### Changed
 

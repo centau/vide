@@ -1153,6 +1153,80 @@ TEST("show()", wrap_root(function()
         CHECK(count == 3)
     end
 
+    do CASE "special strict case"
+        type Weapon = {
+            id: string,
+            enchant: string?
+        }
+
+        vide.strict = true
+
+        local count = 0
+        local branch = 0
+
+        local weapon = source(nil :: Weapon?)
+
+        effect(function()
+            weapon()
+        end)
+
+        effect(function()
+            weapon()
+        end)
+
+        show(weapon, function(weapon: () -> Weapon)
+            local enchant = function() return weapon().enchant end
+    
+            show(enchant, function(enchant: () -> string)
+                effect(function()
+                    local e = enchant()
+                    count += 1
+                    CHECK(e ~= nil)
+                    if branch == 1 then
+                        CHECK(e == "fire")
+                    elseif branch == 2 then
+                        CHECK(e == "poison")
+                    end
+                end)
+
+                return {}
+            end)
+
+            return {}
+        end)
+
+        effect(function()
+            weapon()
+        end)
+
+        effect(function()
+            weapon()
+        end)
+
+        branch = 1
+        weapon { id = "1", enchant = "fire" }
+        CHECK(count == 8)
+
+        branch = 2
+        weapon { id = "1", enchant = "poison" }
+        CHECK(count == 10)
+
+        weapon { id = "1", enchant = nil }
+        CHECK(count == 10)
+
+        branch = 1
+        weapon { id = "1", enchant = "fire" }
+        CHECK(count == 14)
+
+        weapon(nil)
+
+        branch = 2
+        weapon { id = "1", enchant = "poison" }
+        CHECK(count == 22)
+
+        vide.strict = false
+    end
+
     do CASE "alt" -- todo: move test
         local visible = vide.source(true)
         local count = vide.source(0)

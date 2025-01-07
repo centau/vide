@@ -1250,7 +1250,6 @@ TEST("show()", wrap_root(function()
                             destroyed += 1
                         end)
                     end)
-                    return nil
                 end)
             end)
         end)
@@ -2863,7 +2862,6 @@ TEST("strict", wrap_root(function()
                         vide.cleanup(function() count_2 += 1 end)
                         return {}
                     end)
-                    return nil
                 end)
             end)
         end)
@@ -2890,7 +2888,6 @@ TEST("strict", wrap_root(function()
                         vide.cleanup(function() count_2 += 1 end)
                         return {}
                     end)
-                    return nil
                 end)
             end)
         end)

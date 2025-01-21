@@ -1,10 +1,61 @@
 assert(game, "when using vide outside of Roblox, require lib.luau instead")
 
 local vide = require(script.lib)
+local roblox_types = require(script.roblox_types)
 
 export type source<T> = vide.source<T>
 export type Source<T> = vide.Source<T>
 export type context<T> = vide.context<T>
 export type Context<T> = vide.Context<T>
+
+export type vCanvasGroup = roblox_types.vCanvasGroup
+export type vFrame = roblox_types.vFrame
+export type vImageButton = roblox_types.vImageButton
+export type vTextButton = roblox_types.vTextButton
+export type vImageLabel = roblox_types.vImageLabel
+export type vTextLabel = roblox_types.vTextLabel
+export type vScrollingFrame = roblox_types.vScrollingFrame
+export type vTextBox = roblox_types.vTextBox
+export type vVideoFrame = roblox_types.vVideoFrame
+export type vViewportFrame = roblox_types.vViewportFrame
+export type vBillboardGui = roblox_types.vBillboardGui
+export type vScreenGui = roblox_types.vScreenGui
+export type vAdGui = roblox_types.vAdGui
+export type vSurfaceGui = roblox_types.vSurfaceGui
+export type vSelectionBox = roblox_types.vSelectionBox
+export type vBoxHandleAdornment = roblox_types.vBoxHandleAdornment
+export type vConeHandleAdornment = roblox_types.vConeHandleAdornment
+export type vCylinderHandleAdornment = roblox_types.vCylinderHandleAdornment
+export type vImageHandleAdornment = roblox_types.vImageHandleAdornment
+export type vLineHandleAdornment = roblox_types.vLineHandleAdornment
+export type vSphereHandleAdornment = roblox_types.vSphereHandleAdornment
+export type vWireframeHandleAdornment = roblox_types.vWireframeHandleAdornment
+export type vParabolaAdornment = roblox_types.vParabolaAdornment
+export type vSelectionSphere = roblox_types.vSelectionSphere
+export type vArcHandles = roblox_types.vArcHandles
+export type vHandles = roblox_types.vHandles
+export type vSurfaceSelection = roblox_types.vSurfaceSelection
+export type vPath2D = roblox_types.vPath2D
+export type vUIAspectRatioConstraint = roblox_types.vUIAspectRatioConstraint
+export type vUISizeConstraint = roblox_types.vUISizeConstraint
+export type vUITextSizeConstraint = roblox_types.vUITextSizeConstraint
+export type vUICorner = roblox_types.vUICorner
+export type vUIDragDetector = roblox_types.vUIDragDetector
+export type vUIFlexItem = roblox_types.vUIFlexItem
+export type vUIGradient = roblox_types.vUIGradient
+export type vUIListLayout = roblox_types.vUIListLayout
+export type vUIGridLayout = roblox_types.vUIGridLayout
+export type vUIPageLayout = roblox_types.vUIPageLayout
+export type vUITableLayout = roblox_types.vUITableLayout
+export type vUIPadding = roblox_types.vUIPadding
+export type vUIScale = roblox_types.vUIScale
+export type vUIStroke = roblox_types.vUIStroke
+export type vWorldModel = roblox_types.vWorldModel
+export type vCamera = roblox_types.vCamera
+export type vPart = roblox_types.vPart
+export type vModel = roblox_types.vModel
+export type vMeshPart = roblox_types.vMeshPart
+export type vHighlight = roblox_types.vHighlight
+export type vFolder = roblox_types.vFolder
 
 return vide

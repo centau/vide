@@ -64,18 +64,18 @@ desired_classes = [
 	"Part",
 	"Model",
 	"MeshPart",
-	"Highlight"
+	"Highlight",
+	"Folder",
 ]
 
 lines_before = [
 	"type p<T> ="+space+"T?|()->T",
 	"type e<T=()->()> ="+space+"T?",
 	"type a={priority:"+space+"number,"+space+"callback:"+space+"(Instance)"+space+"->"+space+"()}",
-	"type recursive<T> =T|{recursive<T>}"
-	"type c<T> =a|T|Recursive<Instance>|()->Recursive<Instance>",
-	"type ContentId = string", # temporary
-	"type Dictionary = {[string]: any}",
-	"type Array = {any}"
+	"type recursive<T> =T|{read recursive<T>}|()->recursive<T>",
+	"type c<T> =a|T|recursive<Instance>",
+	"type Dictionary = {read [string]: any}",
+	"type Array = {read any}"
 ]
 
 lines_after = [
@@ -99,7 +99,7 @@ aliases = {
 	"float": "number",
 	"double": "number",
 	"bool": "boolean",
-	"Content": "string",
+	"ContentId": "string",
 	"string": "string"+space+"|"+space+"number",
 	"OptionalCoordinateFrame": "CFrame?",
 	"BinaryString": "string",

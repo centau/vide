@@ -3,8 +3,10 @@ local Instance = game and Instance or require "../test/mock".Instance :: never
 
 local defaults = require "./defaults"
 local apply = require "./apply"
+local r = require "./roblox_types"
 
 local ctor_cache = {} :: { [string]: () -> Instance }
+type Props = { [any]: any }
 
 setmetatable(ctor_cache :: any, {
     __index = function(self, class)
@@ -39,7 +41,7 @@ local function clone_instance(instance: Instance)
     end
 end
 
-local function create(class_or_instance: string | Instance, props: Props?): ((Props) -> Instance) | Instance
+local function create(class_or_instance: string | Instance, props: Props?): ((any) -> Instance) | Instance
 	local result: (Props) -> Instance
 	if type(class_or_instance) == "string" then
 		result = create_instance(class_or_instance)
@@ -55,7 +57,6 @@ local function create(class_or_instance: string | Instance, props: Props?): ((Pr
 	return result
 end
 
-type Props = { [any]: any }
 return (create :: any) ::
 	( (class: "CanvasGroup") -> (r.vCanvasGroup) -> CanvasGroup )
 &	( (class: "Frame") -> (r.vFrame) -> Frame )
@@ -105,3 +106,4 @@ return (create :: any) ::
 &	( (class: "Model") -> (r.vModel) -> Model )
 &	( (class: "MeshPart") -> (r.vMeshPart) -> MeshPart )
 &	( (class: "Highlight") -> (r.vHighlight) -> Highlight )
+&	( (class: "Folder") -> (r.vFolder) -> Folder )

@@ -759,6 +759,13 @@ TEST("create()", wrap_root(function()
         CHECK(text.Text == "test")
     end
 
+    do CASE "set nested parent"
+        local frame = create "Frame" {}
+        local text = create "TextLavel" { { Parent = frame } }
+        CHECK(frame:GetChildren()[1] == text)
+        CHECK(text.Parent == frame)
+    end
+
     do CASE "nested deferred"
         local text = create "TextLabel" {
             {

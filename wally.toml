@@ -2,7 +2,7 @@
 name = "centau/vide"
 description = "A reactive Luau library for creating UI. "
 license = "MIT"
-version = "0.3.1-test.1"
+version = "0.4.0"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 include = ["default.project.json", "LICENSE", "src"]

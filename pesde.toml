@@ -1,9 +1,10 @@
 name = "centau/vide"
-version = "0.3.1-test.1"
+version = "0.4.0"
 description = "A reactive Luau library for creating UI."
 authors = ["centau"]
 repository = "https://github.com/centau/vide"
 license = "MIT"
+includes = ["src/*", "README.md", "pesde.toml"]
 
 [target]
 environment = "roblox"

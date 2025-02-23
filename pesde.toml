@@ -7,6 +7,8 @@ license = "MIT"
 
 [target]
 environment = "roblox"
+build_files = ["src"]
+lib = "src/init.luau"
 
 [indices]
 default = "https://github.com/pesde-pkg/index"

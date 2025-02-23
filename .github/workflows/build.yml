@@ -24,7 +24,7 @@ jobs:
         uses: CompeyDev/setup-rokit@v0.1.2
 
       - name: build
-        run: rojo build build.project.json -o build.rbxm
+        run: rojo build default.project.json -o build.rbxm
       
       - name: release
         run: gh release upload ${{github.event.release.tag_name}} build.rbxm

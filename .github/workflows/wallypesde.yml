@@ -24,7 +24,7 @@ jobs:
         uses: CompeyDev/setup-rokit@v0.1.2
 
       - name: login
-        run: wally login --token ${{ secrets.WALLY_TOKEN }}
+        run: wally login --token "${{ secrets.WALLY_TOKEN }}"
 
       - name: publish
         run: wally publish
@@ -45,7 +45,7 @@ jobs:
         run: pesde install
         
       - name: login
-        run: pesde auth login --token ${{ secrets.PESDE_TOKEN }}
+        run: pesde auth login --token "${{ secrets.PESDE_TOKEN }}"
       
       - name: publish
         run: pesde publish --yes

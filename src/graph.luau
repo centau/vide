@@ -9,6 +9,7 @@ export type SourceNode<T> = {
 
 export type Node<T> =  {
     cache: T,
+    higher_parent_update_id: number,
     last_eval_update_id: number,
     needs_queue_children: boolean,
     effect:  ((T) -> T) | false,
@@ -151,7 +152,7 @@ end
 local update_queue = { n = 0 } :: { n: number, [number]: Node<any> }
 
 local function evaluate_node<T>(node: Node<T>)
-    if update_id == node.last_eval_update_id then return node.needs_queue_children end
+    if node.higher_parent_update_id == node.last_eval_update_id then return node.needs_queue_children end
     if flags.strict then
         local initial_value = node.cache
 
@@ -209,6 +210,7 @@ local function queue_children_for_update<T>(node: SourceNode<T>)
     while node[j] do
         if node[j].last_eval_update_id == update_id then j += 1; continue end
         i += 1
+        node[j].higher_parent_update_id = math.max(update_id, node[j].higher_parent_update_id)
         update_queue[i] = node[j]
         unparent(node[j])
     end
@@ -274,6 +276,7 @@ local function create_node<T>(owner: false | Node<any>, effect: false | (T) -> T
         cleanups = false,
 
         needs_queue_children = false,
+        higher_parent_update_id = update_id,
         last_eval_update_id = 0,
         context = false,
 

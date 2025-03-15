@@ -269,7 +269,7 @@ local function create_node<T>(owner: false | Node<any>, effect: false | (T) -> T
 
         needs_queue_children = false,
         higher_parent_update_id = update_id,
-        last_eval_update_id = 0,
+        last_eval_update_id = -1,
         context = false,
 
         owner = owner,

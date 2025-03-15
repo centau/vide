@@ -2535,7 +2535,6 @@ TEST("graph edge cases", wrap_root(function()
         b = derive(upd_b)
 
         a(2)
-        print('CAVALO', count.b, count.c)
         CHECK(count.b == 2)
         CHECK(count.c == 2)
     end

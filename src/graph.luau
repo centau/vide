@@ -1,12 +1,16 @@
 local flags = require "./flags"
+local update_id = 0
 
 export type SourceNode<T> = {
     cache: T,
+    needs_queue_children: boolean,
     [number]: Node<T>
 }
 
 export type Node<T> =  {
     cache: T,
+    last_eval_update_id: number,
+    needs_queue_children: boolean,
     effect:  ((T) -> T) | false,
     cleanups: { () -> () } | false,
 
@@ -147,6 +151,7 @@ end
 local update_queue = { n = 0 } :: { n: number, [number]: Node<any> }
 
 local function evaluate_node<T>(node: Node<T>)
+    if update_id == node.last_eval_update_id then return node.needs_queue_children end
     if flags.strict then
         local initial_value = node.cache
 
@@ -169,7 +174,10 @@ local function evaluate_node<T>(node: Node<T>)
             node.cache = new_value :: T
         end
 
-        return initial_value ~= node.cache
+        local needs_queue_children = initial_value ~= node.cache
+        node.needs_queue_children = needs_queue_children
+        node.last_eval_update_id = update_id
+        return needs_queue_children
     else
         local cur_value = node.cache
 
@@ -185,18 +193,24 @@ local function evaluate_node<T>(node: Node<T>)
             update_queue.n = 0
             error(`effect error:\n{new_value}\n`, 0)
         end
-    
+        local needs_queue_children = cur_value ~= new_value
+        node.needs_queue_children = needs_queue_children
+        node.last_eval_update_id = update_id
         node.cache = new_value
-        return cur_value ~= new_value
+        return needs_queue_children
     end
 end
 
 local function queue_children_for_update<T>(node: SourceNode<T>)
+    node.needs_queue_children = false
     local i = update_queue.n
-    while node[1] do
+    local j = 1
+
+    while node[j] do
+        if node[j].last_eval_update_id == update_id then j += 1; continue end
         i += 1
-        update_queue[i] = node[1]
-        unparent(node[1])
+        update_queue[i] = node[j]
+        unparent(node[j])
     end
     update_queue.n = i
 end
@@ -222,8 +236,9 @@ local function flush_update_queue(from: number)
     update_queue.n = from
 end
 
-local function update_descendants<T>(root: SourceNode<T>)
+local function update_descendants<T>(root: SourceNode<T>, is_root_update: boolean?)
     local n0 = update_queue.n
+    if is_root_update then update_id += 1 end
     queue_children_for_update(root)
 
     if flags.batch then return end
@@ -258,6 +273,8 @@ local function create_node<T>(owner: false | Node<any>, effect: false | (T) -> T
         effect = effect,
         cleanups = false,
 
+        needs_queue_children = false,
+        last_eval_update_id = 0,
         context = false,
 
         owner = owner,
@@ -278,7 +295,7 @@ local function create_node<T>(owner: false | Node<any>, effect: false | (T) -> T
 end
 
 local function create_source_node<T>(value: T): SourceNode<T>
-    return { cache = value }
+    return { cache = value, needs_queue_children = false }
 end
 
 local function get_children<T>(node: Node<T>): { Node<unknown> }

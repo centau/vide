@@ -21,7 +21,7 @@ local function source<T>(initial_value: T): Source<T>
         end
 
         node.cache = v
-        update_descendants(node)
+        update_descendants(node, true)
         return v
     end
 

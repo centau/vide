@@ -11,6 +11,7 @@ local function derive<T>(source: () -> T): () -> T
 
     return function()
         push_child_to_scope(node)
+        evaluate_node(node)
         return node.cache
     end
 end

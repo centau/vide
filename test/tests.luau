@@ -98,9 +98,9 @@ TEST("graph", function()
         pop_scope()
         
         CHECK(count == 1)
-        update_descendants(a)
+        update_descendants(a, true)
         CHECK(count == 2)
-        update_descendants(b)
+        update_descendants(b, true)
         CHECK(count == 3)
     end
 
@@ -119,7 +119,7 @@ TEST("graph", function()
         push_scope(c); push_child_to_scope(a); pop_scope()
         push_scope(d); push_child_to_scope(b); push_child_to_scope(c); pop_scope()
 
-        update_descendants(a)
+        update_descendants(a, true)
 
         CHECK(b_cnt == 1)
         CHECK(c_cnt == 1)
@@ -138,7 +138,7 @@ TEST("graph", function()
 
         push_scope(c); assert(type(c.effect) == "function" and c.effect)(NIL); pop_scope()
 
-        update_descendants(a)
+        update_descendants(a, true)
 
         CHECK(#get_children(a) == 1)
         CHECK(#get_children(b) == 1)
@@ -286,14 +286,14 @@ TEST("graph", function()
         local a, b, c, d, e, f = node(root), node(root), node(root), node(root), node(root), node(root)
 
         function b.effect(x)
-            update_descendants(d)
+            update_descendants(d, true)
             return not x
         end
 
         push_child(a, b); push_child(a, c)
         push_child(d, e); push_child(d, f)
 
-        update_descendants(a)
+        update_descendants(a, true)
 
         CHECK(true)
     end
@@ -2517,6 +2517,29 @@ TEST("graph edge cases", wrap_root(function()
     local effect = vide.effect
     local root = vide.root
 
+    do CASE "brother requires older brother"
+        --[[
+            A
+          ^   ^
+         B <-- C
+        ]]
+
+        local count = { b = 0, c = 0 }
+        local a = source(0)
+        local b
+
+        local function upd_c() count.c += 1; return a()* (b and b() or 0) end
+        local c = derive(upd_c)
+
+        local function upd_b() count.b += 1; return a()*2 end
+        b = derive(upd_b)
+
+        a(2)
+        print('CAVALO', count.b, count.c)
+        CHECK(count.b == 2)
+        CHECK(count.c == 2)
+    end
+
     do CASE "diamond A,B,C,D"
         --[[
 
@@ -2577,14 +2600,14 @@ TEST("graph edge cases", wrap_root(function()
         CHECK(count.b == 2)
         CHECK(count.c == 2)
         CHECK(count.d == 2)
-        CHECK(count.e == 3) -- todo: redundant re-eval
+        CHECK(count.e == 2)
         CHECK(e() == 4)
 
         a(3)
         CHECK(count.b == 2)
         CHECK(count.c == 3)
         CHECK(count.d == 3)
-        CHECK(count.e == 4)
+        CHECK(count.e == 3)
         CHECK(e() == 12)
     end
 

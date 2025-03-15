@@ -106,7 +106,7 @@ TEST("graph", function()
 
     do CASE "diamond graph"
         -- a -> b -> d
-        --   -> c
+        --   🡖  c  🡕
         local root = node()
         local a, b, c, d = node(), node(root), node(root), node(root)
 
@@ -2520,7 +2520,7 @@ TEST("graph edge cases", wrap_root(function()
     do CASE "brother requires older brother"
         --[[
             A
-          ^   ^
+          🡕  🡔
          B <-- C
         ]]
 
@@ -2543,8 +2543,9 @@ TEST("graph edge cases", wrap_root(function()
     do CASE "diamond A,B,C,D"
         --[[
 
-        a > b > d
-          > c >
+        a -> b -> d
+          🡖    🡕
+             c
 
         ]]
 
@@ -2575,9 +2576,9 @@ TEST("graph edge cases", wrap_root(function()
     do CASE "diamond A,B,C,D,E"
         --[[
 
-        a > b   >   e
-          > c > d >
-
+        a -> b -> e
+         🡖       🡕
+          c --> d
         ]]
 
         local a = source(0)

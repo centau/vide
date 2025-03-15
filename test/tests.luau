@@ -2517,7 +2517,7 @@ TEST("graph edge cases", wrap_root(function()
     local effect = vide.effect
     local root = vide.root
 
-    do CASE "brother requires older brother"
+    do CASE "older brother requires newer brother"
         --[[
             A
           🡕  🡔

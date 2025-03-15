@@ -36,7 +36,7 @@ local function efn(err: string)
     end
 
     trace ..= "\nsource update stacktrace:"
-return trace
+    return trace
 end
 
 local function ycall<T, U>(fn: (T) -> U, arg: T): (boolean, string|U)
@@ -204,24 +204,24 @@ end
 
 local function queue_children_for_update<T>(node: SourceNode<T>)
     node.needs_queue_children = false
-    local i = update_queue.n
-    local j = 1
+    local queue_index = update_queue.n
+    local child_index = 1
 
     repeat
-        local child = node[j]
+        local child = node[child_index]
         if not child then break end
 
-        if child.last_eval_update_id == update_id then j += 1; continue end
+        if child.last_eval_update_id == update_id then child_index += 1; continue end
         if update_id > child.higher_parent_update_id then
             child.higher_parent_update_id = update_id
         end
 
-        i += 1
-        update_queue[i] = child
+        queue_index += 1
+        update_queue[queue_index] = child
         unparent(child)
     until false
 
-    update_queue.n = i
+    update_queue.n = queue_index
 end
 
 local function get_update_queue_length()

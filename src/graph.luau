@@ -251,22 +251,7 @@ local function update_descendants<T>(root: SourceNode<T>, is_root_update: boolea
     queue_children_for_update(root)
 
     if flags.batch then return end
-
-    local i = n0 + 1
-    while i <= update_queue.n do
-        local node = update_queue[i]
-        --assert(node.effect)
-
-        -- check if node is still owned in case destroyed after queued
-        if node.owner and evaluate_node(node) then
-            queue_children_for_update(node)
-        end
-
-        update_queue[i] = false :: any -- false instead of nil to avoid sparse
-        i += 1
-    end
-
-    update_queue.n = n0
+    flush_update_queue(n0)
 end
 
 local function push_child_to_scope<T>(node: SourceNode<T>)

@@ -207,13 +207,20 @@ local function queue_children_for_update<T>(node: SourceNode<T>)
     local i = update_queue.n
     local j = 1
 
-    while node[j] do
-        if node[j].last_eval_update_id == update_id then j += 1; continue end
+    repeat
+        local child = node[j]
+        if not child then break end
+
+        if child.last_eval_update_id == update_id then j += 1; continue end
+        if update_id > child.higher_parent_update_id then
+            child.higher_parent_update_id = update_id
+        end
+
         i += 1
-        node[j].higher_parent_update_id = math.max(update_id, node[j].higher_parent_update_id)
-        update_queue[i] = node[j]
-        unparent(node[j])
-    end
+        update_queue[i] = child
+        unparent(child)
+    until false
+
     update_queue.n = i
 end
 

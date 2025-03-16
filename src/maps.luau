@@ -86,7 +86,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
                     output_cache[i] = result
                 else -- update source
                     input_nodes[i].cache = v
-                    update_descendants(input_nodes[i])
+                    update_descendants(input_nodes[i], true)
                 end
             end
         end
@@ -170,7 +170,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
             else -- update source
                 if cv ~= i then
                     input_nodes[v].cache = i
-                    update_descendants(input_nodes[v])
+                    update_descendants(input_nodes[v], true)
                 end
 
                 cur_input_cache[v] = nil

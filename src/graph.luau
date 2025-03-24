@@ -247,7 +247,7 @@ end
 
 local function update_descendants<T>(root: SourceNode<T>, is_root_update: boolean?)
     local n0 = update_queue.n
-    if is_root_update then update_id += 1 end
+    if is_root_update and not flags.batch then update_id += 1 end
     queue_children_for_update(root)
 
     if flags.batch then return end

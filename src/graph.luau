@@ -72,6 +72,7 @@ local function assert_stable_scope(): Node<unknown>
 end
 
 local function push_child<T>(parent: SourceNode<any>, child: Node<any>)
+    if table.find(child.parents, parent) then return end
     table.insert(parent, child)
     table.insert(child.parents, parent)
 end

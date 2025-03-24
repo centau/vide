@@ -285,7 +285,8 @@ local function update_spring_sources()
             output.cache = vec6_to_type[typeof(data.source_value)](x0_123, x0_456)
         end
 
-        update_descendants(output, true)
+        graph.bump_update_id()
+        update_descendants(output)
     end
 end
 

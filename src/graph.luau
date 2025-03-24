@@ -58,6 +58,11 @@ local function get_scope(): Node<unknown>?
     return scopes[scopes.n]
 end
 
+local function bump_update_id()
+    update_id += 1
+    return update_id
+end
+
 local function assert_stable_scope(): Node<unknown>
     local scope = get_scope()
 
@@ -246,9 +251,8 @@ local function flush_update_queue(from: number)
     update_queue.n = from
 end
 
-local function update_descendants<T>(root: SourceNode<T>, is_root_update: boolean?)
+local function update_descendants<T>(root: SourceNode<T>)
     local n0 = update_queue.n
-    if is_root_update and not flags.batch then update_id += 1 end
     queue_children_for_update(root)
 
     if flags.batch then return end
@@ -324,6 +328,7 @@ return table.freeze {
     flush_update_queue = flush_update_queue,
     get_update_queue_length = get_update_queue_length,
     set_context = set_context,
+    bump_update_id = bump_update_id,
     scopes = scopes,
 
     q = update_queue

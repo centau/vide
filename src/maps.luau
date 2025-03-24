@@ -86,7 +86,8 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
                     output_cache[i] = result
                 else -- update source
                     input_nodes[i].cache = v
-                    update_descendants(input_nodes[i], true)
+                    graph.bump_update_id()
+                    update_descendants(input_nodes[i])
                 end
             end
         end
@@ -170,7 +171,8 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
             else -- update source
                 if cv ~= i then
                     input_nodes[v].cache = i
-                    update_descendants(input_nodes[v], true)
+                    graph.bump_update_id()
+                    update_descendants(input_nodes[v])
                 end
 
                 cur_input_cache[v] = nil

@@ -36,6 +36,7 @@ vide.strict = false
 TEST("graph", function()
     local create_node = graph.create_node
     local push_child_to_scope = graph.push_child_to_scope
+    local bump_update_id = graph.bump_update_id
     local update_descendants = graph.update_descendants
     local push_child = graph.push_child
     local get_scope = graph.get_scope
@@ -98,9 +99,13 @@ TEST("graph", function()
         pop_scope()
         
         CHECK(count == 1)
-        update_descendants(a, true)
+
+        bump_update_id()
+        update_descendants(a)
         CHECK(count == 2)
-        update_descendants(b, true)
+        
+        bump_update_id()
+        update_descendants(b)
         CHECK(count == 3)
     end
 
@@ -119,7 +124,8 @@ TEST("graph", function()
         push_scope(c); push_child_to_scope(a); pop_scope()
         push_scope(d); push_child_to_scope(b); push_child_to_scope(c); pop_scope()
 
-        update_descendants(a, true)
+        bump_update_id()
+        update_descendants(a)
 
         CHECK(b_cnt == 1)
         CHECK(c_cnt == 1)
@@ -138,7 +144,8 @@ TEST("graph", function()
 
         push_scope(c); assert(type(c.effect) == "function" and c.effect)(NIL); pop_scope()
 
-        update_descendants(a, true)
+        bump_update_id()
+        update_descendants(a)
 
         CHECK(#get_children(a) == 1)
         CHECK(#get_children(b) == 1)
@@ -286,14 +293,16 @@ TEST("graph", function()
         local a, b, c, d, e, f = node(root), node(root), node(root), node(root), node(root), node(root)
 
         function b.effect(x)
-            update_descendants(d, true)
+            bump_update_id()
+            update_descendants(d)
             return not x
         end
 
         push_child(a, b); push_child(a, c)
         push_child(d, e); push_child(d, f)
 
-        update_descendants(a, true)
+        bump_update_id()
+        update_descendants(a)
 
         CHECK(true)
     end

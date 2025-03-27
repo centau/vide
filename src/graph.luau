@@ -245,7 +245,7 @@ local function update_descendants<T>(root: SourceNode<T>)
     update_queue.n = n0
 end
 
-local function push_child_to_scope<T>(node: SourceNode<T>)
+local function push_scope_as_child_of<T>(node: SourceNode<T>)
     local scope = get_scope()
     if scope and scope.effect then -- do not track nodes with no effect
         push_child(node, scope)
@@ -302,7 +302,7 @@ return table.freeze {
     push_cleanup = push_cleanup,
     destroy = destroy,
     flush_cleanups = flush_cleanups,
-    push_child_to_scope = push_child_to_scope,
+    push_scope_as_child_of = push_scope_as_child_of,
     update_descendants = update_descendants,
     push_child = push_child,
     create_node = create_node,

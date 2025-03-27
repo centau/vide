@@ -14,10 +14,12 @@ local batch = require "./batch"
 local context = require "./context"
 local switch = require "./switch"
 local show = require "./show"
-local indexes, values = require "./maps"()
+local indexes = require "./indexes"
+local values = require "./values"
 local spring, update_springs = require "./spring"()
 local action = require "./action"()
 local changed = require "./changed"
+local timeout, update_timeouts = require "./timeout"()
 local flags = require "./flags"
 
 export type Source<T> = source.Source<T>
@@ -26,17 +28,17 @@ export type Context<T> = context.Context<T>
 export type context<T> = Context<T>
 
 local function step(dt: number)
-    if game then
-        debug.profilebegin("VIDE STEP")
-        debug.profilebegin("VIDE SPRING")
-    end
+    if game then debug.profilebegin("VIDE STEP") end
 
+    if game then debug.profilebegin("VIDE SPRING") end
     update_springs(dt)
+    if game then debug.profileend() end
 
-    if game then
-        debug.profileend()
-        debug.profileend()
-    end
+    if game then debug.profilebegin("VIDE SCHEDULER") end
+    update_timeouts(dt)
+    if game then debug.profileend() end
+
+    if game then debug.profileend() end
 end
 
 local stepped = game and game:GetService("RunService").Heartbeat:Connect(function(dt: number)

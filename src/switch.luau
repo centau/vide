@@ -3,7 +3,7 @@ type Node<T> = graph.Node<T>
 type SourceNode<T> = graph.SourceNode<T>
 local create_node = graph.create_node
 local evaluate_node = graph.evaluate_node
-local push_child_to_scope = graph.push_child_to_scope
+local push_scope_as_child_of = graph.push_scope_as_child_of
 local destroy = graph.destroy
 local assert_stable_scope = graph.assert_stable_scope
 local push_scope = graph.push_scope
@@ -53,7 +53,7 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
         evaluate_node(node)
 
         return function()
-            push_child_to_scope(node)
+            push_scope_as_child_of(node)
             return node.cache
         end
     end

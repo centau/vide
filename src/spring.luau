@@ -6,7 +6,7 @@ local create_source_node = graph.create_source_node
 local assert_stable_scope = graph.assert_stable_scope
 local evaluate_node = graph.evaluate_node
 local update_descendants = graph.update_descendants
-local push_child_to_scope = graph.push_child_to_scope
+local push_scope_as_child_of = graph.push_scope_as_child_of
 
 local UPDATE_RATE = 120
 local TOLERANCE = 0.001
@@ -202,7 +202,7 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
 
     return function(...)
         if select("#", ...) == 0 then -- no args were given
-            push_child_to_scope(output)
+            push_scope_as_child_of(output)
             return output.cache
         end
 

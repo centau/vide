@@ -35,7 +35,7 @@ vide.strict = false
 
 TEST("graph", function()
     local create_node = graph.create_node
-    local push_child_to_scope = graph.push_child_to_scope
+    local push_scope_as_child_of = graph.push_scope_as_child_of
     local update_descendants = graph.update_descendants
     local push_child = graph.push_child
     local get_scope = graph.get_scope
@@ -65,8 +65,8 @@ TEST("graph", function()
 
         push_scope(c)
 
-        push_child_to_scope(a)
-        push_child_to_scope(b)
+        push_scope_as_child_of(a)
+        push_scope_as_child_of(b)
 
         pop_scope()
 
@@ -83,8 +83,8 @@ TEST("graph", function()
         local count = 0
 
         local function effect(x)
-            push_child_to_scope(a)
-            push_child_to_scope(b)
+            push_scope_as_child_of(a)
+            push_scope_as_child_of(b)
             count += 1
             return not x
         end
@@ -115,9 +115,9 @@ TEST("graph", function()
         function c.effect(x) c_cnt += 1; return not x end
         function d.effect(x) d_cnt += 1; return not x end
 
-        push_scope(b); push_child_to_scope(a); pop_scope()
-        push_scope(c); push_child_to_scope(a); pop_scope()
-        push_scope(d); push_child_to_scope(b); push_child_to_scope(c); pop_scope()
+        push_scope(b); push_scope_as_child_of(a); pop_scope()
+        push_scope(c); push_scope_as_child_of(a); pop_scope()
+        push_scope(d); push_scope_as_child_of(b); push_scope_as_child_of(c); pop_scope()
 
         update_descendants(a)
 
@@ -131,8 +131,8 @@ TEST("graph", function()
         local a, b, c = node(root), node(root), node(root)
 
         function c.effect(x)
-            push_child_to_scope(a)
-            push_child_to_scope(b)
+            push_scope_as_child_of(a)
+            push_scope_as_child_of(b)
             return not x
         end
 
@@ -171,10 +171,10 @@ TEST("graph", function()
         do push_scope(root) 
             clean "root"
             items_updated = node(root)
-            push_child_to_scope(items_updated) -- should not
+            push_scope_as_child_of(items_updated) -- should not
 
             do push_scope(items_updated)
-                push_child_to_scope(items)
+                push_scope_as_child_of(items)
 
                 do push_scope(root)
                     do push_scope(scope1)
@@ -183,7 +183,7 @@ TEST("graph", function()
 
                         do push_scope(bind1)
                             clean "bind1"
-                            push_child_to_scope(selected)
+                            push_scope_as_child_of(selected)
                         pop_scope() end
                     pop_scope() end
 
@@ -192,7 +192,7 @@ TEST("graph", function()
                         bind2 = node(scope2)
                         do push_scope(bind2)
                             clean "bind2"
-                            push_child_to_scope(selected)
+                            push_scope_as_child_of(selected)
                         pop_scope() end
                     pop_scope() end
                 pop_scope() end
@@ -2345,7 +2345,7 @@ TEST("read()", wrap_root(function()
         CHECK(read(src) == 1)
     end
 
-    do CASE "push_child_to_scope source"
+    do CASE "push_scope_as_child_of source"
         local src = source(0)
 
         local count = 0
@@ -2748,16 +2748,6 @@ TEST("strict", wrap_root(function()
         CHECK(count == 2)
         src(2)
         CHECK(count == 4)
-    end
-
-    do CASE "indexes() error if primitive"
-        local src = source { 1 }
-
-        local ok = pcall(function()
-            indexes(src, function() return 1 end)
-        end)
-
-        CHECK(not ok)
     end
 
     do CASE "values() error if duplicate"

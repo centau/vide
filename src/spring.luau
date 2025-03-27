@@ -74,7 +74,11 @@ local type_to_vec6 = {
 
     Rect = function(v)
         return vector.create(v.Min.X, v.Min.Y, v.Max.X), vector.create(v.Max.Y, 0, 0)
-    end :: TypeToVec6<Rect>
+    end :: TypeToVec6<Rect>,
+
+    table = function(v)
+        return vector.create(v[1] or 0, v[2] or 0, v[3] or 0), vector.create(v[4] or 0, 0, 0)
+    end :: TypeToVec6<{ number }>
 }
 
 local vec6_to_type = {
@@ -108,7 +112,11 @@ local vec6_to_type = {
 
     Rect = function(a, b)
         return Rect.new(a.X, a.Y, a.Z, b.X)
-    end :: Vec6ToType<Rect>
+    end :: Vec6ToType<Rect>,
+
+    table = function(a, b)
+        return { a.X, a.Y, a.Z, b.X }
+    end :: Vec6ToType<{ number }>
 }
 
 local invalid_type = {

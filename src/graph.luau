@@ -26,6 +26,10 @@ export type Node<T> =  {
 
 local scopes = { n = 0 } :: { [number]: Node<any>, n: number } -- scopes stack
 
+local function is_similar(a: any, b: any)
+	return a == b and (type(a) ~= 'table' or table.isfrozen(a))
+end
+
 local function efn(err: string)
     local trace = debug.traceback(err, 2)
 
@@ -181,7 +185,7 @@ local function evaluate_node<T>(node: Node<T>)
             node.cache = new_value :: T
         end
 
-        local needs_queue_children = initial_value ~= node.cache
+        local needs_queue_children = not is_similar(initial_value, node.cache)
         node.needs_queue_children = needs_queue_children
         node.last_eval_update_id = update_id
         return needs_queue_children
@@ -200,7 +204,7 @@ local function evaluate_node<T>(node: Node<T>)
             update_queue.n = 0
             error(`effect error:\n{new_value}\n`, 0)
         end
-        local needs_queue_children = cur_value ~= new_value
+        local needs_queue_children = not is_similar(cur_value, new_value)
         node.needs_queue_children = needs_queue_children
         node.last_eval_update_id = update_id
         node.cache = new_value

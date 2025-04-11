@@ -3,18 +3,17 @@ local update_id = 0
 
 export type SourceNode<T> = {
     cache: T,
-    needs_queue_children: boolean,
     [number]: Node<T>
 }
 
 export type Node<T> =  {
     cache: T,
+    effect:  ((T) -> T) | false,
+
     higher_parent_update_id: number,
     last_eval_update_id: number,
-    needs_queue_children: boolean,
-    effect:  ((T) -> T) | false,
-    cleanups: { () -> () } | false,
 
+    cleanups: { () -> () } | false,
     context: { [number]: unknown } | false,
 
     owned: { Node<T> } | false,
@@ -159,9 +158,10 @@ local function destroy_owned<T>(node: Node<T>)
 end
 
 local update_queue = { n = 0 } :: { n: number, [number]: Node<any> }
+local queue_children_for_update
 
 local function evaluate_node<T>(node: Node<T>)
-    if node.higher_parent_update_id == node.last_eval_update_id then return node.needs_queue_children end
+    if node.higher_parent_update_id == node.last_eval_update_id then return end
     node.last_eval_update_id = update_id
 
     local cur_value = node.cache
@@ -179,15 +179,13 @@ local function evaluate_node<T>(node: Node<T>)
         error(`effect error:\n{new_value}`, 0)
     end
 
-    local needs_queue_children = not is_similar(cur_value, new_value)
-    node.needs_queue_children = needs_queue_children
     node.cache = new_value
-    
-    return needs_queue_children
+    if not is_similar(cur_value, new_value) then
+        queue_children_for_update(node)
+    end
 end
 
-local function queue_children_for_update<T>(node: SourceNode<T>)
-    node.needs_queue_children = false
+function queue_children_for_update<T>(node: SourceNode<T>)
     local queue_index = update_queue.n
     local child_index = 1
 
@@ -218,9 +216,7 @@ local function flush_update_queue(from: number)
         local node = update_queue[i]
         --assert(node.effect)
 
-        if node.owner and evaluate_node(node) then
-            queue_children_for_update(node)
-        end
+        if node.owner then evaluate_node(node) end
 
         update_queue[i] = false :: any
         i += 1
@@ -249,11 +245,10 @@ local function create_node<T>(owner: false | Node<any>, effect: false | (T) -> T
         cache = value,
         effect = effect,
         cleanups = false,
+        context = false,
 
-        needs_queue_children = false,
         higher_parent_update_id = update_id,
         last_eval_update_id = -1,
-        context = false,
 
         owner = owner,
         owned = false,
@@ -273,7 +268,7 @@ local function create_node<T>(owner: false | Node<any>, effect: false | (T) -> T
 end
 
 local function create_source_node<T>(value: T): SourceNode<T>
-    return { cache = value, needs_queue_children = false }
+    return { cache = value }
 end
 
 local function get_children<T>(node: Node<T>): { Node<unknown> }

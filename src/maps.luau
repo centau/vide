@@ -209,6 +209,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
     evaluate_node(node)
 
     return function()
+        evaluate_node(node)
         push_child_to_scope(node)
         return node.cache
     end

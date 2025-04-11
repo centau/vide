@@ -36,6 +36,7 @@ vide.strict = false
 TEST("graph", function()
     local create_node = graph.create_node
     local push_child_to_scope = graph.push_child_to_scope
+    local bump_update_id = graph.bump_update_id
     local update_descendants = graph.update_descendants
     local push_child = graph.push_child
     local get_scope = graph.get_scope
@@ -98,15 +99,19 @@ TEST("graph", function()
         pop_scope()
         
         CHECK(count == 1)
+
+        bump_update_id()
         update_descendants(a)
         CHECK(count == 2)
+        
+        bump_update_id()
         update_descendants(b)
         CHECK(count == 3)
     end
 
     do CASE "diamond graph"
         -- a -> b -> d
-        --   -> c
+        --   🡖  c  🡕
         local root = node()
         local a, b, c, d = node(), node(root), node(root), node(root)
 
@@ -119,6 +124,7 @@ TEST("graph", function()
         push_scope(c); push_child_to_scope(a); pop_scope()
         push_scope(d); push_child_to_scope(b); push_child_to_scope(c); pop_scope()
 
+        bump_update_id()
         update_descendants(a)
 
         CHECK(b_cnt == 1)
@@ -138,6 +144,7 @@ TEST("graph", function()
 
         push_scope(c); assert(type(c.effect) == "function" and c.effect)(NIL); pop_scope()
 
+        bump_update_id()
         update_descendants(a)
 
         CHECK(#get_children(a) == 1)
@@ -286,6 +293,7 @@ TEST("graph", function()
         local a, b, c, d, e, f = node(root), node(root), node(root), node(root), node(root), node(root)
 
         function b.effect(x)
+            bump_update_id()
             update_descendants(d)
             return not x
         end
@@ -293,6 +301,7 @@ TEST("graph", function()
         push_child(a, b); push_child(a, c)
         push_child(d, e); push_child(d, f)
 
+        bump_update_id()
         update_descendants(a)
 
         CHECK(true)
@@ -1212,24 +1221,24 @@ TEST("show()", wrap_root(function()
 
         branch = 1
         weapon { id = "1", enchant = "fire" }
-        CHECK(count == 8)
+        CHECK(count == 1)
 
         branch = 2
         weapon { id = "1", enchant = "poison" }
-        CHECK(count == 10)
+        CHECK(count == 2)
 
         weapon { id = "1", enchant = nil }
-        CHECK(count == 10)
+        CHECK(count == 2)
 
         branch = 1
         weapon { id = "1", enchant = "fire" }
-        CHECK(count == 14)
+        CHECK(count == 3)
 
         weapon(nil)
 
         branch = 2
         weapon { id = "1", enchant = "poison" }
-        CHECK(count == 22)
+        CHECK(count == 4)
 
         vide.strict = false
     end
@@ -2517,11 +2526,34 @@ TEST("graph edge cases", wrap_root(function()
     local effect = vide.effect
     local root = vide.root
 
+    do CASE "older brother requires newer brother"
+        --[[
+            A
+          🡕  🡔
+         B <-- C
+        ]]
+
+        local count = { b = 0, c = 0 }
+        local a = source(0)
+        local b
+
+        local function upd_c() count.c += 1; return a()* (b and b() or 0) end
+        local c = derive(upd_c)
+
+        local function upd_b() count.b += 1; return a()*2 end
+        b = derive(upd_b)
+
+        a(2)
+        CHECK(count.b == 2)
+        CHECK(count.c == 2)
+    end
+
     do CASE "diamond A,B,C,D"
         --[[
 
-        a > b > d
-          > c >
+        a -> b -> d
+          🡖    🡕
+             c
 
         ]]
 
@@ -2552,9 +2584,9 @@ TEST("graph edge cases", wrap_root(function()
     do CASE "diamond A,B,C,D,E"
         --[[
 
-        a > b   >   e
-          > c > d >
-
+        a -> b -> e
+         🡖       🡕
+          c --> d
         ]]
 
         local a = source(0)
@@ -2577,14 +2609,14 @@ TEST("graph edge cases", wrap_root(function()
         CHECK(count.b == 2)
         CHECK(count.c == 2)
         CHECK(count.d == 2)
-        CHECK(count.e == 3) -- todo: redundant re-eval
+        CHECK(count.e == 2)
         CHECK(e() == 4)
 
         a(3)
         CHECK(count.b == 2)
         CHECK(count.c == 3)
         CHECK(count.d == 3)
-        CHECK(count.e == 4)
+        CHECK(count.e == 3)
         CHECK(e() == 12)
     end
 
@@ -2731,9 +2763,9 @@ TEST("strict", wrap_root(function()
             return src()
         end)
 
-        CHECK(count == 2)
+        CHECK(count == 1)
         src(2)
-        CHECK(count == 4)
+        CHECK(count == 2)
     end
 
     do CASE "run effect callback twice"
@@ -2745,9 +2777,9 @@ TEST("strict", wrap_root(function()
             src()
         end)
 
-        CHECK(count == 2)
+        CHECK(count == 1)
         src(2)
-        CHECK(count == 4)
+        CHECK(count == 2)
     end
 
     do CASE "indexes() error if primitive"
@@ -2809,9 +2841,9 @@ TEST("strict", wrap_root(function()
             return count
         end, count)
 
-        CHECK(count == 2)
+        CHECK(count == 1)
         src(not src())
-        CHECK(count == 4)
+        CHECK(count == 2)
     end
 
     do CASE "effect using derived source"
@@ -2828,11 +2860,11 @@ TEST("strict", wrap_root(function()
             count += 1
         end)
 
-        CHECK(count == 2)
+        CHECK(count == 1)
 
         input(false)
 
-        CHECK(count == 4)
+        CHECK(count == 2)
     end
 
     do CASE "destruction of active scope"

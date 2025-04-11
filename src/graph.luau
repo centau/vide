@@ -1,4 +1,5 @@
 local flags = require "./flags"
+local update_id = 0
 
 export type SourceNode<T> = {
     cache: T,
@@ -8,8 +9,11 @@ export type SourceNode<T> = {
 export type Node<T> =  {
     cache: T,
     effect:  ((T) -> T) | false,
-    cleanups: { () -> () } | false,
 
+    higher_parent_update_id: number,
+    last_eval_update_id: number,
+
+    cleanups: { () -> () } | false,
     context: { [number]: unknown } | false,
 
     owned: { Node<T> } | false,
@@ -21,6 +25,10 @@ export type Node<T> =  {
 
 local scopes = { n = 0 } :: { [number]: Node<any>, n: number } -- scopes stack
 
+local function is_similar(a: any, b: any)
+	return a == b and (type(a) ~= 'table' or table.isfrozen(a))
+end
+
 local function efn(err: string)
     local trace = debug.traceback(err, 2)
 
@@ -31,7 +39,7 @@ local function efn(err: string)
     end
 
     trace ..= "\nsource update stacktrace:"
-return trace
+    return trace
 end
 
 local function ycall<T, U>(fn: (T) -> U, arg: T): (boolean, string|U)
@@ -51,6 +59,11 @@ end
 
 local function get_scope(): Node<unknown>?
     return scopes[scopes.n]
+end
+
+local function bump_update_id()
+    update_id += 1
+    return update_id
 end
 
 local function assert_stable_scope(): Node<unknown>
@@ -145,60 +158,50 @@ local function destroy_owned<T>(node: Node<T>)
 end
 
 local update_queue = { n = 0 } :: { n: number, [number]: Node<any> }
+local queue_children_for_update
 
 local function evaluate_node<T>(node: Node<T>)
-    if flags.strict then
-        local initial_value = node.cache
+    if node.higher_parent_update_id == node.last_eval_update_id then return end
+    node.last_eval_update_id = update_id
 
-        for i = 1, 2 do
-            local cur_value = node.cache
+    local cur_value = node.cache
 
-            flush_cleanups(node)
-            destroy_owned(node)
-    
-            push_scope(node)
-            local ok, new_value = ycall(node.effect :: (T) -> T, cur_value)
-            pop_scope()
-            
-            if not ok then
-                table.clear(update_queue)
-                update_queue.n = 0
-                error(`effect error stacktrace\n{new_value :: string}`, 0)
-            end
+    flush_cleanups(node)
+    destroy_owned(node)
 
-            node.cache = new_value :: T
-        end
+    push_scope(node)
+    local ok, new_value = (if flags.strict then ycall else pcall :: any)(node.effect :: (T) -> T, node.cache)
+    pop_scope()
 
-        return initial_value ~= node.cache
-    else
-        local cur_value = node.cache
+    if not ok then
+        table.clear(update_queue)
+        update_queue.n = 0
+        error(`effect error:\n{new_value}`, 0)
+    end
 
-        flush_cleanups(node)
-        destroy_owned(node)
-
-        push_scope(node)
-        local ok, new_value = pcall(node.effect :: (T) -> T, node.cache)
-        pop_scope()
-
-        if not ok then
-            table.clear(update_queue)
-            update_queue.n = 0
-            error(`effect error:\n{new_value}\n`, 0)
-        end
-    
-        node.cache = new_value
-        return cur_value ~= new_value
+    node.cache = new_value
+    if not is_similar(cur_value, new_value) then
+        queue_children_for_update(node)
     end
 end
 
-local function queue_children_for_update<T>(node: SourceNode<T>)
-    local i = update_queue.n
-    while node[1] do
-        i += 1
-        update_queue[i] = node[1]
-        unparent(node[1])
-    end
-    update_queue.n = i
+function queue_children_for_update<T>(node: SourceNode<T>)
+    local queue_index = update_queue.n
+    local child_index = 1
+
+    repeat
+        local child = node[child_index]
+        if not child then break end
+
+        if child.last_eval_update_id == update_id then child_index += 1; continue end
+        child.higher_parent_update_id = update_id
+
+        queue_index += 1
+        update_queue[queue_index] = child
+        unparent(child)
+    until false
+
+    update_queue.n = queue_index
 end
 
 local function get_update_queue_length()
@@ -211,9 +214,7 @@ local function flush_update_queue(from: number)
         local node = update_queue[i]
         --assert(node.effect)
 
-        if node.owner and evaluate_node(node) then
-            queue_children_for_update(node)
-        end
+        if node.owner then evaluate_node(node) end
 
         update_queue[i] = false :: any
         i += 1
@@ -227,22 +228,7 @@ local function update_descendants<T>(root: SourceNode<T>)
     queue_children_for_update(root)
 
     if flags.batch then return end
-
-    local i = n0 + 1
-    while i <= update_queue.n do
-        local node = update_queue[i]
-        --assert(node.effect)
-
-        -- check if node is still owned in case destroyed after queued
-        if node.owner and evaluate_node(node) then
-            queue_children_for_update(node)
-        end
-
-        update_queue[i] = false :: any -- false instead of nil to avoid sparse
-        i += 1
-    end
-
-    update_queue.n = n0
+    flush_update_queue(n0)
 end
 
 local function push_child_to_scope<T>(node: SourceNode<T>)
@@ -257,8 +243,10 @@ local function create_node<T>(owner: false | Node<any>, effect: false | (T) -> T
         cache = value,
         effect = effect,
         cleanups = false,
-
         context = false,
+
+        higher_parent_update_id = update_id,
+        last_eval_update_id = -1,
 
         owner = owner,
         owned = false,
@@ -311,6 +299,7 @@ return table.freeze {
     flush_update_queue = flush_update_queue,
     get_update_queue_length = get_update_queue_length,
     set_context = set_context,
+    bump_update_id = bump_update_id,
     scopes = scopes,
 
     q = update_queue

@@ -53,6 +53,7 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
         evaluate_node(node)
 
         return function()
+            evaluate_node(node)
             push_child_to_scope(node)
             return node.cache
         end

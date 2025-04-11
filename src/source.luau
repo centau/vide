@@ -21,6 +21,7 @@ local function source<T>(initial_value: T): Source<T>
         end
 
         node.cache = v
+        graph.bump_update_id()
         update_descendants(node)
         return v
     end

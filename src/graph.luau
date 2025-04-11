@@ -194,9 +194,7 @@ function queue_children_for_update<T>(node: SourceNode<T>)
         if not child then break end
 
         if child.last_eval_update_id == update_id then child_index += 1; continue end
-        if update_id > child.higher_parent_update_id then
-            child.higher_parent_update_id = update_id
-        end
+        child.higher_parent_update_id = update_id
 
         queue_index += 1
         update_queue[queue_index] = child

@@ -163,6 +163,8 @@ local update_queue = { n = 0 } :: { n: number, [number]: Node<any> }
 
 local function evaluate_node<T>(node: Node<T>)
     if node.higher_parent_update_id == node.last_eval_update_id then return node.needs_queue_children end
+    node.last_eval_update_id = update_id
+
     local cur_value = node.cache
 
     flush_cleanups(node)
@@ -180,8 +182,6 @@ local function evaluate_node<T>(node: Node<T>)
 
     local needs_queue_children = not is_similar(cur_value, new_value)
     node.needs_queue_children = needs_queue_children
-
-    node.last_eval_update_id = update_id
     node.cache = new_value
     
     return needs_queue_children

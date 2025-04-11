@@ -153,21 +153,21 @@ ROOT_BENCH("update 1000->1 graph", function()
     end
 end)
 
-ROOT_BENCH("update all parents of 500->1 graph", function()
+ROOT_BENCH("update all parents of 1000->1 graph", function()
     local srcs = {}
-    for i = 1, 500 do
+    for i = 1, 1000 do
         srcs[i] = source(0)
     end
 
     derive(function()
-        for i = 1, 500 do
+        for i = 1, 1000 do
             srcs[i]()
         end
         return false
     end)
 
     for i = 1, START(1) do
-        for idx = 1, 500 do
+        for idx = 1, 1000 do
             srcs[idx](i)
         end
     end

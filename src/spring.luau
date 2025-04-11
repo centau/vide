@@ -1,3 +1,4 @@
+local batch = require "./batch"
 local graph = require "./graph"
 type Node<T> = graph.Node<T>
 type SourceNode<T> = graph.SourceNode<T>
@@ -263,31 +264,33 @@ local function step_springs(dt: number)
 end
 
 local function update_spring_sources()
-    for data, output in springs do
-        local x0_123, x1_123, v_123,
-        x0_456, x1_456, v_456 =
-            data.x0_123, data.x1_123, data.v_123,
-            data.x0_456, data.x1_456, data.v_456
+    graph.bump_update_id()
+    batch(function()
+        for data, output in springs do
+            local x0_123, x1_123, v_123,
+            x0_456, x1_456, v_456 =
+                data.x0_123, data.x1_123, data.v_123,
+                data.x0_456, data.x1_456, data.v_456
 
-        local max_difference = vector.max(
-            vector.abs(x0_123 - x1_123 :: any),
-            vector.abs(x0_456 - x1_456 :: any),
-            vector.abs(v_123 :: any),
-            vector.abs(v_456 :: any),
-            TOLERANCE_VECTOR
-        )
+            local max_difference = vector.max(
+                vector.abs(x0_123 - x1_123 :: any),
+                vector.abs(x0_456 - x1_456 :: any),
+                vector.abs(v_123 :: any),
+                vector.abs(v_456 :: any),
+                TOLERANCE_VECTOR
+            )
 
-        if max_difference == TOLERANCE_VECTOR then
-            -- close enough to target, unshedule spring and set value to target
-            springs[data] = nil
-            output.cache = data.source_value
-        else
-            output.cache = vec6_to_type[typeof(data.source_value)](x0_123, x0_456)
+            if max_difference == TOLERANCE_VECTOR then
+                -- close enough to target, unshedule spring and set value to target
+                springs[data] = nil
+                output.cache = data.source_value
+            else
+                output.cache = vec6_to_type[typeof(data.source_value)](x0_123, x0_456)
+            end
+
+            update_descendants(output)
         end
-
-        graph.bump_update_id()
-        update_descendants(output)
-    end
+    end)
 end
 
 return function()

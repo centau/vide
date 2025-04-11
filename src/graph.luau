@@ -163,53 +163,28 @@ local update_queue = { n = 0 } :: { n: number, [number]: Node<any> }
 
 local function evaluate_node<T>(node: Node<T>)
     if node.higher_parent_update_id == node.last_eval_update_id then return node.needs_queue_children end
-    if flags.strict then
-        local initial_value = node.cache
+    local cur_value = node.cache
 
-        for i = 1, 2 do
-            local cur_value = node.cache
+    flush_cleanups(node)
+    destroy_owned(node)
 
-            flush_cleanups(node)
-            destroy_owned(node)
-    
-            push_scope(node)
-            local ok, new_value = ycall(node.effect :: (T) -> T, cur_value)
-            pop_scope()
-            
-            if not ok then
-                table.clear(update_queue)
-                update_queue.n = 0
-                error(`effect error stacktrace\n{new_value :: string}`, 0)
-            end
+    push_scope(node)
+    local ok, new_value = (if flags.strict then ycall else pcall :: any)(node.effect :: (T) -> T, node.cache)
+    pop_scope()
 
-            node.cache = new_value :: T
-        end
-
-        local needs_queue_children = not is_similar(initial_value, node.cache)
-        node.needs_queue_children = needs_queue_children
-        node.last_eval_update_id = update_id
-        return needs_queue_children
-    else
-        local cur_value = node.cache
-
-        flush_cleanups(node)
-        destroy_owned(node)
-
-        push_scope(node)
-        local ok, new_value = pcall(node.effect :: (T) -> T, node.cache)
-        pop_scope()
-
-        if not ok then
-            table.clear(update_queue)
-            update_queue.n = 0
-            error(`effect error:\n{new_value}\n`, 0)
-        end
-        local needs_queue_children = not is_similar(cur_value, new_value)
-        node.needs_queue_children = needs_queue_children
-        node.last_eval_update_id = update_id
-        node.cache = new_value
-        return needs_queue_children
+    if not ok then
+        table.clear(update_queue)
+        update_queue.n = 0
+        error(`effect error:\n{new_value}`, 0)
     end
+
+    local needs_queue_children = not is_similar(cur_value, new_value)
+    node.needs_queue_children = needs_queue_children
+
+    node.last_eval_update_id = update_id
+    node.cache = new_value
+    
+    return needs_queue_children
 end
 
 local function queue_children_for_update<T>(node: SourceNode<T>)

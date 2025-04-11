@@ -1221,24 +1221,24 @@ TEST("show()", wrap_root(function()
 
         branch = 1
         weapon { id = "1", enchant = "fire" }
-        CHECK(count == 8)
+        CHECK(count == 1)
 
         branch = 2
         weapon { id = "1", enchant = "poison" }
-        CHECK(count == 10)
+        CHECK(count == 2)
 
         weapon { id = "1", enchant = nil }
-        CHECK(count == 10)
+        CHECK(count == 2)
 
         branch = 1
         weapon { id = "1", enchant = "fire" }
-        CHECK(count == 14)
+        CHECK(count == 3)
 
         weapon(nil)
 
         branch = 2
         weapon { id = "1", enchant = "poison" }
-        CHECK(count == 22)
+        CHECK(count == 4)
 
         vide.strict = false
     end
@@ -2763,9 +2763,9 @@ TEST("strict", wrap_root(function()
             return src()
         end)
 
-        CHECK(count == 2)
+        CHECK(count == 1)
         src(2)
-        CHECK(count == 4)
+        CHECK(count == 2)
     end
 
     do CASE "run effect callback twice"
@@ -2777,9 +2777,9 @@ TEST("strict", wrap_root(function()
             src()
         end)
 
-        CHECK(count == 2)
+        CHECK(count == 1)
         src(2)
-        CHECK(count == 4)
+        CHECK(count == 2)
     end
 
     do CASE "indexes() error if primitive"
@@ -2841,9 +2841,9 @@ TEST("strict", wrap_root(function()
             return count
         end, count)
 
-        CHECK(count == 2)
+        CHECK(count == 1)
         src(not src())
-        CHECK(count == 4)
+        CHECK(count == 2)
     end
 
     do CASE "effect using derived source"
@@ -2860,11 +2860,11 @@ TEST("strict", wrap_root(function()
             count += 1
         end)
 
-        CHECK(count == 2)
+        CHECK(count == 1)
 
         input(false)
 
-        CHECK(count == 4)
+        CHECK(count == 2)
     end
 
     do CASE "destruction of active scope"

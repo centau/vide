@@ -127,6 +127,7 @@ local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> 
 
     local function update_children(data: Map<K, VI>)
         local cur_input_cache, new_input_cache = cur_input_cache_up, new_input_cache_up
+        cur_input_cache_up = new_input_cache
 
         if flags.strict then
             local cache = {}

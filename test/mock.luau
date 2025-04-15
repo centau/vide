@@ -86,12 +86,28 @@ local Instance = {} :: any do
     local proxies = {} :: { [Data]: userdata? }
     setmetatable(proxies :: any, { __mode = "v" })
 
+    -- allocate variables for the metamethods as __index and get_proxy cross refrences each other
+    local __index, __newindex
+
     local function get_data(userdata: userdata): Data
         local function f(userdata: userdata): ProxyMT
             return getmetatable(userdata :: any)
         end
 
         return f(userdata).data
+    end
+
+    local function get_proxy(data: Data): userdata
+        return proxies[data] or (function()
+            local userdata = newproxy(true)
+            local proxy = getmetatable(userdata)
+            proxy.proxy = userdata
+            proxy.data = data
+            proxy.__index = __index
+            proxy.__newindex = __newindex
+            proxies[data] = userdata   
+            return userdata
+        end)()
     end
 
     local function is_instance(value: unknown): boolean
@@ -101,16 +117,16 @@ local Instance = {} :: any do
 
     local methods = {}
 
-    local function __index(userdata: userdata, property: string): ()
+    __index = function(userdata: userdata, property: string): ()
         local data = get_data(userdata)
         return if methods[property] then methods[property]
             elseif property == "Name" then data.name
-            elseif property == "Parent" then data.parent
+            elseif property == "Parent" then (data.parent and get_proxy(data.parent))
             elseif property == "Destroying" then data.destroying
             else data.properties[property] 
     end
 
-    local function __newindex(userdata: userdata, property: string, value: unknown)
+    __newindex = function(userdata: userdata, property: string, value: unknown)
         local data = get_data(userdata)
         if property == "Name" then
             if type(value) ~= "string" then error("name must be a string", 2) end
@@ -133,19 +149,6 @@ local Instance = {} :: any do
         if data.changed[property] then
             Signal.fire(data.changed[property])
         end
-    end
-
-    local function get_proxy(data: Data): userdata
-        return proxies[data] or (function()
-            local userdata = newproxy(true)
-            local proxy = getmetatable(userdata)
-            proxy.proxy = userdata
-            proxy.data = data
-            proxy.__index = __index
-            proxy.__newindex = __newindex
-            proxies[data] = userdata   
-            return userdata
-        end)()
     end
 
     function Instance.new(class: string): Instance

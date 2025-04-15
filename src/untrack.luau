@@ -22,4 +22,4 @@ local function untrack<T>(source: () -> T): T
     end
 end
 
-return untrack
+return untrack :: ( <T>(fn: () -> T) -> T ) & ( (fn: () -> ()) -> () )

@@ -7,7 +7,7 @@ But the disconnecting of many signals and connections is tedious and verbose.
 Vide instead operates on the concept of scopes which provides a much cleaner
 API, given that you follow a few rules.
 
-Thre are two types of scopes: stable and reactive.
+There are two types of scopes: stable and reactive.
 
 - A scope must be created within another scope.
 - Stable scopes never rerun.

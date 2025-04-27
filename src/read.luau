@@ -1,6 +1,4 @@
-local source = require(script.Parent.source)
-
-local function read<T>(value: source.Source<T> | T): T
+local function read<T>(value: ((() -> T) & ((value: T) -> T)) | T): T
 	return if typeof(value) == "function" then value() else value
 end
 

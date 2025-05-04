@@ -107,3 +107,5 @@ return (create :: any) ::
 &	( (class: "MeshPart") -> (r.vMeshPart) -> MeshPart )
 &	( (class: "Highlight") -> (r.vHighlight) -> Highlight )
 &	( (class: "Folder") -> (r.vFolder) -> Folder )
+&	( (class: "Attachment") -> (r.vAttachment) -> Attachment )
+&	( (class: "ParticleEmitter") -> (r.vParticleEmitter) -> ParticleEmitter )

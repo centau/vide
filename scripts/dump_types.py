@@ -66,6 +66,8 @@ desired_classes = [
 	"MeshPart",
 	"Highlight",
 	"Folder",
+	"Attachment",
+	"ParticleEmitter",
 ]
 
 lines_before = [
@@ -103,6 +105,7 @@ aliases = {
 	"string": "string"+space+"|"+space+"number",
 	"OptionalCoordinateFrame": "CFrame?",
 	"BinaryString": "string",
+	"SecurityCapabilities": "any"
 }
 
 map_corrections = {}
@@ -265,7 +268,7 @@ with open("src/init.luau", "r") as reader:
 	lines = reader.readlines()
 	for line in lines:
 		line_create_at += 1
-		if line.find("-- TYPES HERE") != -1:
+		if line.find("export type Context<T> = vide.Context<T>") != -1:
 			is_found = True
 			break
 	

@@ -7,7 +7,6 @@ export type source<T> = vide.source<T>
 export type Source<T> = vide.Source<T>
 export type context<T> = vide.context<T>
 export type Context<T> = vide.Context<T>
-
 export type vCanvasGroup = roblox_types.vCanvasGroup
 export type vFrame = roblox_types.vFrame
 export type vImageButton = roblox_types.vImageButton
@@ -57,5 +56,7 @@ export type vModel = roblox_types.vModel
 export type vMeshPart = roblox_types.vMeshPart
 export type vHighlight = roblox_types.vHighlight
 export type vFolder = roblox_types.vFolder
+export type vAttachment = roblox_types.vAttachment
+export type vParticleEmitter = roblox_types.vParticleEmitter
 
 return vide

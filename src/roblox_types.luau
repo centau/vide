@@ -58,8 +58,10 @@ export type vCanvasGroup = {
 	SelectionGroup: p<boolean>,
 	SelectionChanged: e<(amISelected:boolean,previousSelection:GuiObject?,newSelection:GuiObject?) -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -67,6 +69,7 @@ export type vCanvasGroup = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vCanvasGroup>
 
@@ -123,8 +126,10 @@ export type vFrame = {
 	SelectionGroup: p<boolean>,
 	SelectionChanged: e<(amISelected:boolean,previousSelection:GuiObject?,newSelection:GuiObject?) -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -132,12 +137,14 @@ export type vFrame = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vFrame>
 
 }
 export type vImageButton = {
 	HoverImage: p<string>,
+	HoverImageContent: p<Content>,
 	Image: p<string>,
 	ImageColor3: p<Color3>,
 	ImageContent: p<Content>,
@@ -145,13 +152,16 @@ export type vImageButton = {
 	ImageRectSize: p<Vector2>,
 	ImageTransparency: p<number>,
 	PressedImage: p<string>,
+	PressedImageContent: p<Content>,
 	ResampleMode: p<Enum.ResamplerMode>,
 	ScaleType: p<Enum.ScaleType>,
 	SliceCenter: p<Rect>,
 	SliceScale: p<number>,
 	TileSize: p<UDim2>,
 	AutoButtonColor: p<boolean>,
+	HoverHapticEffect: p<HapticEffect?>,
 	Modal: p<boolean>,
+	PressHapticEffect: p<HapticEffect?>,
 	Selected: p<boolean>,
 	Style: p<Enum.ButtonStyle>,
 	Activated: e<(inputObject:InputObject,clickCount:number) -> ()>,
@@ -211,8 +221,10 @@ export type vImageButton = {
 	SelectionGroup: p<boolean>,
 	SelectionChanged: e<(amISelected:boolean,previousSelection:GuiObject?,newSelection:GuiObject?) -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -220,6 +232,7 @@ export type vImageButton = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vImageButton>
 
@@ -244,7 +257,9 @@ export type vTextButton = {
 	TextXAlignment: p<Enum.TextXAlignment>,
 	TextYAlignment: p<Enum.TextYAlignment>,
 	AutoButtonColor: p<boolean>,
+	HoverHapticEffect: p<HapticEffect?>,
 	Modal: p<boolean>,
+	PressHapticEffect: p<HapticEffect?>,
 	Selected: p<boolean>,
 	Style: p<Enum.ButtonStyle>,
 	Activated: e<(inputObject:InputObject,clickCount:number) -> ()>,
@@ -304,8 +319,10 @@ export type vTextButton = {
 	SelectionGroup: p<boolean>,
 	SelectionChanged: e<(amISelected:boolean,previousSelection:GuiObject?,newSelection:GuiObject?) -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -313,6 +330,7 @@ export type vTextButton = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vTextButton>
 
@@ -379,8 +397,10 @@ export type vImageLabel = {
 	SelectionGroup: p<boolean>,
 	SelectionChanged: e<(amISelected:boolean,previousSelection:GuiObject?,newSelection:GuiObject?) -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -388,6 +408,7 @@ export type vImageLabel = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vImageLabel>
 
@@ -461,8 +482,10 @@ export type vTextLabel = {
 	SelectionGroup: p<boolean>,
 	SelectionChanged: e<(amISelected:boolean,previousSelection:GuiObject?,newSelection:GuiObject?) -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -470,6 +493,7 @@ export type vTextLabel = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vTextLabel>
 
@@ -540,8 +564,10 @@ export type vScrollingFrame = {
 	SelectionGroup: p<boolean>,
 	SelectionChanged: e<(amISelected:boolean,previousSelection:GuiObject?,newSelection:GuiObject?) -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -549,6 +575,7 @@ export type vScrollingFrame = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vScrollingFrame>
 
@@ -633,8 +660,10 @@ export type vTextBox = {
 	SelectionGroup: p<boolean>,
 	SelectionChanged: e<(amISelected:boolean,previousSelection:GuiObject?,newSelection:GuiObject?) -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -642,6 +671,7 @@ export type vTextBox = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vTextBox>
 
@@ -707,8 +737,10 @@ export type vVideoFrame = {
 	SelectionGroup: p<boolean>,
 	SelectionChanged: e<(amISelected:boolean,previousSelection:GuiObject?,newSelection:GuiObject?) -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -716,6 +748,7 @@ export type vVideoFrame = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vVideoFrame>
 
@@ -777,8 +810,10 @@ export type vViewportFrame = {
 	SelectionGroup: p<boolean>,
 	SelectionChanged: e<(amISelected:boolean,previousSelection:GuiObject?,newSelection:GuiObject?) -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -786,6 +821,7 @@ export type vViewportFrame = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vViewportFrame>
 
@@ -820,8 +856,10 @@ export type vBillboardGui = {
 	SelectionGroup: p<boolean>,
 	SelectionChanged: e<(amISelected:boolean,previousSelection:GuiObject?,newSelection:GuiObject?) -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -829,6 +867,7 @@ export type vBillboardGui = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vBillboardGui>
 
@@ -851,8 +890,10 @@ export type vScreenGui = {
 	SelectionGroup: p<boolean>,
 	SelectionChanged: e<(amISelected:boolean,previousSelection:GuiObject?,newSelection:GuiObject?) -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -860,6 +901,7 @@ export type vScreenGui = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vScreenGui>
 
@@ -883,8 +925,10 @@ export type vAdGui = {
 	SelectionGroup: p<boolean>,
 	SelectionChanged: e<(amISelected:boolean,previousSelection:GuiObject?,newSelection:GuiObject?) -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -892,6 +936,7 @@ export type vAdGui = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vAdGui>
 
@@ -922,8 +967,10 @@ export type vSurfaceGui = {
 	SelectionGroup: p<boolean>,
 	SelectionChanged: e<(amISelected:boolean,previousSelection:GuiObject?,newSelection:GuiObject?) -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -931,6 +978,7 @@ export type vSurfaceGui = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vSurfaceGui>
 
@@ -944,8 +992,10 @@ export type vSelectionBox = {
 	Transparency: p<number>,
 	Visible: p<boolean>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -953,6 +1003,7 @@ export type vSelectionBox = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vSelectionBox>
 
@@ -973,8 +1024,10 @@ export type vBoxHandleAdornment = {
 	Transparency: p<number>,
 	Visible: p<boolean>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -982,6 +1035,7 @@ export type vBoxHandleAdornment = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vBoxHandleAdornment>
 
@@ -1003,8 +1057,10 @@ export type vConeHandleAdornment = {
 	Transparency: p<number>,
 	Visible: p<boolean>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1012,6 +1068,7 @@ export type vConeHandleAdornment = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vConeHandleAdornment>
 
@@ -1035,8 +1092,10 @@ export type vCylinderHandleAdornment = {
 	Transparency: p<number>,
 	Visible: p<boolean>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1044,6 +1103,7 @@ export type vCylinderHandleAdornment = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vCylinderHandleAdornment>
 
@@ -1065,8 +1125,10 @@ export type vImageHandleAdornment = {
 	Transparency: p<number>,
 	Visible: p<boolean>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1074,6 +1136,7 @@ export type vImageHandleAdornment = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vImageHandleAdornment>
 
@@ -1095,8 +1158,10 @@ export type vLineHandleAdornment = {
 	Transparency: p<number>,
 	Visible: p<boolean>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1104,6 +1169,7 @@ export type vLineHandleAdornment = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vLineHandleAdornment>
 
@@ -1124,8 +1190,10 @@ export type vSphereHandleAdornment = {
 	Transparency: p<number>,
 	Visible: p<boolean>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1133,12 +1201,14 @@ export type vSphereHandleAdornment = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vSphereHandleAdornment>
 
 }
 export type vWireframeHandleAdornment = {
 	Scale: p<Vector3>,
+	Thickness: p<number>,
 	AdornCullingMode: p<Enum.AdornCullingMode>,
 	AlwaysOnTop: p<boolean>,
 	CFrame: p<CFrame>,
@@ -1153,8 +1223,10 @@ export type vWireframeHandleAdornment = {
 	Transparency: p<number>,
 	Visible: p<boolean>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1162,6 +1234,7 @@ export type vWireframeHandleAdornment = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vWireframeHandleAdornment>
 
@@ -1172,8 +1245,10 @@ export type vParabolaAdornment = {
 	Transparency: p<number>,
 	Visible: p<boolean>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1181,6 +1256,7 @@ export type vParabolaAdornment = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vParabolaAdornment>
 
@@ -1193,8 +1269,10 @@ export type vSelectionSphere = {
 	Transparency: p<number>,
 	Visible: p<boolean>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1202,6 +1280,7 @@ export type vSelectionSphere = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vSelectionSphere>
 
@@ -1218,8 +1297,10 @@ export type vArcHandles = {
 	Transparency: p<number>,
 	Visible: p<boolean>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1227,6 +1308,7 @@ export type vArcHandles = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vArcHandles>
 
@@ -1244,8 +1326,10 @@ export type vHandles = {
 	Transparency: p<number>,
 	Visible: p<boolean>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1253,6 +1337,7 @@ export type vHandles = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vHandles>
 
@@ -1264,8 +1349,10 @@ export type vSurfaceSelection = {
 	Transparency: p<number>,
 	Visible: p<boolean>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1273,6 +1360,7 @@ export type vSurfaceSelection = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vSurfaceSelection>
 
@@ -1285,8 +1373,10 @@ export type vPath2D = {
 	ZIndex: p<number>,
 	ControlPointChanged: e<() -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1294,6 +1384,7 @@ export type vPath2D = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vPath2D>
 
@@ -1303,8 +1394,10 @@ export type vUIAspectRatioConstraint = {
 	AspectType: p<Enum.AspectType>,
 	DominantAxis: p<Enum.DominantAxis>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1312,6 +1405,7 @@ export type vUIAspectRatioConstraint = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vUIAspectRatioConstraint>
 
@@ -1320,8 +1414,10 @@ export type vUISizeConstraint = {
 	MaxSize: p<Vector2>,
 	MinSize: p<Vector2>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1329,6 +1425,7 @@ export type vUISizeConstraint = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vUISizeConstraint>
 
@@ -1337,8 +1434,10 @@ export type vUITextSizeConstraint = {
 	MaxTextSize: p<number>,
 	MinTextSize: p<number>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1346,6 +1445,7 @@ export type vUITextSizeConstraint = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vUITextSizeConstraint>
 
@@ -1353,8 +1453,10 @@ export type vUITextSizeConstraint = {
 export type vUICorner = {
 	CornerRadius: p<UDim>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1362,6 +1464,7 @@ export type vUICorner = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vUICorner>
 
@@ -1391,8 +1494,10 @@ export type vUIDragDetector = {
 	DragEnd: e<(inputPosition:Vector2) -> ()>,
 	DragStart: e<(inputPosition:Vector2) -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1400,6 +1505,7 @@ export type vUIDragDetector = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vUIDragDetector>
 
@@ -1410,8 +1516,10 @@ export type vUIFlexItem = {
 	ItemLineAlignment: p<Enum.ItemLineAlignment>,
 	ShrinkRatio: p<number>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1419,6 +1527,7 @@ export type vUIFlexItem = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vUIFlexItem>
 
@@ -1430,8 +1539,10 @@ export type vUIGradient = {
 	Rotation: p<number>,
 	Transparency: p<NumberSequence>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1439,6 +1550,7 @@ export type vUIGradient = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vUIGradient>
 
@@ -1454,8 +1566,10 @@ export type vUIListLayout = {
 	SortOrder: p<Enum.SortOrder>,
 	VerticalAlignment: p<Enum.VerticalAlignment>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1463,6 +1577,7 @@ export type vUIListLayout = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vUIListLayout>
 
@@ -1477,8 +1592,10 @@ export type vUIGridLayout = {
 	SortOrder: p<Enum.SortOrder>,
 	VerticalAlignment: p<Enum.VerticalAlignment>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1486,6 +1603,7 @@ export type vUIGridLayout = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vUIGridLayout>
 
@@ -1508,8 +1626,10 @@ export type vUIPageLayout = {
 	SortOrder: p<Enum.SortOrder>,
 	VerticalAlignment: p<Enum.VerticalAlignment>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1517,6 +1637,7 @@ export type vUIPageLayout = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vUIPageLayout>
 
@@ -1531,8 +1652,10 @@ export type vUITableLayout = {
 	SortOrder: p<Enum.SortOrder>,
 	VerticalAlignment: p<Enum.VerticalAlignment>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1540,6 +1663,7 @@ export type vUITableLayout = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vUITableLayout>
 
@@ -1550,8 +1674,10 @@ export type vUIPadding = {
 	PaddingRight: p<UDim>,
 	PaddingTop: p<UDim>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1559,6 +1685,7 @@ export type vUIPadding = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vUIPadding>
 
@@ -1566,8 +1693,10 @@ export type vUIPadding = {
 export type vUIScale = {
 	Scale: p<number>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1575,6 +1704,7 @@ export type vUIScale = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vUIScale>
 
@@ -1587,8 +1717,10 @@ export type vUIStroke = {
 	Thickness: p<number>,
 	Transparency: p<number>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1596,6 +1728,7 @@ export type vUIStroke = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vUIStroke>
 
@@ -1605,8 +1738,10 @@ export type vWorldModel = {
 	PrimaryPart: p<BasePart?>,
 	WorldPivot: p<CFrame>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1614,6 +1749,7 @@ export type vWorldModel = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vWorldModel>
 
@@ -1632,8 +1768,10 @@ export type vCamera = {
 	VRTiltAndRollEnabled: p<boolean>,
 	InterpolationFinished: e<() -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1641,6 +1779,7 @@ export type vCamera = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vCamera>
 
@@ -1683,8 +1822,10 @@ export type vPart = {
 	TouchEnded: e<(otherPart:BasePart) -> ()>,
 	Touched: e<(otherPart:BasePart) -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1692,6 +1833,7 @@ export type vPart = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vPart>
 
@@ -1701,8 +1843,10 @@ export type vModel = {
 	PrimaryPart: p<BasePart?>,
 	WorldPivot: p<CFrame>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1710,6 +1854,7 @@ export type vModel = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vModel>
 
@@ -1753,8 +1898,10 @@ export type vMeshPart = {
 	TouchEnded: e<(otherPart:BasePart) -> ()>,
 	Touched: e<(otherPart:BasePart) -> ()>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1762,6 +1909,7 @@ export type vMeshPart = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vMeshPart>
 
@@ -1775,8 +1923,10 @@ export type vHighlight = {
 	OutlineColor: p<Color3>,
 	OutlineTransparency: p<number>,
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1784,14 +1934,17 @@ export type vHighlight = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vHighlight>
 
 }
 export type vFolder = {
 	Archivable: p<boolean>,
+	Capabilities: p<any>,
 	Name: p<string | number>,
 	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
 	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
 	AttributeChanged: e<(attribute:string | number) -> ()>,
 	ChildAdded: e<(child:Instance?) -> ()>,
@@ -1799,8 +1952,90 @@ export type vFolder = {
 	DescendantAdded: e<(descendant:Instance?) -> ()>,
 	DescendantRemoving: e<(descendant:Instance?) -> ()>,
 	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
 	Changed: e<(property:string | number) -> ()>,
 	[number]: c<vFolder>
+
+}
+export type vAttachment = {
+	Axis: p<Vector3>,
+	CFrame: p<CFrame>,
+	Orientation: p<Vector3>,
+	Position: p<Vector3>,
+	SecondaryAxis: p<Vector3>,
+	Visible: p<boolean>,
+	WorldAxis: p<Vector3>,
+	WorldCFrame: p<CFrame>,
+	WorldOrientation: p<Vector3>,
+	WorldPosition: p<Vector3>,
+	WorldSecondaryAxis: p<Vector3>,
+	Archivable: p<boolean>,
+	Capabilities: p<any>,
+	Name: p<string | number>,
+	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
+	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
+	AttributeChanged: e<(attribute:string | number) -> ()>,
+	ChildAdded: e<(child:Instance?) -> ()>,
+	ChildRemoved: e<(child:Instance?) -> ()>,
+	DescendantAdded: e<(descendant:Instance?) -> ()>,
+	DescendantRemoving: e<(descendant:Instance?) -> ()>,
+	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
+	Changed: e<(property:string | number) -> ()>,
+	[number]: c<vAttachment>
+
+}
+export type vParticleEmitter = {
+	Acceleration: p<Vector3>,
+	Brightness: p<number>,
+	Color: p<ColorSequence>,
+	Drag: p<number>,
+	EmissionDirection: p<Enum.NormalId>,
+	Enabled: p<boolean>,
+	FlipbookFramerate: p<NumberRange>,
+	FlipbookIncompatible: p<string | number>,
+	FlipbookLayout: p<Enum.ParticleFlipbookLayout>,
+	FlipbookMode: p<Enum.ParticleFlipbookMode>,
+	FlipbookStartRandom: p<boolean>,
+	Lifetime: p<NumberRange>,
+	LightEmission: p<number>,
+	LightInfluence: p<number>,
+	LocalTransparencyModifier: p<number>,
+	LockedToPart: p<boolean>,
+	Orientation: p<Enum.ParticleOrientation>,
+	Rate: p<number>,
+	RotSpeed: p<NumberRange>,
+	Rotation: p<NumberRange>,
+	Shape: p<Enum.ParticleEmitterShape>,
+	ShapeInOut: p<Enum.ParticleEmitterShapeInOut>,
+	ShapePartial: p<number>,
+	ShapeStyle: p<Enum.ParticleEmitterShapeStyle>,
+	Size: p<NumberSequence>,
+	Speed: p<NumberRange>,
+	SpreadAngle: p<Vector2>,
+	Squash: p<NumberSequence>,
+	Texture: p<string>,
+	TimeScale: p<number>,
+	Transparency: p<NumberSequence>,
+	VelocityInheritance: p<number>,
+	WindAffectsDrag: p<boolean>,
+	ZOffset: p<number>,
+	Archivable: p<boolean>,
+	Capabilities: p<any>,
+	Name: p<string | number>,
+	Parent: p<Instance?>,
+	Sandboxed: p<boolean>,
+	AncestryChanged: e<(child:Instance?,parent:Instance?) -> ()>,
+	AttributeChanged: e<(attribute:string | number) -> ()>,
+	ChildAdded: e<(child:Instance?) -> ()>,
+	ChildRemoved: e<(child:Instance?) -> ()>,
+	DescendantAdded: e<(descendant:Instance?) -> ()>,
+	DescendantRemoving: e<(descendant:Instance?) -> ()>,
+	Destroying: e<() -> ()>,
+	StyledPropertiesChanged: e<() -> ()>,
+	Changed: e<(property:string | number) -> ()>,
+	[number]: c<vParticleEmitter>
 
 }
 return{}

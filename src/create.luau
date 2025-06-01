@@ -3,8 +3,10 @@ local Instance = game and Instance or require "../test/mock".Instance :: never
 
 local defaults = require "./defaults"
 local apply = require "./apply"
+local r = require "./roblox_types"
 
 local ctor_cache = {} :: { [string]: () -> Instance }
+type Props = { [any]: any }
 
 setmetatable(ctor_cache :: any, {
     __index = function(self, class)
@@ -39,7 +41,7 @@ local function clone_instance(instance: Instance)
     end
 end
 
-local function create(class_or_instance: string | Instance, props: Props?): ((Props) -> Instance) | Instance
+local function create(class_or_instance: string | Instance, props: Props?): ((any) -> Instance) | Instance
 	local result: (Props) -> Instance
 	if type(class_or_instance) == "string" then
 		result = create_instance(class_or_instance)
@@ -55,37 +57,55 @@ local function create(class_or_instance: string | Instance, props: Props?): ((Pr
 	return result
 end
 
-type Props = { [any]: any }
-
-type Create<Name, Instance> = ((Name, Props) -> Instance) & ((Name) -> (Props) -> Instance)
-
 return (create :: any) ::
-	& ( <T>(T & Instance) -> (Props) -> T )
-	& ( <T>(T & Instance, Props) -> T )
-	& Create<"Folder", Folder>
-	& Create<"BillboardGui", BillboardGui>
-	& Create<"CanvasGroup", CanvasGroup>
-	& Create<"Frame", Frame>
-	& Create<"ImageButton", ImageButton>
-	& Create<"ImageLabel", ImageLabel>
-	& Create<"ScreenGui", ScreenGui>
-	& Create<"ScrollingFrame", ScrollingFrame>
-	& Create<"SurfaceGui", SurfaceGui>
-	& Create<"TextBox", TextBox>
-	& Create<"TextButton", TextButton>
-	& Create<"TextLabel", TextLabel>
-	& Create<"UIAspectRatioConstraint", UIAspectRatioConstraint>
-	& Create<"UICorner", UICorner>
-	& Create<"UIGradient", UIGradient>
-	& Create<"UIGridLayout", UIGridLayout>
-	& Create<"UIListLayout", UIListLayout>
-	& Create<"UIPadding", UIPadding>
-	& Create<"UIPageLayout", UIPageLayout>
-	& Create<"UIScale", UIScale>
-	& Create<"UISizeConstraint", UISizeConstraint>
-	& Create<"UIStroke", UIStroke>
-	& Create<"UITableLayout", UITableLayout>
-	& Create<"UITextSizeConstraint", UITextSizeConstraint>
-	& Create<"VideoFrame", VideoFrame>
-	& Create<"ViewportFrame", ViewportFrame>
-	& Create<string, Instance>
+	( (class: "CanvasGroup") -> (r.vCanvasGroup) -> CanvasGroup )
+&	( (class: "Frame") -> (r.vFrame) -> Frame )
+&	( (class: "ImageButton") -> (r.vImageButton) -> ImageButton )
+&	( (class: "TextButton") -> (r.vTextButton) -> TextButton )
+&	( (class: "ImageLabel") -> (r.vImageLabel) -> ImageLabel )
+&	( (class: "TextLabel") -> (r.vTextLabel) -> TextLabel )
+&	( (class: "ScrollingFrame") -> (r.vScrollingFrame) -> ScrollingFrame )
+&	( (class: "TextBox") -> (r.vTextBox) -> TextBox )
+&	( (class: "VideoFrame") -> (r.vVideoFrame) -> VideoFrame )
+&	( (class: "ViewportFrame") -> (r.vViewportFrame) -> ViewportFrame )
+&	( (class: "BillboardGui") -> (r.vBillboardGui) -> BillboardGui )
+&	( (class: "ScreenGui") -> (r.vScreenGui) -> ScreenGui )
+&	( (class: "AdGui") -> (r.vAdGui) -> AdGui )
+&	( (class: "SurfaceGui") -> (r.vSurfaceGui) -> SurfaceGui )
+&	( (class: "SelectionBox") -> (r.vSelectionBox) -> SelectionBox )
+&	( (class: "BoxHandleAdornment") -> (r.vBoxHandleAdornment) -> BoxHandleAdornment )
+&	( (class: "ConeHandleAdornment") -> (r.vConeHandleAdornment) -> ConeHandleAdornment )
+&	( (class: "CylinderHandleAdornment") -> (r.vCylinderHandleAdornment) -> CylinderHandleAdornment )
+&	( (class: "ImageHandleAdornment") -> (r.vImageHandleAdornment) -> ImageHandleAdornment )
+&	( (class: "LineHandleAdornment") -> (r.vLineHandleAdornment) -> LineHandleAdornment )
+&	( (class: "SphereHandleAdornment") -> (r.vSphereHandleAdornment) -> SphereHandleAdornment )
+&	( (class: "WireframeHandleAdornment") -> (r.vWireframeHandleAdornment) -> WireframeHandleAdornment )
+&	( (class: "ParabolaAdornment") -> (r.vParabolaAdornment) -> ParabolaAdornment )
+&	( (class: "SelectionSphere") -> (r.vSelectionSphere) -> SelectionSphere )
+&	( (class: "ArcHandles") -> (r.vArcHandles) -> ArcHandles )
+&	( (class: "Handles") -> (r.vHandles) -> Handles )
+&	( (class: "SurfaceSelection") -> (r.vSurfaceSelection) -> SurfaceSelection )
+&	( (class: "Path2D") -> (r.vPath2D) -> Path2D )
+&	( (class: "UIAspectRatioConstraint") -> (r.vUIAspectRatioConstraint) -> UIAspectRatioConstraint )
+&	( (class: "UISizeConstraint") -> (r.vUISizeConstraint) -> UISizeConstraint )
+&	( (class: "UITextSizeConstraint") -> (r.vUITextSizeConstraint) -> UITextSizeConstraint )
+&	( (class: "UICorner") -> (r.vUICorner) -> UICorner )
+&	( (class: "UIDragDetector") -> (r.vUIDragDetector) -> UIDragDetector )
+&	( (class: "UIFlexItem") -> (r.vUIFlexItem) -> UIFlexItem )
+&	( (class: "UIGradient") -> (r.vUIGradient) -> UIGradient )
+&	( (class: "UIListLayout") -> (r.vUIListLayout) -> UIListLayout )
+&	( (class: "UIGridLayout") -> (r.vUIGridLayout) -> UIGridLayout )
+&	( (class: "UIPageLayout") -> (r.vUIPageLayout) -> UIPageLayout )
+&	( (class: "UITableLayout") -> (r.vUITableLayout) -> UITableLayout )
+&	( (class: "UIPadding") -> (r.vUIPadding) -> UIPadding )
+&	( (class: "UIScale") -> (r.vUIScale) -> UIScale )
+&	( (class: "UIStroke") -> (r.vUIStroke) -> UIStroke )
+&	( (class: "WorldModel") -> (r.vWorldModel) -> WorldModel )
+&	( (class: "Camera") -> (r.vCamera) -> Camera )
+&	( (class: "Part") -> (r.vPart) -> Part )
+&	( (class: "Model") -> (r.vModel) -> Model )
+&	( (class: "MeshPart") -> (r.vMeshPart) -> MeshPart )
+&	( (class: "Highlight") -> (r.vHighlight) -> Highlight )
+&	( (class: "Folder") -> (r.vFolder) -> Folder )
+&	( (class: "Attachment") -> (r.vAttachment) -> Attachment )
+&	( (class: "ParticleEmitter") -> (r.vParticleEmitter) -> ParticleEmitter )

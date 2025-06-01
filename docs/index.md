@@ -13,8 +13,11 @@ hero:
     src: /logo.svg
   actions:
     - theme: brand
-      text: Tutorials
+      text: What is Vide?
       link: /tut/crash-course/1-introduction
+    - theme: alt
+      text: Crash Course
+      link: /tut/crash-course/2-creation
     - theme: alt
       text: API Reference
       link: /api/reactivity-core

@@ -3,6 +3,11 @@
 Reactive components in Vide are created using sources and effects - sources to
 store the data, and effects to display the data.
 
+<<<<<<< HEAD:docs/tut/crash-course/7-stateful-component.md
+## Internal State
+
+=======
+>>>>>>> 58a31a1b329e922dc86c554e8220012ab7238f1b:docs/tut/crash-course/7-reactive-component.md
 ```luau
 local create = vide.create
 local source = vide.source
@@ -34,7 +39,11 @@ count source is created inside the component.
 External sources can also be passed into components for them to use.
 
 ```luau
+<<<<<<< HEAD:docs/tut/crash-course/7-stateful-component.md
+local function Counter(props: { count: () -> number })
+=======
 local function CountDisplay(props: { count: () -> number })
+>>>>>>> 58a31a1b329e922dc86c554e8220012ab7238f1b:docs/tut/crash-course/7-reactive-component.md
     local count = props.count
 
     local instance = create "TextLabel" {}

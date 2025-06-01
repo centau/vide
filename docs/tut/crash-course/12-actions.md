@@ -6,6 +6,10 @@ to run some code on an instance receiving them.
 ```luau
 local action = vide.action
 
+<<<<<<< HEAD
+```luau
+=======
+>>>>>>> 58a31a1b329e922dc86c554e8220012ab7238f1b
 create "TextLabel" {
     Text = "test",
 

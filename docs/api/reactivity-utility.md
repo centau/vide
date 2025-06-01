@@ -7,7 +7,13 @@ Queues a callback to run when a scope is reran or destroyed.
 - **Type**
 
     ```luau
+<<<<<<< HEAD
+    function cleanup(callback: () -> ())
+    function cleanup(obj: Destroyable)
+    function cleanup(obj: Disconnectable)
+=======
     function cleanup(v: Function | Disconnectable | Destroyable | thread)
+>>>>>>> 58a31a1b329e922dc86c554e8220012ab7238f1b
 
     type Function = () -> ()
     type Destroyable = { destroy: () -> () }
@@ -17,7 +23,11 @@ Queues a callback to run when a scope is reran or destroyed.
 - **Example**
 
     ```luau
+<<<<<<< HEAD
+    local data = source(1)
+=======
     local count = source(0)
+>>>>>>> 58a31a1b329e922dc86c554e8220012ab7238f1b
 
     local destroy = root(function()
         effect(function()

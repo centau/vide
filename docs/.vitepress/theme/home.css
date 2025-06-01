@@ -1,0 +1,18 @@
+.home > * > .plugin-tabs--tab-list {
+	background-color: var(--vp-c-bg-alt);
+}
+
+.home > * > .VPNavBar:not(.top) {
+	backdrop-filter: blur(0.5rem);
+	background-color: transparent !important;
+}
+
+.home > * > .VPNavBar > .divider {
+	opacity: 0;
+}
+
+.home > .VPContent {
+	display: flex;
+	justify-content: center;
+	flex-direction: column;
+}

@@ -39,7 +39,28 @@ end
 
 setup() -- error, effect() tried to create a reactive scope with no stable scope
 
+<<<<<<< HEAD
+local count = root(setup) -- ok since effect() was called within a stable scope
+count(1) -- prints "1"
+```
+
+The scope created by `root()` can be destroyed.
+
+```luau
+local function setup()
+    local count = source(0)
+
+    effect(function()
+        print(count())
+    end)
+
+    return count
+end
+
+local destroy, count = root(setup)
+=======
 local destroy = root(setup) -- ok since effect() was called in a stable scope
+>>>>>>> 58a31a1b329e922dc86c554e8220012ab7238f1b
 
 count(1) -- prints "1"
 count(2) -- prints "2"

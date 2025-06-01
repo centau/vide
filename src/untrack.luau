@@ -2,7 +2,7 @@ local graph = require "./graph"
 type Node<T> = graph.Node<T>
 local get_scope = graph.get_scope
 
-local function untrack<T>(source: () -> T): T
+local function untrack<T, U...>(source: () -> T, ...: U...): T
     local scope = get_scope()
     
     if scope then
@@ -10,7 +10,7 @@ local function untrack<T>(source: () -> T): T
         local effect = scope.effect
         scope.effect = false
 
-        local ok, result = xpcall(source, debug.traceback)
+        local ok, result = xpcall(source, debug.traceback, ...)
 
         scope.effect = effect :: () -> ()
 

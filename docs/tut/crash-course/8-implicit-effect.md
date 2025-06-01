@@ -3,9 +3,13 @@
 Explicitly creating effects to update properties is tedious. You can
 *implicitly* create an effect to update properties instead.
 
+<<<<<<< HEAD
+```luau
+=======
 ::: code-group
 
 ```luau [Implicit Effect]
+>>>>>>> 58a31a1b329e922dc86c554e8220012ab7238f1b
 local create = vide.create
 local source = vide.source
 

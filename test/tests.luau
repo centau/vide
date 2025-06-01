@@ -1938,6 +1938,13 @@ TEST("untrack()", wrap_root(function()
 
         CHECK(cleaned_count == 2)
     end
+
+    do CASE "passes values"
+        untrack(function(a, b)
+            CHECK(a == 1)
+            CHECK(b == 2)
+        end, 1, 2)
+    end
 end))
 
 TEST("events", function()
@@ -2464,7 +2471,7 @@ TEST("context()", function()
 end)
 
 TEST("nested effects cases", function()
-    local vide = require "../../vide"
+    local vide = require "../src/lib"
     local source = vide.source
     local effect = vide.effect
     local untrack = vide.untrack

@@ -3,23 +3,26 @@ local Instance = game and Instance or require "../test/mock".Instance :: never
 
 local defaults = require "./defaults"
 local apply = require "./apply"
+local flags = require "./flags"
 
 local ctor_cache = {} :: { [string]: () -> Instance }
 
 setmetatable(ctor_cache :: any, {
     __index = function(self, class)
-        local ok, instance: Instance = pcall(Instance.new, class :: any)
-        if not ok then error(`invalid class name, could not create instance of class { class }`, 0) end
-
-        local default: { [string]: unknown }? = defaults[class]
-        if default then
-            for i, v in next, default do
-                (instance :: any)[i] = v
-            end
-        end
-
         local function ctor(properties: Props): Instance
-            return apply(instance:Clone(), properties)
+            local ok, instance: Instance = pcall(Instance.new, class :: any)
+            if not ok then error(`invalid class name { class }`, 0) end
+
+            if flags.defaults then
+                local default: { [string]: unknown }? = defaults[class]
+                if default then
+                    for i, v in default do
+                        (instance :: any)[i] = v
+                    end
+                end
+            end
+
+            return apply(instance, properties)
         end
 
         self[class] = ctor

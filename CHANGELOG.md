@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `show()` now receives a source to its callback returning the current value
   of the condition.
 - Ignore `false` passed as a child.
+- Flag `vide.defaults` to disable the setting of default properties.
 
 ### Changed
 

@@ -186,7 +186,7 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
     -- set output to goal
     output.cache = data.source_value
 
-    local setter = function(p)
+    local config = function(p)
         local x = p.position
         local v = p.velocity
         local dv = p.impulse
@@ -229,7 +229,7 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
         output.cache = v
 
         return v
-    end, setter
+    end, config
 end
 
 local function step_springs(dt: number)

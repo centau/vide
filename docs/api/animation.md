@@ -11,11 +11,11 @@ Returns a new source with a value always moving torwards the input source value.
         source: () -> T & Animatable,
         period: number = 1,
         damping_ratio: number = 1
-    ): (() -> T, Setter<T>)
+    ): (() -> T, SpringConfig<T>)
 
     type Animatable = number | CFrame | Color3 | UDim | UDim2 | Vector2 | Vector3 | Rect
 
-    type Setter<T> = ({
+    type SpringConfig<T> = ({
         position: T?,
         velocity: T?,
         impulse: T?

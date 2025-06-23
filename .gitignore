@@ -1,7 +1,6 @@
 .vscode
 _local
 
-aftman.toml
 sourcemap.json
 
 docs/.vitepress/dist

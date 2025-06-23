@@ -4,6 +4,6 @@
 # New tools can be added by running `rokit add <tool>` in a terminal.
 
 [tools]
-pesde = "daimond113/pesde@0.6.0+registry.0.2.0"
+pesde = "pesde-pkg/pesde@0.6.2+registry.0.2.2"
 wally = "upliftgames/wally@0.3.2"
 rojo = "rojo-rbx/rojo@7.4.4"

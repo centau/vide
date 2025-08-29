@@ -148,6 +148,10 @@ local update_queue = { n = 0 } :: { n: number, [number]: Node<any> }
 
 local function evaluate_node<T>(node: Node<T>)
     if flags.strict then
+        if table.find(scopes, node) then
+            error("a scope, that should rerun due to the update of a source, is already active", 0)
+        end
+
         local initial_value = node.cache
 
         for i = 1, 2 do

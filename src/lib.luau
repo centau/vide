@@ -1,6 +1,7 @@
 local version = { major = 0, minor = 3, patch = 1 }
 
 local root = require "./root"
+local branch = require "./branch"
 local mount = require "./mount"
 local create = require "./create"
 local apply = require "./apply"
@@ -50,6 +51,7 @@ local vide = {
 
     -- core
     root = root,
+    --branch = branch,
     mount = mount,
     create = create,
     source = source,

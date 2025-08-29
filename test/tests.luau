@@ -1452,6 +1452,45 @@ TEST("indexes()", wrap_root(function()
         CHECK(count[3] == 1)
     end
 
+    do CASE "table caching"
+        local mutable_table = {}
+        local frozen_table = table.freeze { 4, 5, 6 }
+
+        local input = source { mutable_table, frozen_table }
+
+        local count = table.create(2, 0)
+
+        local _, output = vide.root(function()
+            local output = indexes(input, function(v, i)
+                effect(function()
+                    v()
+					count[i] += 1
+                end)
+                return v
+            end)
+
+            return output
+        end)
+
+		CHECK(count[1] == 1)
+		CHECK(count[2] == 1)
+
+        CHECK(#output()[1]() == 0)
+        CHECK(#output()[2]() == 3)
+        
+        mutable_table[1] = 1
+        mutable_table[2] = 2
+        mutable_table[3] = 3
+        
+        input { mutable_table, frozen_table }
+        
+        CHECK(count[1] == 2)
+        CHECK(count[2] == 1)
+
+		CHECK(#output()[1]() == 3)
+		CHECK(#output()[2]() == 3)
+    end
+
     do CASE "removal reflected"
         local input = source { 1, 2, 3 }
 

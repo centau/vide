@@ -44,7 +44,7 @@ local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI,
         for i, v in data do
             local cv = input_cache[i]
 
-            if cv ~= v then
+            if cv ~= v or (type(v) == "table" and not table.isfrozen(v)) then
                 input_cache[i] = v
 
                 if cv == nil then -- create new scope and run transform

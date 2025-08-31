@@ -8,7 +8,10 @@ type Map<K, V> = { [K]: V }
 type Source<T> = () -> T
 type Component<T> = (Source<boolean>) -> T
 
-local function switch_map<K, Obj>(input: Source<K>, map: Map<K, Component<Obj>>): Source<nil | Obj | Array<Obj>>
+local function switch_map<K, Obj>(
+    input: Source<K>,
+    map: Map<K, Component<Obj>>
+): Source<nil | Obj | Array<Obj>>
     local output = source(nil :: nil | Obj | Array<Obj>)
 
     local caches = {} :: Map<K, {

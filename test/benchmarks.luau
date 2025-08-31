@@ -27,7 +27,7 @@ local function ROOT_BENCH(name: string, fn: () -> ())
     end)()
 end
 
-local N = 2^18 -- 262144
+local N = 2^20
 
 TITLE "sources"
 

@@ -1,143 +1,128 @@
 local flags = require "./flags"
-local graph = require "./graph"
-type Node<T> = graph.Node<T>
-type SourceNode<T> = graph.SourceNode<T>
-local create_node = graph.create_node
-local create_source_node = graph.create_source_node
-local push_scope_as_child_of = graph.push_scope_as_child_of
-local update_descendants = graph.update_descendants
-local assert_stable_scope = graph.assert_stable_scope
-local push_scope = graph.push_scope
-local pop_scope = graph.pop_scope
-local evaluate_node = graph.evaluate_node
-local destroy = graph.destroy
+local branch = require "./branch"
+local source = require "./source"
+local effect = require "./effect"
+local timeout = require "./timeout" ()
 
+type Array<T> = { T }
 type Map<K, V> = { [K]: V }
+type Source<T> = () -> T
 
-local function check_primitives(t: {})
-    if not flags.strict then return end
-
-    for _, v in t do
-        if type(v) == "table" or type(v) == "userdata" or type(v) == "function" then continue end
-        error("table source map cannot return primitives", 0)
-    end
-end
-
-local function values<K, VI, VO>(input: () -> Map<K, VI>, transform: (VI, () -> K) -> VO, delay: number?): () -> { VO }
-    local owner  = assert_stable_scope()
-    local subowner = create_node(owner, false, false)
-    
+local function values<K, V, Obj>(
+    input: Source<Map<K, V>>,
+    component: (V, Source<K>, Source<boolean>) -> (Obj, number?)
+): Source<Array<Obj>>
     local update_count = 0
-
-    local caches = {} :: Map<VI, {
+    local caches = {} :: Map<V, {
+        destroy_scope: () -> (),
+        present: (boolean?) -> boolean,
+        index: K?,
+        index_source: (K?) -> K,
+        object: Obj,
+        delay: number,
+        timeout: { cancel: boolean }?,
         count: number,
-        index: K,
-        scope: Node<unknown>,
-        index_source: SourceNode<K>,
-        alive_source: SourceNode<boolean>,
-        result: VO,
     }>
 
-    local function update_children(data: Map<K, VI>)
+    local output = source({} :: Array<Obj>)
+    local function update_output()
+        local array = table.create(16)
+        for _, cache in caches do
+            table.insert(array, cache.object)
+        end
+        output(array)
+    end
+
+    effect(function()
+        local data = input()
+
         local count = update_count
         update_count += 1
 
-        local children_need_update = false
+        local children_need_update = false -- set to true if a scope is created or destroyed
 
         if flags.strict then
-            local cache = {}
+            local map = {}
             for _, v in data do
-                if cache[v] ~= nil then
-                    error "duplicate table value detected"
+                if map[v] then
+                    error("table source passed to `values()` contains duplicate values", 0)
                 end
-                cache[v] = true
+                map[v] = true
             end
         end
 
-        push_scope(subowner)
-    
         -- process data
         for i, v in data do
             local cache = caches[v]
 
-            if cache == nil then -- create new scope and run transform
-                local scope = create_node(subowner, false, false)
-                local index_source = create_source_node(i)
+            if cache == nil then -- create new scope and create component
+                local index_source = source(i)
+                local present = source(false)
 
-                local new_cache = {
+                local delay = nil :: number?
+                local destroy, object = branch(function()
+                    local object, t = component(v, index_source, present)
+                    delay = t
+                    return object
+                end)
+
+                present(true)
+                
+                children_need_update = true
+
+                caches[v] = {
                     count = count,
                     index = i,
-                    scope = scope :: Node<unknown>,
-                    index_source = index_source :: SourceNode<K>,
-                    alive_source = nil :: any,
-                    result = false :: any,
+                    destroy_scope = destroy,
+                    index_source = index_source,
+                    present = present,
+                    delay = delay or 0,
+                    object = object
                 }
-                -- must be set before transform is run so that the scope can
-                -- be destroyed if the transform itself updates the input
-                -- which lets the strict active scope destruction check work
-                caches[v] = new_cache
-    
-                push_scope(scope)
-                
-                local ok, result = xpcall(transform, debug.traceback, v, function()
-                    push_scope_as_child_of(index_source)
-                    return index_source.cache
-                end)
-                
-                pop_scope()
-
-                if not ok then
-                    pop_scope() -- subowner scope
-                    error(result, 0)
-                end
-
-                new_cache.result = result
-                children_need_update = true
             else -- update source
                 cache.count = count
 
                 if cache.index ~= i then
+                    if cache.timeout then
+                        cache.timeout.cancel = true
+                        cache.timeout = nil
+                        cache.present(true)
+                    end
+                    
                     cache.index = i
-                    cache.index_source.cache = i
-                    update_descendants(cache.index_source)
+                    cache.index_source(i)
                 end
             end
         end
 
-        pop_scope()
-
         -- remove old values
         for v, cache in caches do
-            if cache.count < count then
-                destroy(cache.scope)
-                caches[v] = nil
-                children_need_update = true
+            if cache.count < count then -- if count is not latest then value is no longer in the input table
+                cache.present(false)
+
+                if cache.delay == 0 then
+                    cache.destroy_scope()
+                    caches[v] = nil
+                    children_need_update = true
+                else
+                    cache.index = nil
+                    if cache.timeout == nil then
+                        cache.timeout = timeout(cache.delay, function() -- todo: avoid redundant updates (e.g. values() input is cleared)
+                            cache.destroy_scope()
+                            caches[v] = nil
+                            update_output()
+                        end)
+                    end
+                end
             end
         end
 
         if children_need_update then
-            local output_array = table.create(#data)
-            for _, cache in caches do
-                table.insert(output_array, cache.result)
-            end
-            check_primitives(output_array)
-
-            return output_array
-        else
-            return nil
+            update_output()
         end
-    end
+    end)
 
-    local node = create_node(owner, function(pre_children) -- todo: add test
-        return update_children(input()) or pre_children
-    end, {})
-
-    evaluate_node(node)
-
-    return function()
-        push_scope_as_child_of(node)
-        return node.cache
-    end
+    return output
 end
 
 return values

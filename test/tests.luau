@@ -1625,9 +1625,12 @@ TEST("indexes()", wrap_root(function()
         do -- check that `input` allows gc of `output`
             local input = source {}
 
-            local output = indexes(input, function(v, i)
-                return v, i
+            local destroy, output = root(function()
+                return indexes(input, function(v, i)
+                    return v, i
+                end)
             end)
+            destroy()
 
             local wref = weak { output }
 
@@ -1730,6 +1733,81 @@ TEST("indexes()", wrap_root(function()
         CHECK(output()[1][1]() == 2)
 
         vide.strict = false
+    end
+
+     do CASE "delay"
+        local input = source {}
+
+        local cleaned_counts = {} :: Map<number, number>
+    
+        local output = indexes(input, function(v, i, present)
+            cleanup(function()
+                cleaned_counts[i] = (cleaned_counts[i] or 0) + 1
+            end)
+            return { value = v, index = i, present = present }, 1
+        end)
+
+        local function mapped()
+            local map = {}
+            local objects = output()
+            if objects then
+                for _, object in objects do
+                    map[object.index] = { value = object.value, present = object.present }
+                end
+            end
+            return map
+        end
+
+        ------------------------------------------------------------------------
+
+        do
+            CHECK(mapped()[1] == nil)
+        end
+
+        input { 1, 2 }
+
+        do
+            CHECK(mapped()[1].value() == 1)
+            CHECK(mapped()[1].present())
+
+            CHECK(mapped()[2].value() == 2)
+            CHECK(mapped()[2].present())
+        end
+
+        input { 2 }
+        step(0.5)
+
+        do
+            CHECK(mapped()[1].value() == 2)
+            CHECK(mapped()[1].present())
+
+            CHECK(mapped()[2].value() == 2)
+            CHECK(not mapped()[2].present())
+        end
+
+        input { 1, 2 }
+        step(0.5 + 0.01)
+
+        do
+            CHECK(mapped()[1].value() == 1)
+            CHECK(mapped()[1].present())
+
+            CHECK(mapped()[2].value() == 2)
+            CHECK(mapped()[2].present())
+        end
+
+        input { 3 }
+        step(1 + 0.01)
+
+        do
+            CHECK(mapped()[1].value() == 3)
+            CHECK(mapped()[1].present())
+
+            CHECK(not mapped()[2])
+
+            CHECK(cleaned_counts[1] == nil)
+            CHECK(cleaned_counts[2] == 1)
+        end
     end
 end))
 
@@ -1851,6 +1929,80 @@ TEST("values()", wrap_root(function()
         local n1 = scopes.n
 
         CHECK(n0 == n1)
+    end
+
+    do CASE "delay"
+        local input = source {}
+
+        local cleaned_counts = {} :: Map<number, number>
+    
+        local output = values(input, function(v, i, present)
+            cleanup(function()
+                cleaned_counts[v] = (cleaned_counts[v] or 0) + 1
+            end)
+            return { value = v, index = i, present = present }, 1
+        end)
+
+        local function mapped()
+            local map = {}
+            local objects = output()
+            if objects then
+                for _, object in objects do
+                    map[object.value] = { index = object.index, present = object.present }
+                end
+            end
+            return map
+        end
+
+        ------------------------------------------------------------------------
+
+        do
+            CHECK(mapped()[1] == nil)
+        end
+
+        input { 1 }
+
+        do
+            CHECK(mapped()[1].index() == 1)
+            CHECK(mapped()[1].present())
+        end
+
+        input { 2 }
+        step(0.5)
+
+        do
+            CHECK(mapped()[1].index() == 1)
+            CHECK(not mapped()[1].present())
+
+            CHECK(mapped()[2].index() == 1)
+            CHECK(mapped()[2].present())
+        end
+
+        input { 1, 2 }
+        step(0.5 + 0.01)
+
+        do
+            CHECK(mapped()[1].index() == 1)
+            CHECK(mapped()[1].present())
+
+            CHECK(mapped()[2].index() == 2)
+            CHECK(mapped()[2].present())
+        end
+
+        input { 3 }
+        step(1 + 0.01)
+
+        do
+            CHECK(not mapped()[1])
+            CHECK(not mapped()[2])
+
+            CHECK(mapped()[3].index() == 1)
+            CHECK(mapped()[3].present())
+
+            CHECK(cleaned_counts[1] == 1)
+            CHECK(cleaned_counts[2] == 1)
+            CHECK(cleaned_counts[3] == nil)
+        end
     end
 end))
 

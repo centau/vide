@@ -1,114 +1,118 @@
 local flags = require "./flags"
-local graph = require "./graph"
-type Node<T> = graph.Node<T>
-type SourceNode<T> = graph.SourceNode<T>
-local create_node = graph.create_node
-local create_source_node = graph.create_source_node
-local push_scope_as_child_of = graph.push_scope_as_child_of
-local update_descendants = graph.update_descendants
-local assert_stable_scope = graph.assert_stable_scope
-local push_scope = graph.push_scope
-local pop_scope = graph.pop_scope
-local evaluate_node = graph.evaluate_node
-local destroy = graph.destroy
+local branch = require "./branch"
+local source = require "./source"
+local effect = require "./effect"
+local timeout = require "./timeout" ()
 
+type Array<T> = { T }
 type Map<K, V> = { [K]: V }
+type Source<T> = () -> T
 
-local function indexes<K, VI, VO>(input: () -> Map<K, VI>, transform: (() -> VI, K) -> VO, delay: number?): () -> { VO }
-    local owner = assert_stable_scope()
-    local subowner = create_node(owner, false, false)
+local function indexes<K, V, Obj>(
+    input: Source<Map<K, V>>,
+    component: (Source<V>, K, Source<boolean>) -> (Obj, number?)
+): Source<Array<Obj>>
+    local update_count = 0
+    local caches = {} :: Map<K, {
+        destroy_scope: () -> (),
+        present: (boolean?) -> boolean,
+        value: V?,
+        value_source: (V?) -> V,
+        object: Obj,
+        delay: number,
+        timeout: { cancel: boolean }?,
+        count: number,
+    }>
 
-    local input_cache = {} :: Map<K, VI>
-    local output_cache = {} :: Map<K, VO>
-    local input_nodes = {} :: Map<K, SourceNode<VI>>
-    local scopes = {} :: Map<K, Node<unknown>>
-
-    local function update_children(data)
-        local children_need_update = false
-
-        -- remove old indexes
-        for i in input_cache do
-            if data[i] == nil then
-                destroy(scopes[i])
-                input_cache[i] = nil
-                output_cache[i] = nil
-                input_nodes[i] = nil
-                scopes[i] = nil
-                children_need_update = true
-            end
+    local output = source({} :: Array<Obj>)
+    local function update_output()
+        local array = table.create(#caches)
+        for _, cache in caches do
+            table.insert(array, cache.object)
         end
+        output(array)
+    end
 
-        push_scope(subowner)
+    effect(function()
+        local data = input()
 
-        -- process new or changed values
+        local count = update_count
+        update_count += 1
+
+        local children_need_update = false -- set to true if a scope is created or destroyed
+
+        -- process data
         for i, v in data do
-            local cv = input_cache[i]
+            local cache = caches[i]
 
-            if cv ~= v then
-                input_cache[i] = v
+            if cache == nil then -- create new scope and create component
+                local value_source = source(v)
+                local present = source(false)
 
-                if cv == nil then -- create new scope and run transform
-                    local scope = create_node(subowner, false, false)
-                    scopes[i] = scope :: Node<any>
+                local delay = nil :: number?
+                local destroy, object = branch(function()
+                    local object, t = component(value_source, i, present)
+                    delay = t
+                    return object
+                end)
 
-                    local node = create_source_node(v)
+                present(true)
+                
+                children_need_update = true
 
-                    push_scope(scope)
+                caches[i] = {
+                    count = count,
+                    value = v,
+                    destroy_scope = destroy,
+                    value_source = value_source,
+                    present = present,
+                    delay = delay or 0,
+                    object = object
+                }
+            else -- update source
+                cache.count = count
 
-                    local ok, result = xpcall(transform, debug.traceback, function()
-                        push_scope_as_child_of(node)
-                        return node.cache
-                    end, i)
-                    
-                    pop_scope()
-
-                    if not ok then
-                        pop_scope() -- subowner scope
-                        error(result, 0)
+                if cache.value ~= v then
+                    if cache.timeout then
+                        cache.timeout.cancel = true
+                        cache.timeout = nil
+                        cache.present(true)
                     end
                     
-                    input_nodes[i] = node
-                    output_cache[i] = result
-                    children_need_update = true
-                else -- update source
-                    input_nodes[i].cache = v
-                    update_descendants(input_nodes[i])
+                    cache.value = v
+                    cache.value_source(v)
                 end
             end
         end
 
-        pop_scope()
+        -- remove old indexes
+        for i, cache in caches do
+            if cache.count < count then -- if count is not latest then value is no longer in the input table
+                cache.present(false)
+
+                if cache.delay == 0 then
+                    cache.destroy_scope()
+                    caches[i] = nil
+                    children_need_update = true
+                else
+                    cache.value = nil
+                    if cache.timeout == nil then
+                        cache.timeout = timeout(cache.delay, function() -- todo: avoid redundant updates (e.g. indexes() input is cleared)
+                            cache.destroy_scope()
+                            caches[i] = nil
+                            update_output()
+                        end)
+                    end
+                end
+            end
+        end
 
         if children_need_update then
-            local output_array_size = #output_cache
-            local output_array
-
-            -- check if the table contains a dictionary section
-            if output_array_size > 0 and next(output_cache, output_array_size) == nil then
-                output_array = table.clone(output_cache)
-            else
-                output_array = table.create(output_array_size)
-                for _, v in output_cache do
-                    table.insert(output_array, v)
-                end
-            end
-            
-            return output_array
-        else
-            return nil
+            update_output()
         end
-    end
+    end)
 
-    local node = create_node(owner, function(pre_children)
-        return update_children(input()) or pre_children
-    end, {})
-
-    evaluate_node(node)
-
-    return function()
-        push_scope_as_child_of(node)
-        return node.cache
-    end
+    return output
 end
 
 return indexes

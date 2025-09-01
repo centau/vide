@@ -2004,6 +2004,26 @@ TEST("values()", wrap_root(function()
             CHECK(cleaned_counts[3] == nil)
         end
     end
+
+    do CASE "delayed destruction deferred"
+        local input = source {}
+        local output = values(input, function()
+            return {}, 1
+        end)
+
+        local count = 0
+        effect(function() output(); count += 1 end)
+
+        input { 1, 2, 3 }
+        CHECK(count == 2)
+
+        input {}
+        CHECK(count == 2)
+
+        step(1 + 0.01)
+        --CHECK(count == 3)
+        CHECK(count == 5)
+    end
 end))
 
 TEST("spring()", wrap_root(function()

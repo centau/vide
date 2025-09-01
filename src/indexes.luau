@@ -13,24 +13,26 @@ local function indexes<K, V, Obj>(
     component: (Source<V>, K, Source<boolean>) -> (Obj, number?)
 ): Source<Array<Obj>>
     local update_count = 0
-    local caches = {} :: Map<K, {
-        destroy_scope: () -> (),
-        present: (boolean?) -> boolean,
+    local scopes = {} :: Map<K, {
+        destroy: () -> (),
+        object: Obj,
         value: V?,
         value_source: (V?) -> V,
-        object: Obj,
-        delay: number,
-        timeout: { cancel: boolean }?,
         count: number,
+        delay: number,
+        present: (boolean?) -> boolean,
+        timeout: { cancel: boolean }?,
     }>
 
     local output = source({} :: Array<Obj>)
     local function update_output()
-        local array = table.create(#caches)
-        for _, cache in caches do
-            table.insert(array, cache.object)
+        local objects = table.create(4)
+
+        for _, scope in scopes do
+            table.insert(objects, scope.object)
         end
-        output(array)
+
+        output(objects)
     end
 
     effect(function()
@@ -41,11 +43,11 @@ local function indexes<K, V, Obj>(
 
         local children_need_update = false -- set to true if a scope is created or destroyed
 
-        -- process data
+        -- create or update scopes
         for i, v in data do
-            local cache = caches[i]
+            local scope = scopes[i]
 
-            if cache == nil then -- create new scope and create component
+            if scope == nil then -- create new scope and create component
                 local value_source = source(v)
                 local present = source(false)
 
@@ -60,46 +62,47 @@ local function indexes<K, V, Obj>(
                 
                 children_need_update = true
 
-                caches[i] = {
-                    count = count,
+                scopes[i] = {
+                    destroy = destroy,
+                    object = object,
                     value = v,
-                    destroy_scope = destroy,
                     value_source = value_source,
-                    present = present,
+                    count = count,
                     delay = delay or 0,
-                    object = object
+                    present = present,
+                    timeout = nil,
                 }
-            else -- update source
-                cache.count = count
+            else -- update scope
+                scope.count = count
 
-                if cache.value ~= v then
-                    if cache.timeout then
-                        cache.timeout.cancel = true
-                        cache.timeout = nil
-                        cache.present(true)
+                if scope.value ~= v then
+                    if scope.timeout then -- index is in input table again; cancel destruction
+                        scope.timeout.cancel = true
+                        scope.timeout = nil
+                        scope.present(true)
                     end
                     
-                    cache.value = v
-                    cache.value_source(v)
+                    scope.value = v
+                    scope.value_source(v)
                 end
             end
         end
 
-        -- remove old indexes
-        for i, cache in caches do
-            if cache.count < count then -- if count is not latest then value is no longer in the input table
-                cache.present(false)
+        -- destroy scopes
+        for i, scope in scopes do
+            if scope.count < count then -- if count is not latest then index is no longer in the input table
+                scope.present(false)
 
-                if cache.delay == 0 then
-                    cache.destroy_scope()
-                    caches[i] = nil
+                if scope.delay == 0 then
+                    scope.destroy()
+                    scopes[i] = nil
                     children_need_update = true
                 else
-                    cache.value = nil
-                    if cache.timeout == nil then
-                        cache.timeout = timeout(cache.delay, function() -- todo: avoid redundant updates (e.g. indexes() input is cleared)
-                            cache.destroy_scope()
-                            caches[i] = nil
+                    scope.value = nil -- set to nil for the `scope.value ~= v` check
+                    if scope.timeout == nil then
+                        scope.timeout = timeout(scope.delay, function() -- todo: possible redundant updates
+                            scope.destroy()
+                            scopes[i] = nil
                             update_output()
                         end)
                     end

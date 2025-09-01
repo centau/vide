@@ -6,26 +6,26 @@ local timeout = require "./timeout" ()
 type Array<T> = { T }
 type Map<K, V> = { [K]: V }
 type Source<T> = () -> T
-type Component<T> = (Source<boolean>) -> T
+type Component<T> = (Source<boolean>) -> (T, number?)
 
 local function switch_map<K, Obj>(
     input: Source<K>,
     map: Map<K, Component<Obj>>
 ): Source<nil | Obj | Array<Obj>>
-    local output = source(nil :: nil | Obj | Array<Obj>)
-
-    local caches = {} :: Map<K, {
-        destroy_scope: () -> (),
-        present: (boolean?) -> boolean,
+    local scopes = {} :: Map<K, {
+        destroy: () -> (),
         object: Obj,
         delay: number,
+        present: (boolean?) -> boolean,
         timeout: { cancel: boolean }?
     }>
 
+    local output = source(nil :: nil | Obj | Array<Obj>)
     local function update_output()
         local objects = {}
-        for _, cache in caches do
-            table.insert(objects, cache.object)
+
+        for _, scope in scopes do
+            table.insert(objects, scope.object)
         end
 
         output(
@@ -38,33 +38,36 @@ local function switch_map<K, Obj>(
     effect(function()
         local key: K? = input()
 
-        for k, cache in caches do
+        -- destroy (or queue destroy) all scopes not associated with the input key
+        for k, scope in scopes do
             if k == key then continue end
-            cache.present(false)
 
-            if cache.delay == 0 then
-                cache.destroy_scope()
-                caches[k] = nil
+            scope.present(false)
+
+            if scope.delay == 0 then
+                scope.destroy()
+                scopes[k] = nil
             else
-                if cache.timeout == nil then
-                    cache.timeout = timeout(cache.delay, function()
-                        cache.destroy_scope()
-                        caches[k] = nil
+                if scope.timeout == nil then
+                    scope.timeout = timeout(scope.delay, function()
+                        scope.destroy()
+                        scopes[k] = nil
                         update_output()
                     end)
                 end
             end
         end
 
+        -- create new scope or abort destruction of existing scope if key exists
         if key ~= nil then
-            local cache = caches[key]
+            local scope = scopes[key]
 
-            if cache then
-                cache.present(true)
+            if scope then
+                scope.present(true)
 
-                if cache.timeout then
-                    cache.timeout.cancel = true
-                    cache.timeout = nil
+                if scope.timeout then
+                    scope.timeout.cancel = true
+                    scope.timeout = nil
                 end
             else
                 local component = map[key]
@@ -85,11 +88,11 @@ local function switch_map<K, Obj>(
 
                     present(true)
 
-                    caches[key] = {
-                        destroy_scope = destroy,
-                        present = present,
+                    scopes[key] = {
+                        destroy = destroy,
                         object = object,
                         delay = delay or 0,
+                        present = present,
                         timeout = nil
                     }
                 end

@@ -78,6 +78,7 @@ local vide = {
 
     -- flags
     strict = (nil :: any) :: boolean,
+    defaults = (nil :: any) :: boolean,
     defer_nested_properties = (nil :: any) :: boolean,
 
     -- temporary

@@ -1,9 +1,6 @@
 name: site-deploy
 
 on:
-  push:
-    branches: [main] # todo: remove later
-
   workflow_dispatch:
 
 permissions:

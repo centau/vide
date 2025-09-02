@@ -233,7 +233,7 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
 end
 
 local function step_springs(dt: number)
-    for data in next, springs do
+    for data in springs do
         local k, c,
         x0_123, x1_123, u_123,
         x0_456, x1_456, u_456 =

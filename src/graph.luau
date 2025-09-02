@@ -93,7 +93,7 @@ end
 
 local function flush_cleanups<T>(node: Node<T>)
     if node.cleanups then
-        for _, fn in next, node.cleanups do
+        for _, fn in node.cleanups do
             local ok, err: string? = xpcall(fn, debug.traceback)
             if not ok then error(`cleanup error: {err}`, 0) end
         end

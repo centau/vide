@@ -257,6 +257,8 @@ local function step_springs(dt: number)
             data.x0_123, data.x1_123, data.v_123,
             data.x0_456, data.x1_456, data.v_456
 
+        if x0_123 == x1_123 and x0_456 == x1_456 then continue end
+
         -- calculate displacement from target
         local dx_123 = x0_123 - x1_123
         local dx_456 = x0_456 - x1_456
@@ -277,7 +279,7 @@ local function step_springs(dt: number)
         local v_123 = u_123 + dv_123
         local v_456 = u_456 + dv_456
 
-        -- guarantee pos < pos + velocity < goal
+        -- guarantee pos < pos + velocity <= goal
         local a_123 = vector.max(get_min_vector_step(x0_123), vector.abs(v_123) * dt) * vector.sign(v_123)
         local a_456 = vector.max(get_min_vector_step(x0_456), vector.abs(v_456) * dt) * vector.sign(v_456)
 

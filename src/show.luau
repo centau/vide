@@ -9,8 +9,8 @@ type Source<T> = () -> T
 
 local function show<T, Obj>(
     input: Source<T?>,
-    component: (Source<T>, Source<boolean>) -> (Obj, number?),
-    fallback: ((Source<boolean>) -> (Obj, number?))?
+    component: (Source<T>, Source<boolean>) -> (Obj, ...number),
+    fallback: ((Source<boolean>) -> (Obj, ...number))?
 ): Source<nil | Obj | Array<Obj>>
     local filtered_input = source()
 

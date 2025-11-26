@@ -10,7 +10,7 @@ type Source<T> = () -> T
 
 local function indexes<K, V, Obj>(
     input: Source<Map<K, V>>,
-    component: (Source<V>, K, Source<boolean>) -> (Obj, number?)
+    component: (Source<V>, K, Source<boolean>) -> (Obj, ...number)
 ): Source<Array<Obj>>
     local update_count = 0
     local scopes = {} :: Map<K, {

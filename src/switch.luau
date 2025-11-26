@@ -6,7 +6,7 @@ local timeout = require "./timeout" ()
 type Array<T> = { T }
 type Map<K, V> = { [K]: V }
 type Source<T> = () -> T
-type Component<T> = (Source<boolean>) -> (T, number?)
+type Component<T> = (Source<boolean>) -> (T, ...number)
 
 local function switch_map<K, Obj>(
     input: Source<K>,

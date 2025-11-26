@@ -46,7 +46,7 @@ end
 
 local vide = require "../src/"
 local count = vide.source(0)
-create("TextButton") {
+create("TextButton") { -- todo: why is `:: "TextButton"` not necessary?
     BackgroundTransparency = 1,
     AnchorPoint = "bad value", -- should error
     InvalidProperty = true, -- should error

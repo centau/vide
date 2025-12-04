@@ -2120,6 +2120,31 @@ TEST("spring()", wrap_root(function()
         step(0) -- process spring queue
         CHECK(count == 1) -- check spring was rescheduled correctly
     end
+
+    do CASE "spring control"
+        local input = source(1)
+        local output, control = spring(input)
+
+        local value = input()
+        local count = 0
+        effect(function()
+            value = output()
+            count += 1
+        end)
+
+        CHECK(count == 1)
+        CHECK(value == 1)
+
+        control { impulse = 1 }
+
+        CHECK(count == 1)
+        CHECK(value == 1)
+
+        step(1/120 + 0.001)
+
+        CHECK(count == 2)
+        CHECK(value > 1)
+    end
 end))
 
 TEST("untrack()", wrap_root(function()

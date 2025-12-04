@@ -9,6 +9,7 @@ local update_descendants = graph.update_descendants
 local push_scope_as_child_of = graph.push_scope_as_child_of
 
 local UPDATE_RATE = 120
+local TOLERANCE_FACTOR = 10_000
 
 type Animatable = number | CFrame | Color3 | UDim | UDim2 | Vector2 | Vector3
 
@@ -24,7 +25,8 @@ type SpringState<T> = {
     k: number, -- spring constant
     c: number, -- damping coeff
 
-    x0_123: vector, x0_456: vector, -- current position
+    x0_123: vector, x0_456: vector, -- initial position
+    x_123: vector, x_456: vector, -- current position
     x1_123: vector, x1_456: vector, -- target position
     v_123: vector, v_456: vector, -- current velocity
 
@@ -135,10 +137,8 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
     local owner = assert_stable_scope()
 
     -- https://en.wikipedia.org/wiki/Damping
-
     local w_n = 2*math.pi / (period or 1)
     local z = damping_ratio or 1
-
     local k = w_n^2
     local c_c = 2*w_n
     local c = z * c_c
@@ -154,10 +154,12 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
         c = c,
 
         x0_123 = vector.zero,
+        x_123 = vector.zero,
         x1_123 = vector.zero,
         v_123 = vector.zero,
 
         x0_456 = vector.zero,
+        x_456 = vector.zero,
         x1_456 = vector.zero,
         v_456 = vector.zero,
 
@@ -175,11 +177,10 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
     end
 
     local updater = create_node(owner, updater_effect, false :: any)
-
     evaluate_node(updater)
 
     -- set initial position to goal
-    data.x0_123, data.x0_456 = data.x1_123, data.x1_456
+    data.x_123, data.x_456 = data.x1_123, data.x1_456
 
     -- set output to goal
     output.cache = data.source_value
@@ -190,7 +191,9 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
         local dv = p.impulse
 
         if x then
-            data.x0_123, data.x0_456 = type_to_vec6[typeof(x)](x)
+            local x_123, x_456 = type_to_vec6[typeof(x)](x)
+            data.x_123, data.x_456 = x_123, x_456
+            data.x0_123, data.x0_456 = x_123, x_456
         end
 
         if v then
@@ -203,6 +206,7 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
             data.v_456 += dv_456
         end
 
+        -- schedule spring
         springs[data] = output
     end :: SpringSettings<T>
 
@@ -214,7 +218,7 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
 
         -- set current position to value
         local v = ... :: T
-        data.x0_123, data.x0_456 = type_to_vec6[typeof(v)](v)
+        data.x_123, data.x_456 = type_to_vec6[typeof(v)](v)
 
         -- reset velocity
         data.v_123 = vector.zero
@@ -230,38 +234,29 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
     end, config
 end
 
--- luau vectors have f32 for each component, unlike luau number which is f64 
-local FLOAT32_MANTISSA_BITS = 23
-type float32 = number
-
-local function get_min_step(x: float32)
-    local _,exponent = math.frexp(x)
-
-    local lower_mantissa = math.ldexp(1, -FLOAT32_MANTISSA_BITS - 1)
-    return math.ldexp(lower_mantissa, exponent)
+-- calculates a float tolerance, based on the magnitude of the float
+local function get_min_step(x: number): number
+    return x/TOLERANCE_FACTOR
 end
-local function get_min_vector_step(goal: vector): vector
+local function get_min_vector_step(direction: vector): vector
     return vector.create(
-        get_min_step(goal.x),
-        get_min_step(goal.y),
-        get_min_step(goal.z)
+        get_min_step(direction.x),
+        get_min_step(direction.y),
+        get_min_step(direction.z)
     )
 end
 
 local function step_springs(dt: number)
-    for data in springs do
-        local k, c,
-        x0_123, x1_123, u_123,
-        x0_456, x1_456, u_456 =
-            data.k, data.c,
-            data.x0_123, data.x1_123, data.v_123,
-            data.x0_456, data.x1_456, data.v_456
-
-        if x0_123 == x1_123 and x0_456 == x1_456 then continue end
+    for s in springs do
+        local k = s.k
+        local c = s.c
+        local x_123, x_456 = s.x_123, s.x_456
+        local x1_123, x1_456 = s.x1_123, s.x1_456
+        local u_123, u_456 = s.v_123, s.v_456
 
         -- calculate displacement from target
-        local dx_123 = x0_123 - x1_123
-        local dx_456 = x0_456 - x1_456
+        local dx_123 = x_123 - x1_123
+        local dx_456 = x_456 - x1_456
 
         -- calculate spring force
         local fs_123 = dx_123*-k
@@ -271,35 +266,46 @@ local function step_springs(dt: number)
         local ff_123 = u_123*-c
         local ff_456 = u_456*-c
 
-        -- calculate acceleration step
-        local dv_123 = (fs_123 + ff_123)*dt
-        local dv_456 = (fs_456 + ff_456)*dt
+        -- calculate acceleration
+        local a_123 = (fs_123 + ff_123)
+        local a_456 = (fs_456 + ff_456)
 
-        -- apply acceleration step
-        local v_123 = u_123 + dv_123
-        local v_456 = u_456 + dv_456
+        -- step acceleration
+        local v_123 = u_123 + a_123*dt
+        local v_456 = u_456 + a_456*dt
 
-        -- guarantee pos < pos + velocity <= goal
-        local a_123 = vector.max(get_min_vector_step(x0_123), vector.abs(v_123) * dt) * vector.sign(v_123)
-        local a_456 = vector.max(get_min_vector_step(x0_456), vector.abs(v_456) * dt) * vector.sign(v_456)
+        -- step velocity
+        local y_123 = x_123 + v_123*dt
+        local y_456 = x_456 + v_456*dt
 
-        -- calculate new position
-        local x_123 = x0_123 + a_123
-        local x_456 = x0_456 + a_456
-
-        data.x0_123, data.x0_456 = x_123, x_456
-        data.v_123, data.v_456 = v_123, v_456
+        s.x_123, s.x_456 = y_123, y_456
+        s.v_123, s.v_456 = v_123, v_456
     end
 end
 
 local function update_spring_sources()
     for data, output in springs do
         local x0_123, x0_456 = data.x0_123, data.x0_456
-        if x0_123 == data.x1_123 and x0_456 == data.x1_456 then
+        local x_123, x_456 = data.x_123, data.x_456
+        local x1_123, x1_456 = data.x1_123, data.x1_456
+        local v_123, v_456 = data.v_123, data.v_456
+
+        local tol_123 = vector.abs(get_min_vector_step(x0_123 - x1_123))
+        local tol_456 = vector.abs(get_min_vector_step(x0_456 - x1_456))
+
+        if
+            -- position is at goal (within tolerance)
+            vector.max(vector.abs(x_123 - x1_123), tol_123) == tol_123
+            and vector.max(vector.abs(x_456 - x1_456), tol_456) == tol_456
+
+            -- velocity is at 0 (within tolerance)
+            and vector.max(vector.abs(v_123/10), tol_123) == tol_123
+            and vector.max(vector.abs(v_456/10), tol_456) == tol_456
+        then
             springs[data] = nil
             output.cache = data.source_value
         else
-            output.cache = vec6_to_type[typeof(data.source_value)](x0_123, x0_456)
+            output.cache = vec6_to_type[typeof(data.source_value)](x_123, x_456)
         end
 
         update_descendants(output)

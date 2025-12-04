@@ -1,25 +1,34 @@
 local vide = require "../../vide"
-local testkit = require("../test/testkit")
 
-local program_time = os.clock()
+local function system(): (number) -> number
+    local MAX = 40
+    local MIN = 10
 
-local function step(): number
-    local FPS = 60
-    local DT = 1/FPS
+    local _, input, output = vide.root(function()
+        local input = vide.source(MAX)
+        local output = vide.spring(input, 1, .3)
+        return input, output
+    end)
 
-    repeat until os.clock() - program_time >= DT
-    program_time += DT
-    return DT
+    local T = 10
+    local t = 0
+    return function(dt)
+        t += dt
+        if t >= T then
+            t -= T
+            input(input() == MAX and MIN or MAX)
+        end
+
+        vide.step(dt)
+
+        return output()
+    end
 end
 
-local function main()
-    local TERMINAL_HEIGHT = 73 --* REDUCE IF BAR DOES NOT FIT IN TERMINAL
-    local MIN_ALPHA = 0.3
-    local MAX_ALPHA = 0.7
+--------------------------------------------------------------------------------
 
-    local MIN = TERMINAL_HEIGHT * MIN_ALPHA
-    local MAX = TERMINAL_HEIGHT * MAX_ALPHA
-    local OFFSET = TERMINAL_HEIGHT - MAX
+local function redraw_block(h: number)
+    local OFFSET = 70
 
     local BLOCK = "█"
 
@@ -35,37 +44,35 @@ local function main()
             else "▁"
     end
 
-    local source = vide.source
-    local spring = vide.spring
-    local effect = vide.effect
-
-    local value = source(MAX)
-    local sprung = spring(value, 1, 0.3)
-
-    effect(function()
-        local v = sprung()
-        local fv = math.floor(v)
-        local reset = "\27[H\27[2J" -- ANSI clear terminal
-        local offset = string.rep("\n", MAX - fv + OFFSET)
-        local bar = testkit.color.gray(remainder_to_block(v - fv) .. "\n" .. string.rep(BLOCK .. "\n", fv))
-        print(reset .. offset .. bar .. "\n" .. v)
-    end)
-
-    local T = 3
-    local elapsed = T/1.2
-    repeat local dt = step()
-        vide.step(dt)
-
-        elapsed += dt
-        while elapsed >= T do
-            elapsed -= T
-            value(value() == MAX and MIN or MAX)
-        end
-
-    until false
+    local h_f = math.floor(h)
+    local reset = "\27[H\27[2J" -- ANSI clear terminal
+    local offset = string.rep("\n", OFFSET - h_f)
+    local bar = remainder_to_block(h - h_f) .. "\n" .. string.rep(BLOCK .. "\n", h_f)
+    --print(reset .. offset .. bar .. "\n" .. string.format("%.1f", h))
+    print(reset .. offset .. bar .. "\n" .. h)
 end
 
-vide.root(main)
+local program_time = os.clock()
 
+local function step(): number
+    local FPS = 30
+    local DT = 1/FPS
+
+    repeat until os.clock() - program_time >= DT
+    program_time += DT
+    return DT
+end
+
+local function loop()
+    local callback = system()
+
+    while true do
+        local dt = step()
+        local x = callback(dt)
+        redraw_block(x)
+    end
+end
+
+loop()
 
 

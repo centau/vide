@@ -4,7 +4,7 @@ Eventually you may need a way to dynamically create and destroy UI elements
 resulting from source updates. Vide provides functions to help you do this,
 known as *dynamic scope* functions.
 
-These functions create and destroy components for you in response to source
+These functions create and destroy scopes for you in response to source
 updates. They return a source containing the created component. This source can
 be parented as a child which will update the shown children whenever the source
 updates.
@@ -156,3 +156,56 @@ local data = src()
 table.insert(data, 3) -- no effects will run
 src(data) -- effects will run
 ```
+
+--------------------------------------------------------------------------------
+
+All dynamic scope functions also support delaying the destruction of the scope.
+This is useful for playing any sort of animation or effect before the UI
+instance is removed.
+
+If you have the following code, for example:
+
+```lua
+local function Menu()
+    return create "Frame" {}
+end
+
+local toggled = source(true)
+
+create "ScreenGui" {
+    show(toggled, function()
+        return Menu {}
+    end)
+}
+
+toggled(false) -- menu will disappear immediately
+```
+
+```lua
+local function Menu(props: { Visible: () -> boolean })
+    local transparency = spring(function()
+        return if p.Visible then 0 else 1
+    end
+
+    return create "Frame" {
+        BackgroundTransparency = transparency
+    }
+end
+
+local toggled = source(true)
+
+create "ScreenGui" {
+    show(toggled, function(_, present)
+        return Menu { p.Visible = present }, 3 -- give a generous 3 seconds for the spring to complete before destroying
+    end)
+}
+
+toggled(false)
+-- `present` will go `false` immediately
+-- transparency will begin being sprung
+-- after 3 seconds the scope is destroyed, giving the spring enough time to complete
+```
+
+If `toggled` goes from truthy to falsey, beginning the timer, but then back
+to truthy before the timer finishes, the timer is cancelled and the scope is
+not destroyed.

@@ -1,6 +1,6 @@
-# Dynamic Scoping
+# Dynamic Scopes
 
-Dynamic scoping is the act of creating and destroying new scopes in response to
+Dynamic scopes are scopes that are created and destroyed in response to
 source updates. This is needed for conditionally rendering parts of your UI,
 such as opening and closing menus.
 

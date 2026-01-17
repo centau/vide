@@ -1,7 +1,7 @@
-# Reactivity: Dynamic Scoping
+# Reactivity: Dynamic Scopes
 
-Dynamic scoping is the act of creating and destroying new scopes in response to
-source updates. Vide provides functions for some common use-cases to do this.
+Dynamic scopes are scopes that are created or destroyed in response to
+source updates. Vide provides functions for some common use-cases for dynamic scopes.
 
 ## show() <Badge type="tip" text="STABLE"><a href="/vide/api/reactivity-core#Scopes">REACTIVE</a></Badge>
 
@@ -11,8 +11,10 @@ if the source is falsey.
 - **Type**
 
     ```luau
-    function show<T>(source: () -> unknown, component: () -> T): () -> T?
-    function show<T, U>(source: () -> unknown, component: () -> T, fallback: () -> U): () -> T | U
+    function show<T>(source: () -> unknown, component: Constructor<T>): () -> T?
+    function show<T, U>(source: () -> unknown, component: Constructor<T>, fallback: () -> U): () -> T | U
+
+    type Constructor<T> = () -> (T, number?)
     ```
 
 - **Details**
@@ -25,6 +27,9 @@ if the source is falsey.
     Returns a source holding an instance of the currently shown component or
     `nil` if no component is currently shown.
 
+    Destruction of the scope can be delayed by returning the number of seconds
+    to delay by, after the component.
+
 ## switch() <Badge type="tip" text="STABLE"><a href="/vide/api/reactivity-core#Scopes">REACTIVE</a></Badge>
 
 Shows one of a set of components depending on a source and a mapping table.
@@ -32,7 +37,9 @@ Shows one of a set of components depending on a source and a mapping table.
 - **Type**
 
     ```luau
-    function switch<K, V>(source: () -> K): (map: Map<K, () -> V>): () -> V?
+    function switch<K, V>(source: () -> K): (map: Map<K, Constructor<V>>): () -> V?
+
+    type Constructor<T> = () -> (T, number?)
     ```
 
 - **Details**
@@ -45,6 +52,9 @@ Shows one of a set of components depending on a source and a mapping table.
 
     Returns a source holding an instance of the currently shown component or
     `nil` if no component is currently shown.
+
+    Destruction of the scope can be delayed by returning the number of seconds
+    to delay by, after the component.
 
 - **Example**
 
@@ -71,8 +81,9 @@ Shows a component for each index in a table.
     ```luau
     function indexes<KI, VI, VO>(
         source: () -> Map<KI, VI>,
-        transform: (value: () -> VI, index: KI) -> VO
+        constructor: (value: () -> VI, index: KI) -> (VO, number?)
     ): Array<VO>
+    ```
 
 - **Details**
 
@@ -81,20 +92,23 @@ Shows a component for each index in a table.
     When the source table updates, a component is generated for each index in
     the table.
 
-    - For any added index, the `transform` function is run in a new stable
+    - For any added index, the `constructor` function is run in a new stable
       scope to produce an instance that is cached.
     - For any removed index, the stable scope for that index is destroyed.
 
-    The `transform` function is called with:
+    The `constructor` function is called with:
 
     1. A *source containing the index's value*.
     2. The *index itself*.
 
-    Anytime an existing index's value changes, the `transform` function is not
+    Anytime an existing index's value changes, the `constructor` function is not
     rerun, instead, that index's corresponding source is updated with the new
     value.
 
     Returns a source holding an array of instances currently shown.
+
+    Destruction of the scope can be delayed by returning the number of seconds
+    to delay by, after the component.
 
 - **Example**
 
@@ -128,7 +142,7 @@ Shows a component for each value in a table.
     ```luau
     function values<KI, VI, VO>(
         source: () -> Map<KI, VI>,
-        transform: (value: VI, index: () -> KI) -> VO
+        constructor: (value: VI, index: () -> KI) -> (VO, number?)
     ): Array<VO>
 
 - **Details**
@@ -141,21 +155,24 @@ Shows a component for each value in a table.
     When the source table updates, a component is generated for each value in
     the table.
 
-    - For any added value, the `transform` function is run in a new stable scope
+    - For any added value, the `constructor` function is run in a new stable scope
       to produce an instance that is cached.
     - For any removed value, the stable scope for that value is destroyed.
   
-    The `transform` function is called with:
+    The `constructor` function is called with:
 
     1. The *value itself*.
     2. A *source containing the value's index*.
 
-    Anytime an existing value's index changes, the `transform` function is not
+    Anytime an existing value's index changes, the `constructor` function is not
     rerun, instead, that value's corresponding source is updated with the new
     index.
 
     Returns a source holding an array of instances currently shown.
- 
+
+    Destruction of the scope can be delayed by returning the number of seconds
+    to delay by, after the component.
+
     ::: warning
     Having the same values appear multiple times in the input source table can
     cause unexpected behavior. Strict mode has checks for this.

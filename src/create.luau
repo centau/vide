@@ -76,7 +76,6 @@ type function Properties(instance: type?)
         for i, v in instance:properties() do
             local connector = v.read and v.read.tag == "table" and v.read:readproperty(types.singleton("Connect"))
             if connector then
-                if not connector then continue end
                 local params = connector:parameters().head
                 if not params then continue end
                 local listener = params[2]

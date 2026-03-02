@@ -1,4 +1,4 @@
-<img width="239" height="496" alt="image" src="https://github.com/user-attachments/assets/2d5de615-60bc-4e1b-997f-ec1cac69c8df" /># Components
+# Components
 
 Vide encourages separating different parts of your UI into functions called
 *components*.
@@ -14,27 +14,24 @@ together.
 local create = vide.create
 
 local function Button(props: {
-    Position: UDim2,
-    Text: string,
-    Activated: () -> ()
+	Position: UDim2,
+	Text: string,
+	Activated: () -> ()
 })
-    return create "TextButton" {
-        BackgroundColor3 = Color3.fromRGB(50, 50, 50),
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        Size = UDim2.fromOffset(200, 150),
+	return create "TextButton" {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50),
+		TextColor3 = Color3.fromRGB(255, 255, 255),
+		Size = UDim2.fromOffset(200, 150),
 
-        Position = props.Position,
-        Text = props.Text,
-        Activated = props.Activated,
+		Position = props.Position,
+		Text = props.Text,
+		Activated = props.Activated,
 
-        create "UICorner" {}
-    }
+		create "UICorner" {}
+	}
 end
 
 return Button
-```
-
-```luau [Menu.luau]
 local create = vide.create
 local source = vide.source
 local effect = vide.effect
@@ -115,8 +112,6 @@ local function Menu()
 end
 
 return Menu
-```
-```luau [slider.luau]
 -- Example of a component that wraps the built-in slider component.
 -- This keeps a consistent "component(props) -> Instance" style.
 
@@ -165,5 +160,3 @@ end
 
 return Slider
 :::
-
-A single parameter `props` is used to pass properties to the component.

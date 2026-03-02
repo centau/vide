@@ -159,4 +159,5 @@ local function Slider(props: SliderProps)
 end
 
 return Slider
+```
 :::

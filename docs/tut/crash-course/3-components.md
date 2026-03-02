@@ -116,9 +116,8 @@ end
 
 return Menu
 ```
-
 ```luau [slider.luau]
-l-- Example of a component that wraps the built-in slider component.
+-- Example of a component that wraps the built-in slider component.
 -- This keeps a consistent "component(props) -> Instance" style.
 
 local source = vide.source

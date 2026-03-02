@@ -53,3 +53,12 @@ instance.Text = "foo" -- "foo" will be printed by the effect
 
 The source `output` will be updated with the new property value any time it is
 changed externally.
+
+# draggable()
+
+Creates an Action that makes a GuiObject draggable using input events (mouse and touch). This helper is intended for reuse across components and does not use Roblox’s deprecated `.Draggable` property.
+
+## Type
+
+```lua
+draggable(opts: DraggableOptions?) -> Action

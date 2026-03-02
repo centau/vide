@@ -10,7 +10,7 @@ together.
 
 ::: code-group
 
-```luau [Button.luau]
+```lua [Button.luau]
 local create = vide.create
 
 local function Button(props: {
@@ -32,7 +32,9 @@ local function Button(props: {
 end
 
 return Button
+```
 
+```luau [menu.luau]
 local create = vide.create
 local source = vide.source
 local effect = vide.effect
@@ -67,7 +69,6 @@ local function Menu()
 			end
 		},
 
-		-- Settings menu panel (example usage of Slider component)
 		create "Frame" {
 			AnchorPoint = Vector2.new(0, 1),
 			Position = UDim2.fromOffset(24, 560),
@@ -113,9 +114,9 @@ local function Menu()
 end
 
 return Menu
--- Example of a component that wraps the built-in slider component.
--- This keeps a consistent "component(props) -> Instance" style.
+```
 
+```luau [slider.luau]
 local source = vide.source
 
 export type SliderTheme = {
@@ -132,26 +133,21 @@ export type SliderTheme = {
 }
 
 export type SliderProps = {
-	-- required
 	value: source.source<number>,
 
-	-- range
 	min: number?,
 	max: number?,
 	step: number?,
 
-	-- text
 	label: string?,
 	format: ((number) -> string)?,
 	onChanged: ((number) -> ())?,
 
-	-- layout
 	size: UDim2?,
 	position: UDim2?,
 	anchorPoint: Vector2?,
 	layoutOrder: number?,
 
-	-- style
 	theme: SliderTheme?,
 }
 
@@ -161,4 +157,5 @@ end
 
 return Slider
 ```
+
 :::

@@ -10,7 +10,6 @@ together.
 
 ::: code-group
 
-
 ```luau [Button.luau]
 local create = vide.create
 
@@ -33,6 +32,7 @@ local function Button(props: {
 end
 
 return Button
+
 local create = vide.create
 local source = vide.source
 local effect = vide.effect

@@ -62,7 +62,7 @@ Creates an Action that makes a GuiObject draggable using input events (mouse and
 
 ```lua
 draggable(opts: DraggableOptions?) -> Action
-
+```
 DraggableOptions
 	•	axis: "x" | "y" | "both" (default "both")
 Constrains dragging to a single axis or allows free movement.
@@ -83,6 +83,8 @@ draggable() must be applied to an instance that:
 If applied to a non-GuiObject, the Action should be treated as a no-op
 
 Example: Basic draggable panel
+
+```lua
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -118,3 +120,4 @@ local function App()
 end
 
 mount(App, playerGui)
+```

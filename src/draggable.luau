@@ -1,5 +1,4 @@
--- vide/draggable.luau
-local UserInputService = game:GetService("UserInputService")
+local UserInputService = game:GetService("UserInputService") or nil
 
 return function(action, cleanup)
 	return function(opts)

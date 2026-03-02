@@ -1,4 +1,4 @@
-local UserInputService = game:GetService("UserInputService")
+local UserInputService = game and game:GetService("UserInputService") or nil
 
 local function clamp(x, a, b)
 	if x < a then return a end
@@ -140,6 +140,12 @@ return function(create, source, action, cleanup)
 					create "UIStroke" { Thickness = 1, Color = Color3.fromRGB(0, 0, 0), Transparency = 0.75 },
 
 					action(function(btn)
+						-- In non-Roblox test environments, game/UserInputService may not exist.
+						-- The slider should still be requireable, and still render; dragging is disabled.
+						if not UserInputService then
+							return
+						end
+
 						local dragInput
 						local dragging = false
 						local beganConn

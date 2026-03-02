@@ -1,11 +1,23 @@
-local UserInputService = game:GetService("UserInputService") or nil
+local UserInputService = game and game:GetService("UserInputService") or nil
 
+-- Factory: inject Vide functions to avoid cyclic requires
 return function(action, cleanup)
 	return function(opts)
 		opts = opts or {}
 		local axis = opts.axis or "both" -- "x" | "y" | "both"
 
 		return action(function(gui)
+			-- Non-Roblox / unit-test environment: allow requiring this module without crashing.
+			-- Draggable behaviour is disabled when UserInputService is unavailable.
+			if not UserInputService then
+				return
+			end
+
+			-- Optional hardening: ignore non-GuiObject targets
+			if typeof(gui) ~= "Instance" or not gui:IsA("GuiObject") then
+				return
+			end
+
 			local dragging = false
 			local dragInput
 			local dragStart
@@ -46,6 +58,7 @@ return function(action, cleanup)
 						if input.UserInputState == Enum.UserInputState.End then
 							dragging = false
 							if changedConn then changedConn:Disconnect() end
+
 							if opts.onDragEnd then
 								opts.onDragEnd(gui.Position)
 							end

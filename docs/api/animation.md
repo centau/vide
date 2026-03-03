@@ -55,6 +55,11 @@ Returns a new source with a value always moving torwards the input source value.
 
     This module is designed for UI animations (size, position, transparency, colour, etc.). It is safe to `require` in non-Roblox environments (it should fall back to applying goals           instantly).
 
+  ::: warning
+  	Avoid tweening frequently changing reactive properties directly. Prefer tweening on events (button press, open/close).
+  	For continuous motion, prefer spring.
+  :::
+
     ## Exports
 
     - `vide.tween.tweenTo(instance, goals, tweenInfo?) -> Tween?`

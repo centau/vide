@@ -8,6 +8,8 @@ A component is a function that creates and returns a piece of UI.
 This is a way to separate your UI into small chunks that you can reuse and put
 together.
 
+A single parameter `props` is used to pass properties to the component.
+
 ::: code-group
 
 ```lua [Button.luau]

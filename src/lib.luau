@@ -23,6 +23,7 @@ local changed = require "./changed"
 local timeout, update_timeouts = require "./timeout"()
 local flags = require "./flags"
 local draggable = require "./draggable"
+local toggle = require "./toggle"
 local sliderFactory = require "./slider"
 local slider = sliderFactory(create, source, action, cleanup)
 
@@ -64,6 +65,7 @@ local vide = {
     show = show,
     indexes = indexes,
 	values = values,
+	toggle = toggle,
 	slider = slider,
 
     -- util

@@ -1,11 +1,13 @@
 -- src/tween.luau
 local TweenService = game and game:GetService("TweenService") or nil
+local HasTweenInfo = (TweenInfo  ~= nil)
 
 -- Factory: inject action + cleanup so tweens are stopped on scope destruction
 return function(action, cleanup)
 	local tween = {}
 
 	-- Presets (simple, useful)
+	if HasTweenInfo then
 	tween.presets = {
 		instant = TweenInfo.new(0),
 		fast = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),

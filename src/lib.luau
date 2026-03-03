@@ -25,7 +25,8 @@ local flags = require "./flags"
 local draggable = require "./draggable"
 local toggle = require "./toggle"
 local dropdown = require "./dropdown"
-local tween = require "./tween"
+local tweenFactory = require "./tween"
+local tween = tweenFactory(action, cleanup)
 local sliderFactory = require "./slider"
 local slider = sliderFactory(create, source, action, cleanup)
 
@@ -81,11 +82,11 @@ local vide = {
 
     -- animations
     spring = spring,
-	tween = tween,
 
     -- actions
     action = action,
     changed = changed,
+	tween = tween,
 
     -- flags
     strict = (nil :: any) :: boolean,

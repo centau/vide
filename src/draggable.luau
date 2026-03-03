@@ -1,19 +1,15 @@
 -- src/draggable.luau
 local UserInputService = game and game:GetService("UserInputService") or nil
 
--- Factory: injects action from vide
 return function(action)
 	return function(opts)
 		opts = opts or {}
 		local axis = opts.axis or "both" -- "x" | "y" | "both"
+		local smoothTime = tonumber(opts.smoothTime) or 0 -- seconds; 0 = off
 
 		return action(function(gui)
-			if not UserInputService then
-				return
-			end
-			if typeof(gui) ~= "Instance" or not gui:IsA("GuiObject") then
-				return
-			end
+			if not UserInputService then return end
+			if typeof(gui) ~= "Instance" or not gui:IsA("GuiObject") then return end
 
 			local dragging = false
 			local dragInput
@@ -25,6 +21,11 @@ return function(action)
 			local uisConn
 			local destroyingConn
 
+			-- smoothing state (offset-space)
+			local currentX, currentY
+			local targetX, targetY
+			local lastT = os.clock()
+
 			local function disconnectAll()
 				if beganConn then beganConn:Disconnect(); beganConn = nil end
 				if inputChangedConn then inputChangedConn:Disconnect(); inputChangedConn = nil end
@@ -32,7 +33,11 @@ return function(action)
 				if destroyingConn then destroyingConn:Disconnect(); destroyingConn = nil end
 			end
 
-			local function update(input)
+			local function setPosition(xOff, yOff)
+				gui.Position = UDim2.new(startPos.X.Scale, xOff, startPos.Y.Scale, yOff)
+			end
+
+			local function updateTarget(input)
 				local delta = input.Position - dragStart
 
 				local xOff = startPos.X.Offset
@@ -45,7 +50,32 @@ return function(action)
 					yOff = startPos.Y.Offset + delta.Y
 				end
 
-				gui.Position = UDim2.new(startPos.X.Scale, xOff, startPos.Y.Scale, yOff)
+				targetX, targetY = xOff, yOff
+
+				-- init current on first target
+				if currentX == nil then
+					currentX, currentY = targetX, targetY
+				end
+			end
+
+			local function step()
+				if not dragging or not dragInput then return end
+				if smoothTime <= 0 then
+					setPosition(targetX, targetY)
+					return
+				end
+
+				local now = os.clock()
+				local dt = now - lastT
+				lastT = now
+
+				-- alpha in [0..1]
+				local alpha = 1 - math.exp(-dt / smoothTime)
+
+				currentX = currentX + (targetX - currentX) * alpha
+				currentY = currentY + (targetY - currentY) * alpha
+
+				setPosition(currentX, currentY)
 			end
 
 			beganConn = gui.InputBegan:Connect(function(input)
@@ -54,15 +84,17 @@ return function(action)
 					dragStart = input.Position
 					startPos = gui.Position
 
-					-- stop dragging when the same input ends
+					-- reset smoothing state
+					currentX, currentY, targetX, targetY = nil, nil, nil, nil
+					lastT = os.clock()
+
+					updateTarget(input)
+
 					local changedConn
 					changedConn = input.Changed:Connect(function()
 						if input.UserInputState == Enum.UserInputState.End then
 							dragging = false
-							if changedConn then
-								changedConn:Disconnect()
-								changedConn = nil
-							end
+							if changedConn then changedConn:Disconnect(); changedConn = nil end
 						end
 					end)
 				end
@@ -76,18 +108,16 @@ return function(action)
 
 			uisConn = UserInputService.InputChanged:Connect(function(input)
 				if input == dragInput and dragging then
-					update(input)
+					updateTarget(input)
+					step()
 				end
 			end)
 
-			-- Cleanup without vide.cleanup which printed false errors into console
 			if gui.Destroying then
 				destroyingConn = gui.Destroying:Connect(disconnectAll)
 			else
 				destroyingConn = gui.AncestryChanged:Connect(function(_, parent)
-					if parent == nil then
-						disconnectAll()
-					end
+					if parent == nil then disconnectAll() end
 				end)
 			end
 		end)

@@ -1,18 +1,16 @@
 -- src/draggable.luau
 local UserInputService = game and game:GetService("UserInputService") or nil
 
--- Factory: inject vide.action and vide.cleanup to avoid cyclic requires
-return function(action, cleanup)
+-- Factory: injects action from vide
+return function(action)
 	return function(opts)
 		opts = opts or {}
 		local axis = opts.axis or "both" -- "x" | "y" | "both"
 
 		return action(function(gui)
-			-- allow require in non-Roblox test environments
 			if not UserInputService then
 				return
 			end
-
 			if typeof(gui) ~= "Instance" or not gui:IsA("GuiObject") then
 				return
 			end
@@ -21,6 +19,18 @@ return function(action, cleanup)
 			local dragInput
 			local dragStart
 			local startPos
+
+			local beganConn
+			local inputChangedConn
+			local uisConn
+			local destroyingConn
+
+			local function disconnectAll()
+				if beganConn then beganConn:Disconnect(); beganConn = nil end
+				if inputChangedConn then inputChangedConn:Disconnect(); inputChangedConn = nil end
+				if uisConn then uisConn:Disconnect(); uisConn = nil end
+				if destroyingConn then destroyingConn:Disconnect(); destroyingConn = nil end
+			end
 
 			local function update(input)
 				local delta = input.Position - dragStart
@@ -36,56 +46,50 @@ return function(action, cleanup)
 				end
 
 				gui.Position = UDim2.new(startPos.X.Scale, xOff, startPos.Y.Scale, yOff)
-
-				if opts.onDrag then
-					opts.onDrag(gui.Position)
-				end
 			end
 
-			local beganConn = gui.InputBegan:Connect(function(input)
+			beganConn = gui.InputBegan:Connect(function(input)
 				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 					dragging = true
 					dragStart = input.Position
 					startPos = gui.Position
 
-					if opts.onDragStart then
-						opts.onDragStart(startPos)
-					end
-
+					-- stop dragging when the same input ends
 					local changedConn
 					changedConn = input.Changed:Connect(function()
 						if input.UserInputState == Enum.UserInputState.End then
 							dragging = false
-							if changedConn then changedConn:Disconnect() end
-							if opts.onDragEnd then
-								opts.onDragEnd(gui.Position)
+							if changedConn then
+								changedConn:Disconnect()
+								changedConn = nil
 							end
 						end
-					end)
-
-					cleanup(function()
-						if changedConn then changedConn:Disconnect() end
 					end)
 				end
 			end)
 
-			local changedConn = gui.InputChanged:Connect(function(input)
+			inputChangedConn = gui.InputChanged:Connect(function(input)
 				if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
 					dragInput = input
 				end
 			end)
 
-			local uisConn = UserInputService.InputChanged:Connect(function(input)
+			uisConn = UserInputService.InputChanged:Connect(function(input)
 				if input == dragInput and dragging then
 					update(input)
 				end
 			end)
 
-			cleanup(function()
-				beganConn:Disconnect()
-				changedConn:Disconnect()
-				uisConn:Disconnect()
-			end)
+			-- Cleanup without vide.cleanup which printed false errors into console
+			if gui.Destroying then
+				destroyingConn = gui.Destroying:Connect(disconnectAll)
+			else
+				destroyingConn = gui.AncestryChanged:Connect(function(_, parent)
+					if parent == nil then
+						disconnectAll()
+					end
+				end)
+			end
 		end)
 	end
 end

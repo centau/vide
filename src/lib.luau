@@ -24,6 +24,8 @@ local timeout, update_timeouts = require "./timeout"()
 local flags = require "./flags"
 local draggable = require "./draggable"
 local toggle = require "./toggle"
+local dropdown = require "./dropdown"
+local tween = require "./tween"
 local sliderFactory = require "./slider"
 local slider = sliderFactory(create, source, action, cleanup)
 
@@ -66,6 +68,7 @@ local vide = {
     indexes = indexes,
 	values = values,
 	toggle = toggle,
+	dropdown = dropdown,
 	slider = slider,
 
     -- util
@@ -78,6 +81,7 @@ local vide = {
 
     -- animations
     spring = spring,
+	tween = tween,
 
     -- actions
     action = action,

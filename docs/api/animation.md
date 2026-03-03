@@ -48,3 +48,24 @@ Returns a new source with a value always moving torwards the input source value.
     ::: warning
     Large periods or damping ratios can break the spring.
     :::
+
+  # tween
+
+A small TweenService wrapper that provides ergonomic tweening helpers and optional presets.
+
+This module is designed for UI animations (size, position, transparency, colour, etc.). It is safe to `require` in non-Roblox environments (it should fall back to applying goals instantly).
+
+## Exports
+
+- `vide.tween.tweenTo(instance, goals, tweenInfo?) -> Tween?`
+- `vide.tween.tween(goals, tweenInfo?) -> Action` (optional, if you implemented the Action form)
+- `vide.tween.presets` (optional)
+
+## tweenTo()
+
+Tweens an instance to a set of goal properties.
+
+### Type
+
+```lua
+tweenTo(instance: Instance, goals: { [string]: any }, tweenInfo: TweenInfo?) -> Tween?

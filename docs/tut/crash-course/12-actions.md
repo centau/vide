@@ -66,12 +66,15 @@ draggable(opts: DraggableOptions?) -> Action
 DraggableOptions
 	•	axis: "x" | "y" | "both" (default "both")
 Constrains dragging to a single axis or allows free movement.
+	•	smoothTime: number (optional, default 0)
+Enables smoothing/“weight” while dragging. 0 disables smoothing. Practical range: 0.05–0.12.
 	•	onDragStart: (startPos: UDim2) -> () (optional)
 Called when dragging begins. Receives the starting Position.
 	•	onDrag: (newPos: UDim2) -> () (optional)
 Called while dragging. Receives the updated Position.
 	•	onDragEnd: (endPos: UDim2) -> () (optional)
 Called when dragging ends. Receives the final Position.
+
 
 Supported instances
 

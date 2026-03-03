@@ -33,6 +33,143 @@ end
 
 return Button
 ```
+```luau [toggle.luau]
+local toggle = vide.toggle
+local source = vide.source
+
+local enabled = source(true)
+
+return function()
+	return toggle {
+		label = "Music",
+		description = "Enable background music",
+		value = enabled, -- Source<boolean>
+		onChanged = function(v)
+			print("Music:", v)
+		end,
+		-- optional theme (omit if you want defaults / neutral)
+		theme = {
+			onColor = Color3.fromRGB(80, 140, 255),
+			offColor = Color3.fromRGB(18, 20, 26),
+			knobColor = Color3.fromRGB(245, 247, 252),
+			strokeColor = Color3.fromRGB(255, 255, 255),
+			strokeTransparency = 0.88,
+			labelColor = Color3.fromRGB(245, 247, 252),
+			subLabelColor = Color3.fromRGB(190, 196, 210),
+			cornerRadius = 999,
+		},
+	}
+end
+```
+
+```luau [dropdown.luau]
+local dropdown = vide.dropdown
+local source = vide.source
+
+local selected = source("All")
+local isOpen = source(false)
+
+local options = {
+	"All",
+	"Public",
+	"Private",
+	"Friends",
+	"Full",
+	"Empty",
+	"Region: EU",
+	"Region: NA",
+}
+
+return function()
+	return dropdown {
+		size = UDim2.fromOffset(260, 44),
+
+		-- state
+		value = selected,   -- Source<string>
+		open = isOpen,      -- Source<boolean>
+
+		-- options
+		options = options,
+		placeholder = "Select…",
+		closeOnSelect = true,
+
+		-- scrolling
+		maxVisible = 4,
+		rowHeight = 36,
+		gap = 8,
+		scrollBarThickness = 6,
+
+		-- layering (recommended if you have other UI nearby)
+		baseZIndex = 200,
+
+		onChanged = function(v)
+			print("Selected:", v)
+		end,
+
+		-- optional theme
+		theme = {
+			boxBg = Color3.fromRGB(18, 20, 26),
+			boxBgTransparency = 0,
+			boxStroke = Color3.fromRGB(255, 255, 255),
+			boxStrokeTransparency = 0.88,
+
+			listBg = Color3.fromRGB(12, 13, 16),
+			listBgTransparency = 0,
+			listStroke = Color3.fromRGB(255, 255, 255),
+			listStrokeTransparency = 0.88,
+
+			textColor = Color3.fromRGB(245, 247, 252),
+			itemBg = Color3.fromRGB(18, 20, 26),
+			itemBgTransparency = 0,
+
+			cornerRadius = 12,
+			itemCornerRadius = 10,
+		},
+	}
+end
+```
+
+```luau [slider.luau]
+local source = vide.source
+
+export type SliderTheme = {
+	trackColor: Color3?,
+	trackTransparency: number?,
+	fillColor: Color3?,
+	fillTransparency: number?,
+	knobColor: Color3?,
+	knobTransparency: number?,
+	strokeColor: Color3?,
+	strokeTransparency: number?,
+	cornerRadius: number?,
+	knobRadius: number?,
+}
+
+export type SliderProps = {
+	value: source.source<number>,
+
+	min: number?,
+	max: number?,
+	step: number?,
+
+	label: string?,
+	format: ((number) -> string)?,
+	onChanged: ((number) -> ())?,
+
+	size: UDim2?,
+	position: UDim2?,
+	anchorPoint: Vector2?,
+	layoutOrder: number?,
+
+	theme: SliderTheme?,
+}
+
+local function Slider(props: SliderProps)
+	return vide.slider(props)
+end
+
+return Slider
+```
 
 ```luau [menu.luau]
 local create = vide.create
@@ -114,48 +251,6 @@ local function Menu()
 end
 
 return Menu
-```
-
-```luau [slider.luau]
-local source = vide.source
-
-export type SliderTheme = {
-	trackColor: Color3?,
-	trackTransparency: number?,
-	fillColor: Color3?,
-	fillTransparency: number?,
-	knobColor: Color3?,
-	knobTransparency: number?,
-	strokeColor: Color3?,
-	strokeTransparency: number?,
-	cornerRadius: number?,
-	knobRadius: number?,
-}
-
-export type SliderProps = {
-	value: source.source<number>,
-
-	min: number?,
-	max: number?,
-	step: number?,
-
-	label: string?,
-	format: ((number) -> string)?,
-	onChanged: ((number) -> ())?,
-
-	size: UDim2?,
-	position: UDim2?,
-	anchorPoint: Vector2?,
-	layoutOrder: number?,
-
-	theme: SliderTheme?,
-}
-
-local function Slider(props: SliderProps)
-	return vide.slider(props)
-end
-
-return Slider
 ```
 
 :::

@@ -1,5 +1,4 @@
 local vide = require "../../vide"
-local easings = require "../src/easings"
 
 local function system(): (number) -> number
     local MAX = 40
@@ -7,7 +6,7 @@ local function system(): (number) -> number
 
     local _, input, output = vide.root(function()
         local input = vide.source(MAX)
-        local output = vide.tween(input, { time = 2, style = easings.quad_ease_inout })
+        local output = vide.tween(input, { time = 2, style = "quad_ease_inout" })
         return input, output
     end)
 

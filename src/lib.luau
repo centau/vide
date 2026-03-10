@@ -18,8 +18,7 @@ local show = require "./show"
 local indexes = require "./indexes"
 local values = require "./values"
 local spring, update_springs = require "./spring"()
--- Initialize the tween module
-local tween, update_tweens = require "./tween"() 
+local tween, update_tweens = require "./tween"()
 local action = require "./action"()
 local changed = require "./changed"
 local timeout, update_timeouts = require "./timeout"()
@@ -78,7 +77,7 @@ local vide = {
 
 	-- animations
 	spring = spring,
-	tween = tween, -- Exposing tween to the user
+	tween = tween,
 
 	-- actions
 	action = action,

@@ -22,6 +22,14 @@ local action = require "./action"()
 local changed = require "./changed"
 local timeout, update_timeouts = require "./timeout"()
 local flags = require "./flags"
+local draggableFactory = require "./draggable"
+local draggable = draggableFactory(action)
+local toggle = require "./toggle"
+local dropdown = require "./dropdown"
+local tweenFactory = require "./tween"
+local tween = tweenFactory(action, cleanup)
+local sliderFactory = require "./slider"
+local slider = sliderFactory(create, source, action, cleanup)
 
 export type Source<T> = source.Source<T>
 export type source<T> = Source<T>
@@ -60,14 +68,18 @@ local vide = {
     switch = switch,
     show = show,
     indexes = indexes,
-    values = values,
+	values = values,
+	toggle = toggle,
+	dropdown = dropdown,
+	slider = slider,
 
     -- util
     cleanup = cleanup,
     untrack = untrack,
     read = read,
     batch = batch,
-    context = context,
+	context = context,
+	draggable = draggable,
 
     -- animations
     spring = spring,
@@ -75,6 +87,7 @@ local vide = {
     -- actions
     action = action,
     changed = changed,
+	tween = tween,
 
     -- flags
     strict = (nil :: any) :: boolean,

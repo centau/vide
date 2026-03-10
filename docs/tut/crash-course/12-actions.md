@@ -53,3 +53,84 @@ instance.Text = "foo" -- "foo" will be printed by the effect
 
 The source `output` will be updated with the new property value any time it is
 changed externally.
+
+# draggable()
+
+Creates an Action that makes a GuiObject draggable using input events (mouse and touch). This helper is intended for reuse across components and does not use Roblox’s deprecated `.Draggable` property.
+
+## Type
+
+```lua
+draggable(opts: DraggableOptions?) -> Action
+```
+DraggableOptions
+	
+	•	axis: "x" | "y" | "both" (default "both")
+
+Constrains dragging to a single axis or allows free movement.
+	
+	•	smoothTime: number (optional, default 0)
+
+Enables smoothing/“weight” while dragging. 0 disables smoothing. Practical range: 0.05–0.12.
+	
+	•	onDragStart: (startPos: UDim2) -> () (optional)
+
+Called when dragging begins. Receives the starting Position.
+	
+	•	onDrag: (newPos: UDim2) -> () (optional)
+
+Called while dragging. Receives the updated Position.
+	
+	•	onDragEnd: (endPos: UDim2) -> () (optional)
+
+Called when dragging ends. Receives the final Position.
+
+
+Supported instances
+
+draggable() must be applied to an instance that:
+	•	is a GuiObject (e.g., Frame, TextButton, ImageLabel, ImageButton),
+	•	has a writable Position property,
+	•	exposes input events such as InputBegan and InputChanged.
+
+If applied to a non-GuiObject, the Action should be treated as a no-op
+
+Example: Basic draggable panel
+
+```lua
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local vide = require(ReplicatedStorage:WaitForChild("vide"))
+local create = vide.create
+local mount = vide.mount
+
+local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+
+local function App()
+	return create "ScreenGui" {
+		Name = "DraggableExample",
+		ResetOnSpawn = false,
+		Parent = playerGui,
+
+		create "Frame" {
+			Position = UDim2.fromOffset(200, 150),
+			Size = UDim2.fromOffset(420, 240),
+			BackgroundTransparency = 0.1,
+
+			create "UICorner" { CornerRadius = UDim.new(0, 16) },
+
+			vide.draggable(), -- defaults to axis = "both"
+
+			create "TextLabel" {
+				BackgroundTransparency = 1,
+				Size = UDim2.fromOffset(420, 50),
+				Text = "Drag this panel",
+				TextSize = 20,
+			},
+		}
+	}
+end
+
+mount(App, playerGui)
+```

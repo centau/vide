@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 --------------------------------------------------------------------------------
 
+## Unreleased
+
+### Changed
+
+- `branch()` is now allowed to be used within a reactive scope.
+
+--------------------------------------------------------------------------------
+
 ## [0.4.0] - 2026-01-17
 
 ### Added

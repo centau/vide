@@ -13,8 +13,8 @@ local function branch<T>(fn: () -> T): (() -> (), T)
     end
 
     local parent = current.owner
-    if not parent or parent.effect then
-        error(`current scope is not owned by a stable scope`, 0)
+    if not parent then
+        error(`current scope is not owned by a scope`, 0)
     end
 
     local node = create_node(parent, false, false)

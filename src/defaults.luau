@@ -110,4 +110,4 @@ return {
         BorderColor3 = Color3.new(0, 0, 0),
         BorderSizePixel = 0
     }
-}
+} :: { [string]: { [string]: unknown} }

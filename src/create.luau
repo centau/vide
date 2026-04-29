@@ -5,11 +5,10 @@ local defaults = require "./defaults"
 local apply = require "./apply"
 local flags = require "./flags"
 
-local ctor_cache = {} :: { [string]: (AnyProps) -> Instance }
-local function lazy_init(_, class: string)
-    local function ctor(properties: AnyProps): Instance
+local function create_constructor_for_class(class: string): ({ [unknown]: unknown }) -> Instance
+    local function constructor(properties: { [unknown]: unknown }): Instance
         local ok, instance: Instance = pcall(Instance.new, class :: any)
-        if not ok then error(`invalid class name { class }`, 0) end
+        if not ok then error(`invalid class name {class}`, 0) end
 
         if flags.defaults then
             local default: { [string]: unknown }? = defaults[class]
@@ -23,28 +22,34 @@ local function lazy_init(_, class: string)
         return apply(instance, properties)
     end
 
-    ctor_cache[class] = ctor
-    return ctor
+    return constructor
 end
-setmetatable(ctor_cache, { __index = lazy_init })
+
+local constructor_cache = {} :: { [string]: ({ [unknown]: unknown }) -> Instance }
 
 -- todo: remove support for different overloads
-local function create(class_or_instance: string|Instance, properties: AnyProps?): ((AnyProps) -> Instance) | Instance
+local function create(class_or_instance: string|Instance, properties: { [unknown]: unknown }?): unknown
     if type(class_or_instance) ~= "string" and typeof(class_or_instance) ~= "Instance" then
         error("bad argument #1, expected string or instance, got " .. typeof(class_or_instance), 0)
     end
 
-    local ctor = if type(class_or_instance) == "string"
-        then ctor_cache[class_or_instance]
-        else function(properties)
-            local clone = class_or_instance:Clone()
-            if not clone then error "attempt to clone a non-archivable instance" end
-            return apply(clone, properties)
+    local constructor: ({ [unknown]: unknown }) -> Instance
+    if type(class_or_instance) == "string" then
+        constructor = constructor_cache[class_or_instance]
+        if not constructor then
+            constructor = create_constructor_for_class(class_or_instance)
+            constructor_cache[class_or_instance] = constructor
         end
+    else
+        constructor = function(props)
+            local clone = assert(class_or_instance:Clone(), "attempt to clone a non-archivable instance")
+            return apply(clone, props)
+        end
+    end
 
     return if properties
-        then ctor(properties)
-        else ctor
+        then constructor(properties)
+        else constructor
 end
 
 type Instances = {
@@ -97,13 +102,6 @@ type function Properties(instance: type?)
     return properties
 end
 
-type AnyProps = { [any]: any }
-type Create = (
-    (Instance) -> (AnyProps) -> Instance
-) & (
-    (string, AnyProps) -> Instance
-) & (
-    <Name>(Name|keyof<Instances>) -> (Properties<index<Instances, Name>>) -> index<Instances, Name>
-)
+type Create = <Name>(Name|keyof<Instances>|"") -> (Properties<index<Instances, Name>>) -> index<Instances, Name>
 
-return (create :: any) :: Create
+return create :: Create

@@ -4,6 +4,7 @@ local Instance = game and Instance or require "../test/mock".Instance :: never
 local defaults = require "./defaults"
 local apply = require "./apply"
 local flags = require "./flags"
+local instances = require "./types/instances"
 
 local function create_constructor_for_class(class: string): ({ [unknown]: unknown }) -> Instance
     local function constructor(properties: { [unknown]: unknown }): Instance
@@ -52,27 +53,7 @@ local function create(class_or_instance: string|Instance, properties: { [unknown
         else constructor
 end
 
-type Instances = {
-    Folder: Folder,
-    BillboardGui: BillboardGui,
-    CanvasGroup: CanvasGroup,
-    Frame: Frame,
-    ImageButton: ImageButton,
-    ImageLabel: ImageLabel,
-    ScreenGui: ScreenGui,
-    ScrollingFrame: ScrollingFrame,
-    SurfaceGui: SurfaceGui,
-    TextBox: TextBox,
-    TextButton: TextButton,
-    TextLabel: TextLabel,
-    UIAspectRatioConstraint: UIAspectRatioConstraint,
-    UICorner: UICorner,
-    UIGradient: UIGradient,
-    UIGridLayout: UIGridLayout,
-    UIListLayout: UIListLayout,
-    Camera: Camera,
-    WorldModel: WorldModel,
-}
+type Instances = instances.Instances
 
 type function Properties(instance: type?)
     local properties = types.newtable()

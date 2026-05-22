@@ -4,7 +4,7 @@ local create_source_node = graph.create_source_node
 local push_scope_as_child_of = graph.push_scope_as_child_of
 local update_descendants = graph.update_descendants
 
-export type Source<T> = (() -> T) & ((value: T) -> T)
+export type Source<T> = (() -> T) & (<U>(value: U & T) -> U & T)
 
 local function source<T>(initial_value: T): Source<T>
     local node = create_source_node(initial_value)
@@ -25,7 +25,7 @@ local function source<T>(initial_value: T): Source<T>
         return v
     end
 
-    return update_source
+    return update_source :: Source<T>
 end
 
 return source :: (<T>(initial_value: T) -> Source<T>) & (<T>() -> Source<T>)

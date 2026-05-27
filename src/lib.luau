@@ -20,6 +20,7 @@ local values = require "./values"
 local spring, update_springs = require "./spring"()
 local action = require "./action"()
 local changed = require "./changed"
+local tag = require "./tag"
 local timeout, update_timeouts = require "./timeout"()
 local flags = require "./flags"
 
@@ -75,6 +76,7 @@ local vide = {
     -- actions
     action = action,
     changed = changed,
+    tag = tag,
 
     -- flags
     strict = (nil :: any) :: boolean,

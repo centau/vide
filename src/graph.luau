@@ -1,25 +1,26 @@
-local flags = require "./flags"
+local flags = require "./flags" 
 
 export type SourceNode<T> = {
     cache: T,
-    [number]: Node<T>
+    children: { [Node<T>]: true },
 }
 
-export type Node<T> =  {
+export type Node<T> = {
     cache: T,
-    effect:  ((T) -> T) | false,
+    effect: ((T) -> T) | false,
     cleanups: { () -> () } | false,
 
     context: { [number]: unknown } | false,
 
-    owned: { Node<T> } | false,
+    owned: { [Node<T>]: true } | false,
     owner: Node<T> | false,
 
     parents: { SourceNode<T> },
-    [number]: Node<T> -- children
+    children: { [Node<T>]: true },
 }
 
-local scopes = { n = 0 } :: { [number]: Node<any>, n: number } -- scopes stack
+local scopes = {} :: { [number]: Node<any> } -- scopes stack
+local active_nodes = {} :: { [Node<any>]: true } -- nodes present in scopes stack
 
 local function efn(err: string)
     local trace = debug.traceback(err, 2)
@@ -31,17 +32,16 @@ local function efn(err: string)
     end
 
     trace ..= "\nsource update stacktrace:"
-return trace
+    return trace
 end
 
-local function ycall<T, U>(fn: (T) -> U, arg: T): (boolean, string|U)
-
+local function ycall<T, U>(fn: (T) -> U, arg: T): (boolean, string | U)
     local thread = coroutine.create(xpcall)
     --local function efn(err: string) return debug.traceback(err, 3) end
     local resume_ok, run_ok, result = coroutine.resume(thread, fn, efn, arg)
 
     assert(resume_ok)
-        
+
     if coroutine.status(thread) ~= "dead" then
         return false, debug.traceback(thread, "attempt to yield in reactive scope")
     end
@@ -50,7 +50,7 @@ local function ycall<T, U>(fn: (T) -> U, arg: T): (boolean, string|U)
 end
 
 local function get_scope(): Node<unknown>?
-    return scopes[scopes.n]
+    return scopes[#scopes]
 end
 
 local function assert_stable_scope(): Node<unknown>
@@ -67,20 +67,19 @@ local function assert_stable_scope(): Node<unknown>
 end
 
 local function push_child<T>(parent: SourceNode<any>, child: Node<any>)
-    table.insert(parent, child)
+    parent.children[child] = true
     table.insert(child.parents, parent)
 end
 
 local function push_scope<T>(node: Node<T>)
-    local n = scopes.n + 1
-    scopes.n = n
-    scopes[n] = node
+    active_nodes[node] = true
+    table.insert(scopes, node)
 end
 
 local function pop_scope()
-    local n = scopes.n
-    scopes.n = n - 1
-    scopes[n] = nil
+    local len = #scopes
+    active_nodes[scopes[len]] = nil
+    scopes[len] = nil
 end
 
 local function push_cleanup<T>(node: Node<T>, cleanup: () -> ())
@@ -102,45 +101,39 @@ local function flush_cleanups<T>(node: Node<T>)
     end
 end
 
-local function find_and_swap_pop<T>(t: { T }, v: T)
-    local i = table.find(t, v) :: number
-    local n = #t
-    t[i] = t[n]
-    t[n] = nil
-end
-
 local function unparent<T>(node: Node<T>)
     local parents = node.parents
-
-    for i, parent in parents do
-        find_and_swap_pop(parent, node)
-        parents[i] = nil
+    for _, parent in parents do
+        parent.children[node] = nil
     end
+    table.clear(parents)
 end
 
 local function destroy<T>(node: Node<T>)
-    if flags.strict and table.find(scopes, node) then
+    if flags.strict and active_nodes[node] then
         error("attempt to destroy an active scope", 0)
     end
 
     flush_cleanups(node)
     unparent(node)
-    
+
     if node.owner then
-        find_and_swap_pop(node.owner.owned :: { Node<T> }, node)
+        (node.owner.owned :: { [Node<T>]: true })[node] = nil
         node.owner = false
     end
 
     if node.owned then
-        local owned = node.owned
-        while owned[1] do destroy(owned[1]) end
+        for ownedNode, _ in node.owned do
+            destroy(ownedNode)
+        end
     end
 end
 
 local function destroy_owned<T>(node: Node<T>)
     if node.owned then
-        local owned = node.owned
-        while owned[1] do destroy(owned[1]) end
+        for ownedNode, _ in node.owned do
+            destroy(ownedNode)
+        end
     end
 end
 
@@ -148,7 +141,7 @@ local update_queue = { n = 0 } :: { n: number, [number]: Node<any> }
 
 local function evaluate_node<T>(node: Node<T>)
     if flags.strict then
-        if table.find(scopes, node) then
+        if active_nodes[node] then
             error("a scope, that should rerun due to the update of a source, is already active", 0)
         end
 
@@ -159,11 +152,11 @@ local function evaluate_node<T>(node: Node<T>)
 
             flush_cleanups(node)
             destroy_owned(node)
-    
+
             push_scope(node)
             local ok, new_value = ycall(node.effect :: (T) -> T, cur_value)
             pop_scope()
-            
+
             if not ok then
                 table.clear(update_queue)
                 update_queue.n = 0
@@ -189,7 +182,7 @@ local function evaluate_node<T>(node: Node<T>)
             update_queue.n = 0
             error(`effect error:\n{new_value}\n`, 0)
         end
-    
+
         node.cache = new_value
         return cur_value ~= new_value
     end
@@ -197,10 +190,10 @@ end
 
 local function queue_children_for_update<T>(node: SourceNode<T>)
     local i = update_queue.n
-    while node[1] do
+    for child, _ in node.children do
         i += 1
-        update_queue[i] = node[1]
-        unparent(node[1])
+        update_queue[i] = child
+        unparent(child)
     end
     update_queue.n = i
 end
@@ -222,7 +215,7 @@ local function flush_update_queue(from: number)
         update_queue[i] = false :: any
         i += 1
     end
-    
+
     update_queue.n = from
 end
 
@@ -268,13 +261,14 @@ local function create_node<T>(owner: false | Node<any>, effect: false | (T) -> T
         owned = false,
 
         parents = {},
+        children = {},
     }
 
     if owner then
         if owner.owned then
-            table.insert(owner.owned, node)
+            owner.owned[node] = true
         else
-            owner.owned = { node }
+            owner.owned = { [node] = true }
         end
     end
 
@@ -282,11 +276,7 @@ local function create_node<T>(owner: false | Node<any>, effect: false | (T) -> T
 end
 
 local function create_source_node<T>(value: T): SourceNode<T>
-    return { cache = value }
-end
-
-local function get_children<T>(node: Node<T>): { Node<unknown> }
-    return { unpack(node) } :: { Node<any> }
+    return { cache = value, children = {} }
 end
 
 local function set_context<T>(node: Node<T>, key: number, value: unknown)
@@ -311,11 +301,10 @@ return table.freeze {
     push_child = push_child,
     create_node = create_node,
     create_source_node = create_source_node,
-    get_children = get_children,
     flush_update_queue = flush_update_queue,
     get_update_queue_length = get_update_queue_length,
     set_context = set_context,
     scopes = scopes,
 
-    q = update_queue
+    q = update_queue,
 }

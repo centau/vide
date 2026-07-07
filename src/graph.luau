@@ -279,6 +279,14 @@ local function create_source_node<T>(value: T): SourceNode<T>
     return { cache = value, children = {} }
 end
 
+local function get_children_as_array<T>(node: Node<T>): { Node<unknown> }
+    local arr = {}
+    for child, _ in node.children do
+        table.insert(arr, child)
+    end
+    return arr
+end
+
 local function set_context<T>(node: Node<T>, key: number, value: unknown)
     if node.context then
         node.context[key] = value
@@ -301,6 +309,7 @@ return table.freeze {
     push_child = push_child,
     create_node = create_node,
     create_source_node = create_source_node,
+    get_children_as_array = get_children_as_array,
     flush_update_queue = flush_update_queue,
     get_update_queue_length = get_update_queue_length,
     set_context = set_context,

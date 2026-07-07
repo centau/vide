@@ -61,7 +61,7 @@ TEST("graph", function()
     local get_scope = graph.get_scope
     local push_scope = graph.push_scope
     local pop_scope = graph.pop_scope
-    local get_children = graph.get_children
+    local get_children = graph.get_children_as_array
     local push_cleanup = graph.push_cleanup
     local destroy = graph.destroy
 

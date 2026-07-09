@@ -1,7 +1,7 @@
 local flags = require "./flags"
 
-local TEMPORALLY_UNPARENTED = -1
-type TEMPORALLY_UNPARENTED = number
+local TEMPORALLY_UNPARENTED: TEMPORALLY_UNPARENTED = false
+type TEMPORALLY_UNPARENTED = false
 
 export type SourceNode<T> = {
     cache: T,
@@ -109,7 +109,7 @@ local function find_and_swap_pop<T>(t: { T }, v: T)
 end
 
 local function push_child<T>(parent: SourceNode<any>, child: Node<any>)
-    local parent_index = child.pushing_parent_index
+    local parent_index = child.pushing_parent_index :: number -- assert(parent.pushing_parent_index ~= TEMPORALLY_UNPARENTED)
     local parents = child.parents
 
     child.pushing_parent_index = parent_index + 1
@@ -123,9 +123,7 @@ local function push_child<T>(parent: SourceNode<any>, child: Node<any>)
 end
 
 local function unparent<T>(node: Node<T>)
-    if node.pushing_parent_index == TEMPORALLY_UNPARENTED then return end
     local parents = node.parents
-
     for i, parent in parents do
         find_and_swap_pop(parent, node)
         parents[i] = nil
@@ -162,7 +160,16 @@ local update_queue = { n = 0 } :: { n: number, [number]: Node<any> }
 
 local function unparent_unuseds<T>(node: Node<T>)
     local parents = node.parents
-    for i = node.pushing_parent_index+1, #parents do
+    -- assert(parent.pushing_parent_index ~= TEMPORALLY_UNPARENTED)
+    -- if do error here, a stack overflow error would error later
+    -- due infinite re-entrant updates, like this
+    -- ```lua
+    --   local clock = source(0)
+    --   effect(function()
+    --     clock(clock() + 1)
+    --   end)
+    -- ```
+    for i = node.pushing_parent_index :: number + 1, #parents do
         find_and_swap_pop(parents[i], node)
         parents[i] = nil
     end

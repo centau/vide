@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 --------------------------------------------------------------------------------
 
-## Unreleased
+## [0.4.1] - 2026-07-11
 
 ### Changed
 
@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Deprecated
 
 - `create()` overloads. Supported is now only `create(class)(props)`.
+
+### Fixed
+
+- `create()` types in the new solver should now work without `::`.
 
 --------------------------------------------------------------------------------
 

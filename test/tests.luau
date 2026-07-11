@@ -24,6 +24,7 @@ local vide = require "../../vide"
     local spring = vide.spring
     local action = vide.action
     local changed = vide.changed
+    local tag = vide.tag
     local apply = vide.apply
     local step = vide.step
 local graph = require "../../vide/src/graph"
@@ -2337,6 +2338,122 @@ TEST("changed()", wrap_root(function()
         text = NIL
         gc()
         CHECK(not wref[1])
+    end
+end))
+
+TEST("tag()", wrap_root(function()
+    do CASE "apply single tag"
+        local frame = create "Frame" {
+            tag("MyTag")
+        }
+
+        CHECK(frame:HasTag("MyTag"))
+        CHECK(#frame:GetTags() == 1)
+    end
+
+    do CASE "apply multiple tags"
+        local frame = create "Frame" {
+            tag({ "A", "B", "C" })
+        }
+
+        CHECK(frame:HasTag("A"))
+        CHECK(frame:HasTag("B"))
+        CHECK(frame:HasTag("C"))
+        CHECK(#frame:GetTags() == 3)
+    end
+
+    do CASE "compose multiple tag() actions"
+        local frame = create "Frame" {
+            tag("A"),
+            tag("B")
+        }
+
+        CHECK(frame:HasTag("A"))
+        CHECK(frame:HasTag("B"))
+    end
+
+    do CASE "remove tags on scope destroy"
+        local _, frame, destroy = root(function(destroy)
+            return create "Frame" {
+                tag({ "A", "B" })
+            }, destroy
+        end)
+
+        CHECK(frame:HasTag("A"))
+        CHECK(frame:HasTag("B"))
+
+        destroy()
+
+        CHECK(not frame:HasTag("A"))
+        CHECK(not frame:HasTag("B"))
+    end
+
+    do CASE "reactive single tag"
+        local current = source("A")
+
+        local frame = create "Frame" {
+            tag(current)
+        }
+
+        CHECK(frame:HasTag("A"))
+        CHECK(#frame:GetTags() == 1)
+
+        current("B")
+
+        CHECK(not frame:HasTag("A"))
+        CHECK(frame:HasTag("B"))
+        CHECK(#frame:GetTags() == 1)
+    end
+
+    do CASE "reactive multiple tags"
+        local current = source({ "A", "B" })
+
+        local frame = create "Frame" {
+            tag(current)
+        }
+
+        CHECK(frame:HasTag("A"))
+        CHECK(frame:HasTag("B"))
+        CHECK(#frame:GetTags() == 2)
+
+        -- preserve "A", remove "B", add "C"
+        current({ "A", "C" })
+
+        CHECK(frame:HasTag("A"))
+        CHECK(not frame:HasTag("B"))
+        CHECK(frame:HasTag("C"))
+        CHECK(#frame:GetTags() == 2)
+    end
+
+    do CASE "reactive tag removed on scope destroy"
+        local _, frame, destroy = root(function(destroy)
+            local current = source("A")
+            return create "Frame" {
+                tag(current)
+            }, destroy
+        end)
+
+        CHECK(frame:HasTag("A"))
+
+        destroy()
+
+        CHECK(not frame:HasTag("A"))
+        CHECK(#frame:GetTags() == 0)
+    end
+
+    do CASE "reactive tag derived from source"
+        local name = source("hello")
+
+        local frame = create "Frame" {
+            tag(function() return "prefix-" .. name() end)
+        }
+
+        CHECK(frame:HasTag("prefix-hello"))
+
+        name("world")
+
+        CHECK(not frame:HasTag("prefix-hello"))
+        CHECK(frame:HasTag("prefix-world"))
     end
 end))
 

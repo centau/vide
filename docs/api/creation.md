@@ -118,6 +118,56 @@ A wrapper for `action()` to listen for property changes.
 
     Runs with an action priority of 1.
 
+## tag()
+
+A wrapper for `action()` to add [CollectionService](https://create.roblox.com/docs/reference/engine/classes/CollectionService)
+tags to an instance.
+
+- **Type**
+
+    ```luau
+    function tag(tag: string): Action
+    function tag(tags: { string }): Action
+    function tag(source: () -> string): Action
+    function tag(source: () -> { string }): Action
+    ```
+
+- **Details**
+
+    Adds the given tag(s) to the instance using `Instance:AddTag()`. When the
+    surrounding scope is destroyed, any tags that were added are removed using
+    `Instance:RemoveTag()`.
+
+    A source (function) can be passed instead of a static value to reactively
+    update the applied tags. When the source updates, tags no longer present
+    are removed and new tags are added; tags present in both the previous and
+    new value are left untouched.
+
+    Multiple `tag()` actions can be composed on the same instance.
+
+    Runs with an action priority of 1.
+
+- **Example**
+
+    Apply static tags:
+
+    ```luau
+    create "Frame" {
+        tag("Clickable"),
+        tag({ "Draggable", "Highlightable" })
+    }
+    ```
+
+    Apply a reactive tag driven by a source:
+
+    ```luau
+    local state = source "idle"
+
+    create "Frame" {
+        tag(function() return "state-" .. state() end)
+    }
+    ```
+
 ## mount() <Badge type="info" text="STABLE"><a href="/vide/api/reactivity-core#Scopes">STABLE</a></Badge>
 
 Runs a function in a new stable scope and optionally applies its result to a

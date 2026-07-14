@@ -70,7 +70,7 @@ export type Instances = {
     UIGradient: UIGradient,
     UIGridLayout: UIGridLayout,
     UIListLayout: UIListLayout,
-    UIAspectRatioConstraintISizeConstraint: UISizeConstraint,
+    UISizeConstraint: UISizeConstraint,
     UITextSizeConstraint: UITextSizeConstraint,
     UIScale: UIScale,
     UIPadding: UIPadding,

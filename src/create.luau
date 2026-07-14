@@ -52,7 +52,7 @@ local function create(class_or_instance: string|Instance, properties: { [unknown
         else constructor
 end
 
-type Instances = {
+export type Instances = {
     Folder: Folder,
     BillboardGui: BillboardGui,
     CanvasGroup: CanvasGroup,
@@ -86,7 +86,7 @@ type Instances = {
     WorldModel: WorldModel,
 }
 
-type function Properties(instance: type?)
+export type function Properties(instance: type?)
     local properties = types.newtable()
 
     while instance do

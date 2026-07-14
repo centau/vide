@@ -52,7 +52,7 @@ local function create(class_or_instance: string|Instance, properties: { [unknown
         else constructor
 end
 
-type Instances = {
+export type Instances = {
     Folder: Folder,
     BillboardGui: BillboardGui,
     CanvasGroup: CanvasGroup,
@@ -70,11 +70,23 @@ type Instances = {
     UIGradient: UIGradient,
     UIGridLayout: UIGridLayout,
     UIListLayout: UIListLayout,
+    UISizeConstraint: UISizeConstraint,
+    UITextSizeConstraint: UITextSizeConstraint,
+    UIScale: UIScale,
+    UIPadding: UIPadding,
+    UIStroke: UIStroke,
+    UIFlexItem: UIFlexItem,
+    UIPageLayout: UIPageLayout,
+    UITableLayout: UITableLayout,
+    VideoFrame: VideoFrame,
+    ViewportFrame: ViewportFrame,
+    ProximityPrompt: ProximityPrompt,
+    UIDragDetector: UIDragDetector,
     Camera: Camera,
     WorldModel: WorldModel,
 }
 
-type function Properties(instance: type?)
+export type function Properties(instance: type?)
     local properties = types.newtable()
 
     while instance do

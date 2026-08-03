@@ -228,15 +228,29 @@ local function remove_dependency_counts(node) -- to be called when updating a no
     for i = 1, #node do
         local child = node[i]
         if not node.owner then continue end -- we won't be updating this anyway
-        node_deps_left[child] -= 1
-        remove_dependency_counts(child)
+        local deps_left = node_deps_left[child]
+        if deps_left > 1 then
+            node_deps_left[child] = deps_left - 1
+        else
+            node_deps_left[child] = 0
+            -- only recurse if we're removing the last dependency *and* if we aren't planning on updating it
+            if not in_queue[child] then
+                remove_dependency_counts(child)
+            end
+        end
     end
 end
 
 local function queue_children_for_update<T>(node: SourceNode<T>)
     for i = 1, #node do
         local child = node[i]
-        node_deps_left[child] -= 1
+        local deps_left = node_deps_left[child]
+        if deps_left then
+            node_deps_left[child] = deps_left - 1
+        else
+            -- This can happen if child adds parent as a new dependency after the initial update
+            node_deps_left[child] = 0
+        end
         if not in_queue[child] then
             in_queue[child] = true
             update_queue_n += 1

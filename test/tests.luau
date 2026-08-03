@@ -319,6 +319,102 @@ TEST("graph", function()
     end
 end)
 
+TEST("duplicate update", function()
+    local cases = {
+        {
+            name = "b",
+            err = "b",
+            e1 = {1, 2, 2, 2, 2},
+        },
+        {
+            name = "c",
+            err = "c",
+            e1 = {2, 1, 1, 2, 2},
+        },
+        {
+            name = "c2",
+            err = "c2",
+            e1 = {2, 2, 1, 2, 2},
+        },
+        {
+            name = "d",
+            err = "d",
+            e1 = {2, 2, 2, 1, 2},
+        },
+        {
+            name = "e",
+            err = "e",
+            e1 = {2, 2, 2, 2, 1},
+            e2 = {3, 3, 3, 3, 3}, -- e has a dependency on just 'a' after the first time, so it'll get updated 2x (only way to prevent this extra update is to yield, which isn't currently supported)
+        },
+        {
+            name = "no error",
+            err = "",
+            e1 = {2, 2, 2, 2, 2},
+        }
+    }
+    for _, case in cases do
+        CASE(case.name)
+        local destroy = root(function()
+            local e1, e2, err = case.e1, case.e2, case.err
+            if not e2 then
+                e2 = {}
+                for i, v in e1 do
+                    e2[i] = v + 1
+                end
+            end
+            local a = source(0)
+            local nb = 0
+            local b = derive(function()
+                if err == "b" and a() == 1 then error("user error") end
+                nb += 1
+                return a() + 1
+            end)
+            local nc = 0
+            local c = derive(function()
+                if err == "c" and a() == 1 then error("user error") end
+                nc += 1
+                return a() * 2
+            end)
+            local nc2 = 0
+            local c2 = derive(function()
+                if err == "c2" and c() == 2 then error("user error") end
+                nc2 += 1
+                return c()
+            end)
+            local nd = 0
+            local d = derive(function()
+                if err == "d" and b() == 2 then error("user error") end
+                nd += 1
+                return b() * 100 + c2()
+            end)
+            local ne = 0
+            effect(function()
+                if err == "e" and a() == 1 then error("user error") end
+                ne += 1
+                a(); b(); c(); c2(); d()
+            end)
+            local length = graph.get_update_queue_length()
+
+            a(1)
+            CHECK(nb == e1[1])
+            CHECK(nc == e1[2])
+            CHECK(nc2 == e1[3])
+            CHECK(nd == e1[4])
+            CHECK(ne == e1[5])
+            CHECK(graph.get_update_queue_length() == length)
+
+            a(2)
+            CHECK(nb == e2[1])
+            CHECK(nc == e2[2])
+            CHECK(nc2 == e2[3])
+            CHECK(nd == e2[4])
+            CHECK(ne == e2[5])
+        end)
+        destroy()
+    end
+end)
+
 TEST("mount()", function()
     local screen = create "ScreenGui" {}
 

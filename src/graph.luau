@@ -175,7 +175,7 @@ local function evaluate_node<T>(node: Node<T>, continue_on_error: boolean) -- if
             if not ok then
                 local msg = debug.traceback(`effect error: {new_value}`, 2)
                 if continue_on_error then
-                    task.spawn(error, msg, 0)
+                    print(msg)
                     return false
                 else
                     error(msg, 2)
@@ -199,7 +199,7 @@ local function evaluate_node<T>(node: Node<T>, continue_on_error: boolean) -- if
         if not ok then
             local msg = debug.traceback(`effect error: {new_value}`, 2)
             if continue_on_error then
-                task.spawn(error, msg, 0)
+                print(msg)
                 return false
             else
                 error(msg, 2)
@@ -307,7 +307,7 @@ local function flush_update_queue(from: number)
             update_queue_n = moveTo1
             if not changed then -- Can occur in recursive updates (where 'from' is > 0)
                 if from == 0 then
-                    warn("Some nodes failed to update", update_queue, node_deps_left, debug.traceback())
+                    print("Some nodes failed to update", update_queue, node_deps_left, debug.traceback())
                     reset_queue()
                 end
                 return

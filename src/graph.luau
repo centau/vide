@@ -1,5 +1,8 @@
 local flags = require "./flags"
 
+local TEMPORALLY_UNPARENTED: TEMPORALLY_UNPARENTED = false
+type TEMPORALLY_UNPARENTED = false
+
 export type SourceNode<T> = {
     cache: T,
     [number]: Node<T>
@@ -15,6 +18,7 @@ export type Node<T> =  {
     owned: { Node<T> } | false,
     owner: Node<T> | false,
 
+    pushing_parent_index: number | TEMPORALLY_UNPARENTED,
     parents: { SourceNode<T> },
     [number]: Node<T> -- children
 }
@@ -66,11 +70,6 @@ local function assert_stable_scope(): Node<unknown>
     return scope
 end
 
-local function push_child<T>(parent: SourceNode<any>, child: Node<any>)
-    table.insert(parent, child)
-    table.insert(child.parents, parent)
-end
-
 local function push_scope<T>(node: Node<T>)
     local n = scopes.n + 1
     scopes.n = n
@@ -109,9 +108,22 @@ local function find_and_swap_pop<T>(t: { T }, v: T)
     t[n] = nil
 end
 
+local function push_child<T>(parent: SourceNode<any>, child: Node<any>)
+    local parent_index = child.pushing_parent_index :: number -- assert(parent.pushing_parent_index ~= TEMPORALLY_UNPARENTED)
+    local parents = child.parents
+
+    child.pushing_parent_index = parent_index + 1
+    local previous_parent = parents[parent_index]
+
+    if previous_parent == parent then return end
+    parents[parent_index] = parent
+
+    if previous_parent then find_and_swap_pop(previous_parent, child) end
+    table.insert(parent, child)
+end
+
 local function unparent<T>(node: Node<T>)
     local parents = node.parents
-
     for i, parent in parents do
         find_and_swap_pop(parent, node)
         parents[i] = nil
@@ -146,6 +158,23 @@ end
 
 local update_queue = { n = 0 } :: { n: number, [number]: Node<any> }
 
+local function unparent_unuseds<T>(node: Node<T>)
+    local parents = node.parents
+    -- assert(parent.pushing_parent_index ~= TEMPORALLY_UNPARENTED)
+    -- if do error here, a stack overflow error would error later
+    -- due infinite re-entrant updates, like this
+    -- ```lua
+    --   local clock = source(0)
+    --   effect(function()
+    --     clock(clock() + 1)
+    --   end)
+    -- ```
+    for i = node.pushing_parent_index :: number + 1, #parents do
+        find_and_swap_pop(parents[i], node)
+        parents[i] = nil
+    end
+end
+
 local function evaluate_node<T>(node: Node<T>)
     if flags.strict then
         if table.find(scopes, node) then
@@ -159,10 +188,13 @@ local function evaluate_node<T>(node: Node<T>)
 
             flush_cleanups(node)
             destroy_owned(node)
+            node.pushing_parent_index = 1
     
             push_scope(node)
             local ok, new_value = ycall(node.effect :: (T) -> T, cur_value)
+
             pop_scope()
+            unparent_unuseds(node)
             
             if not ok then
                 table.clear(update_queue)
@@ -179,10 +211,13 @@ local function evaluate_node<T>(node: Node<T>)
 
         flush_cleanups(node)
         destroy_owned(node)
+        node.pushing_parent_index = 1
 
         push_scope(node)
         local ok, new_value = pcall(node.effect :: (T) -> T, node.cache)
+
         pop_scope()
+        unparent_unuseds(node)
 
         if not ok then
             table.clear(update_queue)
@@ -196,13 +231,15 @@ local function evaluate_node<T>(node: Node<T>)
 end
 
 local function queue_children_for_update<T>(node: SourceNode<T>)
-    local i = update_queue.n
-    while node[1] do
-        i += 1
-        update_queue[i] = node[1]
-        unparent(node[1])
+    local queue_length = update_queue.n
+    for j = 1, #node do
+        if node[j].pushing_parent_index == TEMPORALLY_UNPARENTED then continue end
+        node[j].pushing_parent_index = TEMPORALLY_UNPARENTED
+
+        queue_length += 1
+        update_queue[queue_length] = node[j]
     end
-    update_queue.n = i
+    update_queue.n = queue_length
 end
 
 local function get_update_queue_length()
@@ -267,6 +304,7 @@ local function create_node<T>(owner: false | Node<any>, effect: false | (T) -> T
         owner = owner,
         owned = false,
 
+        pushing_parent_index = 1,
         parents = {},
     }
 

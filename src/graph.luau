@@ -7,7 +7,7 @@ export type SourceNode<T> = {
 
 export type Node<T> =  {
     cache: T,
-    effect:  ((T) -> T) | false,
+    effect: ((T) -> T) | false,
     cleanups: { () -> () } | false,
 
     context: { [number]: unknown } | false,
@@ -25,13 +25,11 @@ local function efn(err: string)
     local trace = debug.traceback(err, 2)
 
     if string.find(err, "^effect error stacktrace") then -- if effect error is nested
-        trace = string.gsub("    " .. trace, "\n", function() -- indent entire error
-            return "\n    "
-        end)
+        trace = string.gsub("    " .. trace, "\n", "\n    ") -- indent entire error
     end
 
     trace ..= "\nsource update stacktrace:"
-return trace
+    return trace
 end
 
 local function ycall<T, U>(fn: (T) -> U, arg: T): (boolean, string|U)
@@ -41,7 +39,7 @@ local function ycall<T, U>(fn: (T) -> U, arg: T): (boolean, string|U)
     local resume_ok, run_ok, result = coroutine.resume(thread, fn, efn, arg)
 
     assert(resume_ok)
-        
+
     if coroutine.status(thread) ~= "dead" then
         return false, debug.traceback(thread, "attempt to yield in reactive scope")
     end
@@ -125,7 +123,7 @@ local function destroy<T>(node: Node<T>)
 
     flush_cleanups(node)
     unparent(node)
-    
+
     if node.owner then
         find_and_swap_pop(node.owner.owned :: { Node<T> }, node)
         node.owner = false
@@ -144,9 +142,19 @@ local function destroy_owned<T>(node: Node<T>)
     end
 end
 
-local update_queue = { n = 0 } :: { n: number, [number]: Node<any> }
+local update_queue_n = 0
+local in_queue = {}
+local update_queue = {} :: { [number]: Node<any> }
+local node_deps_left = {} -- any node that goes into the update queue needs to store how many dependencies it's waiting on
 
-local function evaluate_node<T>(node: Node<T>)
+local function reset_queue()
+    update_queue_n = 0
+    table.clear(in_queue)
+    table.clear(update_queue)
+    table.clear(node_deps_left)
+end
+
+local function evaluate_node<T>(node: Node<T>, continue_on_error: boolean) -- if continue_on_error, the calling function wishes to continue even if the update fails (without using pcall)
     if flags.strict then
         if table.find(scopes, node) then
             error("a scope, that should rerun due to the update of a source, is already active", 0)
@@ -159,15 +167,19 @@ local function evaluate_node<T>(node: Node<T>)
 
             flush_cleanups(node)
             destroy_owned(node)
-    
+
             push_scope(node)
             local ok, new_value = ycall(node.effect :: (T) -> T, cur_value)
             pop_scope()
-            
+
             if not ok then
-                table.clear(update_queue)
-                update_queue.n = 0
-                error(`effect error stacktrace\n{new_value :: string}`, 0)
+                local msg = debug.traceback(`effect error: {new_value}`, 2)
+                if continue_on_error then
+                    print(msg)
+                    return false
+                else
+                    error(msg, 2)
+                end
             end
 
             node.cache = new_value :: T
@@ -181,72 +193,137 @@ local function evaluate_node<T>(node: Node<T>)
         destroy_owned(node)
 
         push_scope(node)
-        local ok, new_value = pcall(node.effect :: (T) -> T, node.cache)
+        local ok, new_value = pcall(node.effect :: (T) -> T, cur_value)
         pop_scope()
 
         if not ok then
-            table.clear(update_queue)
-            update_queue.n = 0
-            error(`effect error:\n{new_value}\n`, 0)
+            local msg = debug.traceback(`effect error: {new_value}`, 2)
+            if continue_on_error then
+                print(msg)
+                return false
+            else
+                error(msg, 2)
+            end
         end
-    
+
         node.cache = new_value
         return cur_value ~= new_value
     end
 end
 
-local function queue_children_for_update<T>(node: SourceNode<T>)
-    local i = update_queue.n
-    while node[1] do
-        i += 1
-        update_queue[i] = node[1]
-        unparent(node[1])
+local function add_dependency_counts(node)
+    for i = 1, #node do
+        local child = node[i]
+        if not child.owner then continue end -- we won't be updating this anyway
+        local deps_left = node_deps_left[child]
+        if deps_left then
+            node_deps_left[child] = deps_left + 1
+        else
+            node_deps_left[child] = 1
+            add_dependency_counts(child) -- only recurse if we haven't seen this node before
+        end
     end
-    update_queue.n = i
+end
+local function remove_dependency_counts(node) -- to be called when updating a node if its value remains unchanged
+    for i = 1, #node do
+        local child = node[i]
+        if not node.owner then continue end -- we won't be updating this anyway
+        local deps_left = node_deps_left[child]
+        if deps_left > 1 then
+            node_deps_left[child] = deps_left - 1
+        else
+            node_deps_left[child] = 0
+            -- only recurse if we're removing the last dependency *and* if we aren't planning on updating it
+            if not in_queue[child] then
+                remove_dependency_counts(child)
+            end
+        end
+    end
+end
+
+local function queue_children_for_update<T>(node: SourceNode<T>)
+    for i = 1, #node do
+        local child = node[i]
+        local deps_left = node_deps_left[child]
+        if deps_left then
+            node_deps_left[child] = deps_left - 1
+        else
+            -- This can happen if child adds parent as a new dependency after the initial update
+            node_deps_left[child] = 0
+        end
+        if not in_queue[child] then
+            in_queue[child] = true
+            update_queue_n += 1
+            update_queue[update_queue_n] = child
+        end
+    end
 end
 
 local function get_update_queue_length()
-    return update_queue.n
+    return update_queue_n
 end
 
 local function flush_update_queue(from: number)
-    local i = from + 1
-    while i <= update_queue.n do
-        local node = update_queue[i]
-        --assert(node.effect)
+    while true do
+        local i = from
+        if i >= update_queue_n then return end -- nothing more to do
+        local changed = false
+        local moveTo1 = from -- 1 less than where to store an update if we can't process it yet
+        while i < update_queue_n do
+            i += 1
+            local node = update_queue[i]
+            -- assert(node.effect)
+            if node.owner then
+                local deps_left = node_deps_left[node]
+                if deps_left > 0 then -- waiting on more dependencies
+                    moveTo1 += 1
+                    if i ~= moveTo1 then
+                        update_queue[moveTo1] = node
+                        update_queue[i] = false :: any
+                    end
+                    continue
+                end
+                changed = true
+                -- Reset in_queue and node_deps_left before evaluation in case the node's depedencies are changed during evaluation (which usually implies an infinite loop, but we have explicit errors for this case)
+                in_queue[node] = nil
+                node_deps_left[node] = nil
+                unparent(node)
+                if evaluate_node(node, true) then
+                    queue_children_for_update(node)
+                else
+                    remove_dependency_counts(node)
+                end
+            else -- otherwise node was cleaned up
+                in_queue[node] = nil
+                node_deps_left[node] = nil
+            end
 
-        if node.owner and evaluate_node(node) then
-            queue_children_for_update(node)
+            update_queue[i] = false :: any
         end
-
-        update_queue[i] = false :: any
-        i += 1
+        if moveTo1 == 0 then -- no pending updates
+            reset_queue()
+            return
+        else
+            update_queue_n = moveTo1
+            if not changed then -- Can occur in recursive updates (where 'from' is > 0)
+                if from == 0 then
+                    print("Some nodes failed to update", update_queue, node_deps_left, debug.traceback())
+                    reset_queue()
+                end
+                return
+            end
+        end
     end
-    
-    update_queue.n = from
 end
 
 local function update_descendants<T>(root: SourceNode<T>)
-    local n0 = update_queue.n
+    add_dependency_counts(root)
+    local n0 = update_queue_n
     queue_children_for_update(root)
 
     if flags.batch then return end
 
-    local i = n0 + 1
-    while i <= update_queue.n do
-        local node = update_queue[i]
-        --assert(node.effect)
-
-        -- check if node is still owned in case destroyed after queued
-        if node.owner and evaluate_node(node) then
-            queue_children_for_update(node)
-        end
-
-        update_queue[i] = false :: any -- false instead of nil to avoid sparse
-        i += 1
-    end
-
-    update_queue.n = n0
+    flush_update_queue(n0)
 end
 
 local function push_scope_as_child_of<T>(node: SourceNode<T>)

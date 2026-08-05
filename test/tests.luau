@@ -116,7 +116,7 @@ TEST("graph", function()
         effect(c.cache)
 
         pop_scope()
-        
+
         CHECK(count == 1)
         update_descendants(a)
         CHECK(count == 2)
@@ -188,7 +188,7 @@ TEST("graph", function()
             end)
         end
 
-        do push_scope(root) 
+        do push_scope(root)
             clean "root"
             items_updated = node(root)
             push_scope_as_child_of(items_updated) -- should not
@@ -216,9 +216,9 @@ TEST("graph", function()
                         pop_scope() end
                     pop_scope() end
                 pop_scope() end
-            pop_scope() end 
+            pop_scope() end
         pop_scope() end
-        
+
 
         -- verify graph
 
@@ -226,7 +226,7 @@ TEST("graph", function()
             local c = get_children(items_updated)
             CHECK(#c == 0)
         end
-    
+
         do
             local c = get_children(root)
             CHECK(#c == 0)
@@ -298,7 +298,7 @@ TEST("graph", function()
 
         depth=1
         _, _   <- attempt to update_descendants nothing
-           ^        
+           ^
 
         ]]
 
@@ -316,6 +316,102 @@ TEST("graph", function()
         update_descendants(a)
 
         CHECK(true)
+    end
+end)
+
+TEST("duplicate update", function()
+    local cases = {
+        {
+            name = "b",
+            err = "b",
+            e1 = {1, 2, 2, 2, 2},
+        },
+        {
+            name = "c",
+            err = "c",
+            e1 = {2, 1, 1, 2, 2},
+        },
+        {
+            name = "c2",
+            err = "c2",
+            e1 = {2, 2, 1, 2, 2},
+        },
+        {
+            name = "d",
+            err = "d",
+            e1 = {2, 2, 2, 1, 2},
+        },
+        {
+            name = "e",
+            err = "e",
+            e1 = {2, 2, 2, 2, 1},
+            e2 = {3, 3, 3, 3, 3}, -- e has a dependency on just 'a' after the first time, so it'll get updated 2x (only way to prevent this extra update is to yield, which isn't currently supported)
+        },
+        {
+            name = "no error",
+            err = "",
+            e1 = {2, 2, 2, 2, 2},
+        }
+    }
+    for _, case in cases do
+        CASE(case.name)
+        local destroy = root(function()
+            local e1, e2, err = case.e1, case.e2, case.err
+            if not e2 then
+                e2 = {}
+                for i, v in e1 do
+                    e2[i] = v + 1
+                end
+            end
+            local a = source(0)
+            local nb = 0
+            local b = derive(function()
+                if err == "b" and a() == 1 then error("user error") end
+                nb += 1
+                return a() + 1
+            end)
+            local nc = 0
+            local c = derive(function()
+                if err == "c" and a() == 1 then error("user error") end
+                nc += 1
+                return a() * 2
+            end)
+            local nc2 = 0
+            local c2 = derive(function()
+                if err == "c2" and c() == 2 then error("user error") end
+                nc2 += 1
+                return c()
+            end)
+            local nd = 0
+            local d = derive(function()
+                if err == "d" and b() == 2 then error("user error") end
+                nd += 1
+                return b() * 100 + c2()
+            end)
+            local ne = 0
+            effect(function()
+                if err == "e" and a() == 1 then error("user error") end
+                ne += 1
+                a(); b(); c(); c2(); d()
+            end)
+            local length = graph.get_update_queue_length()
+
+            a(1)
+            CHECK(nb == e1[1])
+            CHECK(nc == e1[2])
+            CHECK(nc2 == e1[3])
+            CHECK(nd == e1[4])
+            CHECK(ne == e1[5])
+            CHECK(graph.get_update_queue_length() == length)
+
+            a(2)
+            CHECK(nb == e2[1])
+            CHECK(nc == e2[2])
+            CHECK(nc2 == e2[3])
+            CHECK(nd == e2[4])
+            CHECK(ne == e2[5])
+        end)
+        destroy()
     end
 end)
 
@@ -466,7 +562,7 @@ TEST("derive()", wrap_root(function()
             is_even()
             count += 1
         end)
-        
+
         num(1) -- odd
         CHECK(count == 2)
         num(2) -- even
@@ -559,7 +655,7 @@ TEST("derive()", wrap_root(function()
     --     end)
 
     --     destroy()
-        
+
     --     CHECK(ran[1] == 1)
     --     CHECK(ran[2] == 1)
     --     CHECK(cleaned[1] == 1)
@@ -567,7 +663,7 @@ TEST("derive()", wrap_root(function()
     -- end
 
     do CASE "garbage collection"
-        -- check that `b` does not allow gc of `a`        
+        -- check that `b` does not allow gc of `a`
         local a = source(1)
 
         local _b = derive(function()
@@ -606,7 +702,7 @@ TEST("effect()", wrap_root(function()
         local num = source(0)
 
         local text = derive(function() return tostring(num()) end)
-        
+
         local count = 0
         effect(function()
             text()
@@ -660,7 +756,7 @@ TEST("cleanup()", wrap_root(function()
             src()
             effected += 1
             cleanup(function()
-                cleaned += 1  
+                cleaned += 1
             end)
         end)
 
@@ -677,7 +773,7 @@ TEST("cleanup()", wrap_root(function()
         local src = source(1)
 
         local queue = {}
-    
+
         effect(function()
             src()
             cleanup(function() table.insert(queue, 1) end)
@@ -772,7 +868,7 @@ TEST("create()", wrap_root(function()
         vide.defer_nested_properties = false
 
         local t = {}
-    
+
         create "TextLabel" {
             {
                 { function() table.insert(t, 1) end } :: any,
@@ -891,7 +987,7 @@ TEST("create()", wrap_root(function()
     do CASE "bind children"
         local children = source()
 
-        local a, b, c = 
+        local a, b, c =
             create "TextLabel" { Name = "A" },
             create "TextLabel" { Name = "B" },
             create "TextLabel" { Name = "C" }
@@ -899,14 +995,14 @@ TEST("create()", wrap_root(function()
         local frame = create "Frame" {
             children
         }
-  
+
         children { a, b }
 
         CHECK(frame:FindFirstChild "A")
         CHECK(frame:FindFirstChild "B")
 
         -- check that b is removed and c is added while a remains untouched
-        
+
         children { a, c }
 
         CHECK(frame:FindFirstChild "A")
@@ -949,7 +1045,7 @@ TEST("create()", wrap_root(function()
         local set_test_to_true = action(function(self) (self :: any).test = true end)
 
         local f2
-    
+
         local to_apply = {
             { a = 1 },
             set_test_to_true,
@@ -978,13 +1074,13 @@ TEST("create()", wrap_root(function()
         local c = create "Frame" { Name = "c" }
         local d = create "Frame" { Name = "d" }
         local e = create "Frame" { Name = "e" }
-        
+
         local children = source {
             a,
             { b, c, { d } },
             { { e } }
         }
-        
+
         local obj = create "Frame" {
             children
         }
@@ -1125,7 +1221,7 @@ TEST("show()", wrap_root(function()
         show(input :: () -> number?, function(value: () -> number)
             effect(function()
                 local v = value()
-    
+
                 count += 1
 
                 CHECK(v == count)
@@ -1166,7 +1262,7 @@ TEST("show()", wrap_root(function()
 
         show(weapon, function(weapon: () -> Weapon)
             local enchant = function() return weapon().enchant end
-    
+
             show(enchant, function(enchant: () -> string)
                 effect(function()
                     local e = enchant()
@@ -1295,7 +1391,7 @@ TEST("show()", wrap_root(function()
         CHECK(value_upval() == true)
         CHECK(present_upval() == false)
         CHECK(not cleaned)
-        
+
         step(0.5)
 
         CHECK(output() == obj)
@@ -1342,7 +1438,7 @@ TEST("show()", wrap_root(function()
         CHECK(value_upval() == true)
         CHECK(present_upval() == false)
         CHECK(not cleaned)
-        
+
         step(0.5)
 
         CHECK(output() == obj)
@@ -1432,15 +1528,15 @@ TEST("switch()", wrap_root(function()
 
         CHECK(count == 1)
         CHECK(output() == 1)
-    
+
         input(false)
         CHECK(output() == 0)
         CHECK(count == 2)
-    
+
         input(false)
         CHECK(output() == 0)
         CHECK(count == 2)
-    
+
         input(NIL)
         CHECK(output() == nil)
     end
@@ -1477,12 +1573,12 @@ TEST("switch()", wrap_root(function()
         cleanup(function() owner_count += 1 end)
 
         local output = switch(input) {
-            [true] = function() 
+            [true] = function()
                 cleanup(function() switch1_count += 1 end)
                 return 1
             end,
 
-            [false] = function() 
+            [false] = function()
                 cleanup(function() switch0_count += 1 end)
                 return 0
             end
@@ -1546,7 +1642,7 @@ TEST("indexes()", wrap_root(function()
         local input = source { 1, 2, 3 }
 
         local output = indexes(input, function(v, k)
-            return tostring(v())    
+            return tostring(v())
         end)
 
         CHECK("" .. input()[1] == output()[1])
@@ -1619,7 +1715,7 @@ TEST("indexes()", wrap_root(function()
             input = NIL
 
             gc()
-            CHECK(wref[1]) 
+            CHECK(wref[1])
         end
 
         do -- check that `input` allows gc of `output`
@@ -1645,7 +1741,7 @@ TEST("indexes()", wrap_root(function()
         local input = source { 1, 2, 3 }
 
         local count = table.create(3, 0)
-        
+
         local output = indexes(input, function(v, i)
             cleanup(function()
                 count[i] += 1
@@ -1691,12 +1787,12 @@ TEST("indexes()", wrap_root(function()
         indexes(items, function(item)
             effect(function()
                 item()
-                updated[1] += 1    
+                updated[1] += 1
             end)
 
             effect(function()
                 item()
-                updated[2] += 1    
+                updated[2] += 1
             end)
 
             return {}
@@ -1739,7 +1835,7 @@ TEST("indexes()", wrap_root(function()
         local input = source {}
 
         local cleaned_counts = {} :: Map<number, number>
-    
+
         local output = indexes(input, function(v, i, present)
             cleanup(function()
                 cleaned_counts[i] = (cleaned_counts[i] or 0) + 1
@@ -1816,7 +1912,7 @@ TEST("values()", wrap_root(function()
         local input = source { 1, 2, 3 }
 
         local output = values(input, function(v, k)
-            return tostring(v)    
+            return tostring(v)
         end)
 
         CHECK("" .. input()[1] == output()[1])
@@ -1894,7 +1990,7 @@ TEST("values()", wrap_root(function()
         local input = source { 1, 2, 3 }
 
         local count = table.create(3, 0)
-        
+
         local output = values(input, function(v, i)
             cleanup(function()
                 count[i()] += 1
@@ -1935,7 +2031,7 @@ TEST("values()", wrap_root(function()
         local input = source {}
 
         local cleaned_counts = {} :: Map<number, number>
-    
+
         local output = values(input, function(v, i, present)
             cleanup(function()
                 cleaned_counts[v] = (cleaned_counts[v] or 0) + 1
@@ -2056,10 +2152,10 @@ TEST("spring()", wrap_root(function()
         do -- `input` should allow gc of `output`
             local input = source(10)
             local output = spring(input)
-        
+
             local wref = weak { output }
             output = NIL
-            
+
             gc()
             CHECK(not wref[1])
         end
@@ -2073,7 +2169,7 @@ TEST("spring()", wrap_root(function()
         --         local output_node = unpack(capture(output))
         --         wref = weak { output_node, data }
         --     end
-    
+
         --     gc()
         --     CHECK(not wref[1])
         --     CHECK(not wref[2])
@@ -2208,11 +2304,11 @@ TEST("untrack()", wrap_root(function()
                 return untrack(function()
                     return derive(function()
                         inner_count += 1
-    
+
                         cleanup(function()
                             cleaned_count += 1
                         end)
-    
+
                         return tostring(input())
                     end)
                 end)
@@ -2435,7 +2531,7 @@ TEST("batch()", wrap_root(function()
             b(a())
             c(a())
         end)
-        
+
         batch(function()
             a(1)
         end)
@@ -2491,10 +2587,10 @@ TEST("batch()", wrap_root(function()
     do CASE "recursive queue flush diamond A,B,C,D,E"
         --[[
         where b and c batches d
-        
+
         a > b >     e
           > c > d >
-        
+
         ]]
 
         local a = source(0)
@@ -2551,7 +2647,7 @@ TEST("batch()", wrap_root(function()
         --[[
 
         a > b > d > E > G
-          > c ^   > F  
+          > c ^   > F
 
         ]]
 
@@ -2560,7 +2656,7 @@ TEST("batch()", wrap_root(function()
         local b = source(0)
         local c = source(0)
         local d = source(0)
-        
+
         local e = source(0)
         local f = source(0)
         local g = source(0)
@@ -2668,7 +2764,7 @@ TEST("context()", function()
         local ok = pcall(function()
             ctx(1, function() end)
         end)
-        
+
         CHECK(not ok)
     end
 
@@ -2847,14 +2943,14 @@ TEST("graph edge cases", wrap_root(function()
         CHECK(count.b == 2)
         CHECK(count.c == 2)
         CHECK(count.d == 2)
-        CHECK(count.e == 3) -- todo: redundant re-eval
+        CHECK(count.e == 2)
         CHECK(e() == 4)
 
         a(3)
         CHECK(count.b == 2)
         CHECK(count.c == 3)
         CHECK(count.d == 3)
-        CHECK(count.e == 4)
+        CHECK(count.e == 3)
         CHECK(e() == 12)
     end
 
@@ -2871,7 +2967,7 @@ TEST("graph edge cases", wrap_root(function()
     end
 
     do CASE "do not destroy children"
-        local parent = source(0)   
+        local parent = source(0)
 
         local _,
             destroy,
@@ -2899,10 +2995,10 @@ TEST("graph edge cases", wrap_root(function()
         CHECK(count == 3)
 
         destroy()
-        
+
         update_parent_to_destroy(2)
         CHECK(count == 3)
-        
+
         parent(parent() + 1)
         CHECK(count == 4)
     end
@@ -2931,7 +3027,7 @@ TEST("graph edge cases", wrap_root(function()
         local _, destroy_child, _child_B = nil, function() end, nil
 
         local count_A = 0
-    
+
         -- child_A
         effect(function()
             count_A += 1

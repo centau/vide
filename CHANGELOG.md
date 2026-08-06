@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [0.4.1] - 2026-07-11
 
+### Added
+
+- `tag()` action for adding CollectionService tags to instances. Supports
+  static strings and arrays as well as reactive sources for dynamic tag sets.
+  Tags are automatically removed when the surrounding scope is destroyed.
+
 ### Changed
 
 - `branch()` is now allowed to be used within a reactive scope.

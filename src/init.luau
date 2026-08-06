@@ -4,6 +4,7 @@ local vide = require("@self/lib")
 
 export type source<T> = vide.source<T>
 export type Source<T> = vide.Source<T>
+export type CanBeSource<T> = vide.CanBeSource<T>
 export type context<T> = vide.context<T>
 export type Context<T> = vide.Context<T>
 export type Instances = vide.Instances

@@ -74,7 +74,9 @@ Utility used to read a value that is either a primitive or a source.
 - **Type**
 
     ```luau
-    function read<T>(value: T | () -> T): T
+    type CanBeSource<T> = T | (() -> T)
+
+    function read<T>(value: CanBeSource<T>): T
     ```
 
 ## batch()

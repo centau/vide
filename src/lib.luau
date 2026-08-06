@@ -25,6 +25,7 @@ local flags = require "./flags"
 
 export type Source<T> = source.Source<T>
 export type source<T> = Source<T>
+export type CanBeSource<T> = read.CanBeSource<T>
 export type Context<T> = context.Context<T>
 export type context<T> = Context<T>
 export type Instances = create.Instances

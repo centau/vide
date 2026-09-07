@@ -1,4 +1,4 @@
-local typeof = game and typeof or require "../test/mock".typeof :: never
+local typeof = Instance and typeof or require "../test/mock".typeof :: never
 
 local graph = require "./graph"
 local get_scope = graph.get_scope

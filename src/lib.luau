@@ -31,17 +31,17 @@ export type Instances = create.Instances
 export type Properties<T> = create.Properties<T>
 
 local function step(dt: number)
-    if game then debug.profilebegin("VIDE STEP") end
+    if debug.profilebegin then debug.profilebegin("VIDE STEP") end
 
-    if game then debug.profilebegin("VIDE SPRING") end
+    if debug.profilebegin then debug.profilebegin("VIDE SPRING") end
     update_springs(dt)
-    if game then debug.profileend() end
+    if debug.profileend then debug.profileend() end
 
-    if game then debug.profilebegin("VIDE SCHEDULER") end
+    if debug.profilebegin then debug.profilebegin("VIDE SCHEDULER") end
     update_timeouts(dt)
-    if game then debug.profileend() end
+    if debug.profileend then debug.profileend() end
 
-    if game then debug.profileend() end
+    if debug.profileend then debug.profileend() end
 end
 
 local stepped = game and game:GetService("RunService").Heartbeat:Connect(function(dt: number)

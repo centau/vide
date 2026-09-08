@@ -1,5 +1,3 @@
-assert(game, "when using vide outside of Roblox, require lib.luau instead")
-
 local vide = require("@self/lib")
 
 export type source<T> = vide.source<T>

@@ -59,7 +59,7 @@ export type Instances = {
 
     -- layer collectors
     ScreenGui: ScreenGui,
-    SufaceGui: SurfaceGui,
+    SurfaceGui: SurfaceGui,
     BillboardGui: BillboardGui,
 
     -- ui objects
@@ -107,8 +107,8 @@ export type Instances = {
     NumberValue: NumberValue,
     StringValue: StringValue,
     ObjectValue: ObjectValue,
-    ColorValue: Color3Value,
-    VectorValue: Vector3Value,
+    Color3Value: Color3Value,
+    Vector3Value: Vector3Value,
     CFrameValue: CFrameValue,
 }
 

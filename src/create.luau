@@ -1,5 +1,5 @@
-local typeof = game and typeof or require "../test/mock".typeof :: never
-local Instance = game and Instance or require "../test/mock".Instance :: never
+local typeof = Instance and typeof or require "../test/mock".typeof :: never
+local Instance = Instance or require "../test/mock".Instance :: never
 
 local defaults = require "./defaults"
 local apply = require "./apply"

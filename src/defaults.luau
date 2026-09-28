@@ -1,5 +1,5 @@
-local Enum = game and Enum or require "../test/mock".Enum :: never
-local Color3 = game and Color3 or require "../test/mock".Color3 :: never
+local Enum = Enum or require "../test/mock".Enum :: never
+local Color3 = Color3 or require "../test/mock".Color3 :: never
 
 return {
     Part = {

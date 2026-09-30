@@ -66,6 +66,7 @@ local Instance = {} :: any do
         children: { Data },
         changed: { [string]: RBXScriptSignal },
         properties: { [string]: unknown },
+        tags: { [string]: true },
         destroying: RBXScriptSignal,
         class: string,
         type: "Instance"
@@ -158,6 +159,7 @@ local Instance = {} :: any do
             children = {},
             changed = {},
             properties = {},
+            tags = {},
             class = class,
             destroying = Signal.new() :: any,
             type = "Instance" :: "Instance"
@@ -209,6 +211,29 @@ local Instance = {} :: any do
             data.changed[property] = Signal.new() :: any
         end
         return data.changed[property]
+    end
+
+    function methods.AddTag(userdata: userdata, tag: string)
+        if type(tag) ~= "string" then error("tag must be a string", 2) end
+        get_data(userdata).tags[tag] = true
+    end
+
+    function methods.RemoveTag(userdata: userdata, tag: string)
+        if type(tag) ~= "string" then error("tag must be a string", 2) end
+        get_data(userdata).tags[tag] = nil
+    end
+
+    function methods.HasTag(userdata: userdata, tag: string): boolean
+        if type(tag) ~= "string" then error("tag must be a string", 2) end
+        return get_data(userdata).tags[tag] == true
+    end
+
+    function methods.GetTags(userdata: userdata): { string }
+        local out = {}
+        for name in get_data(userdata).tags do
+            table.insert(out, name)
+        end
+        return out
     end
 
     function methods.Destroy(userdata: userdata)

@@ -2121,6 +2121,32 @@ TEST("spring()", wrap_root(function()
         CHECK(count == 1) -- check spring was rescheduled correctly
     end
 
+    do CASE "spring finished at zero"
+        local input = source(1)
+        local output, control = spring(input)
+
+        local count = 0
+        effect(function()
+            output()
+            count += 1
+        end)
+
+        input(0)
+        step(10)
+        CHECK(output() == 0)
+
+        count = 0
+        step(1)
+        CHECK(count == 0) -- check spring is finished
+
+        control { impulse = 1 }
+        step(10)
+
+        count = 0
+        step(1)
+        CHECK(count == 0) -- check spring is finished after impulse at rest
+    end
+
     do CASE "spring control"
         local input = source(1)
         local output, control = spring(input)

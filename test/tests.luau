@@ -633,6 +633,25 @@ TEST("effect()", wrap_root(function()
 
         CHECK(count == 2)
     end
+
+    do CASE "error does not stop other effects"
+        local src = source(0)
+
+        local count = 0
+        effect(function()
+            if src() == 1 then error("effect error") end
+        end)
+        effect(function()
+            src()
+            count += 1
+        end)
+
+        CHECK(count == 1)
+        CHECK(not pcall(src, 1))
+        CHECK(count == 2)
+        src(2)
+        CHECK(count == 3)
+    end
 end))
 
 TEST("cleanup()", wrap_root(function()
@@ -708,6 +727,46 @@ TEST("cleanup()", wrap_root(function()
         CHECK(ran.Disconnect)
         CHECK(ran.destroy)
         CHECK(ran.Destroy)
+    end
+
+    do CASE "error does not stop destruction"
+        local src = source(0)
+
+        local cleaned = false
+        local count = 0
+
+        local destroy = root(function()
+            cleanup(function() error("cleanup error") end)
+            cleanup(function() cleaned = true end)
+            effect(function()
+                src()
+                count += 1
+            end)
+        end)
+
+        CHECK(not pcall(destroy))
+        CHECK(cleaned)
+        src(1)
+        CHECK(count == 1)
+    end
+
+    do CASE "error on rerun does not stop updates"
+        local src = source(0)
+
+        local count = 0
+        effect(function()
+            src()
+            cleanup(function() if src() == 1 then error("cleanup error") end end)
+        end)
+        effect(function()
+            src()
+            count += 1
+        end)
+
+        CHECK(not pcall(src, 1))
+        CHECK(count == 2)
+        src(2)
+        CHECK(count == 3)
     end
 end))
 

@@ -50,9 +50,10 @@ local function switch_map<K, Obj>(
             else
                 if scope.timeout == nil then
                     scope.timeout = timeout(scope.delay, function()
-                        scope.destroy()
+                        local ok, err = pcall(scope.destroy)
                         scopes[k] = nil
                         update_output()
+                        if not ok then error(err, 0) end
                     end)
                 end
             end

@@ -1539,6 +1539,25 @@ TEST("switch()", wrap_root(function()
     do CASE "delay"
         -- probably unneeded because show() uses switch() internally
     end
+
+    do CASE "delay with cleanup error"
+        local input = source(1)
+        local errored = false
+
+        local output = switch(input) {
+            [1] = function()
+                cleanup(function()
+                    if not errored then errored = true; error("cleanup error") end
+                end)
+                return 1, 1
+            end,
+            [2] = function() return 2 end
+        }
+
+        input(2)
+        CHECK(not pcall(step, 1 + 0.01))
+        CHECK(output() == 2)
+    end
 end))
 
 TEST("indexes()", wrap_root(function()
@@ -1809,6 +1828,23 @@ TEST("indexes()", wrap_root(function()
             CHECK(cleaned_counts[2] == 1)
         end
     end
+
+    do CASE "delay with cleanup error"
+        local input = source { 1 }
+        local errored = false
+
+        local output = indexes(input, function()
+            cleanup(function()
+                if not errored then errored = true; error("cleanup error") end
+            end)
+            return {}, 1
+        end)
+
+        input {}
+        CHECK(#output() == 1)
+        CHECK(not pcall(step, 1 + 0.01))
+        CHECK(#output() == 0)
+    end
 end))
 
 TEST("values()", wrap_root(function()
@@ -2023,6 +2059,23 @@ TEST("values()", wrap_root(function()
         step(1 + 0.01)
         --CHECK(count == 3)
         CHECK(count == 5)
+    end
+
+    do CASE "delay with cleanup error"
+        local input = source { 1 }
+        local errored = false
+
+        local output = values(input, function()
+            cleanup(function()
+                if not errored then errored = true; error("cleanup error") end
+            end)
+            return {}, 1
+        end)
+
+        input {}
+        CHECK(#output() == 1)
+        CHECK(not pcall(step, 1 + 0.01))
+        CHECK(#output() == 0)
     end
 end))
 

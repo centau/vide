@@ -2769,6 +2769,16 @@ TEST("context()", function()
             end)
         end)
     end
+
+    do CASE "get context without default"
+        local ctx = context()
+
+        CHECK(not pcall(ctx))
+
+        root(function()
+            CHECK(not pcall(ctx))
+        end)
+    end
 end)
 
 TEST("nested effects cases", function()

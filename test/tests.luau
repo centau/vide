@@ -3171,6 +3171,21 @@ TEST("strict", wrap_root(function()
         CHECK(count == 4)
     end
 
+    do CASE "effect updating its own source"
+        local src = source(0)
+        local count = 0
+
+        effect(function()
+            count += 1
+            if count > 100 then return end
+            local v = src()
+            if v > 0 then src(v + 1) end
+        end)
+
+        CHECK(not pcall(src, 1))
+        CHECK(count < 100)
+    end
+
     do CASE "destruction of active scope"
         local src = source(false)
         local count = 0

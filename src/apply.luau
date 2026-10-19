@@ -23,6 +23,9 @@ type Cache = {
         Array<(Instance) -> ()> -- action callbacks
     >,
 
+    -- priorities of the actions, in ascending order
+    priorities: Array<number>,
+
     -- what to parent the instance to after running actions
     parent: unknown,
 
@@ -45,11 +48,19 @@ local function borrow_cache(): Cache
         free_cache = nil
         return cache
     else
+        local priorities = {}
+
         return {
             events = {},
-            actions = setmetatable({} :: any, { -- lazy init
-                __index = function(self, i) self[i] = {}; return self[i] end
+            actions = setmetatable({} :: any, { -- lazy init, records new priorities in order
+                __index = function(self, i: number)
+                    self[i] = {}
+                    table.insert(priorities, i)
+                    table.sort(priorities)
+                    return self[i]
+                end
             }),
+            priorities = priorities,
             parent = nil,
             nested_debug = setmetatable({} :: any, {
                 __index = function(self, i: number) self[i] = {}; return self[i] end
@@ -116,6 +127,7 @@ local function apply<T>(instance: T & Instance, properties: { [unknown]: unknown
     local caches = borrow_cache()
     local events = caches.events
     local actions = caches.actions
+    local priorities = caches.priorities
     local nested_debug = caches.nested_debug
     local nested_stack = caches.nested_stack
 
@@ -133,8 +145,8 @@ local function apply<T>(instance: T & Instance, properties: { [unknown]: unknown
         ;(instance :: any)[event_name]:Connect(event_listener)
     end
 
-    for _, queued in actions do
-        for _, callback in queued do
+    for _, priority in priorities do
+        for _, callback in actions[priority] do
             callback(instance)
         end
     end

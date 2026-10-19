@@ -53,3 +53,8 @@ instance.Text = "foo" -- "foo" will be printed by the effect
 
 The source `output` will be updated with the new property value any time it is
 changed externally.
+
+Vide also ships a few common actions out of the box, such as `vide.changed()`
+for the pattern above and `vide.tag()` for adding
+[CollectionService](https://create.roblox.com/docs/reference/engine/classes/CollectionService)
+tags to an instance.

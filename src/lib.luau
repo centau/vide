@@ -112,7 +112,7 @@ setmetatable(vide :: any, {
 
     __newindex = function(_, index: unknown, value: unknown)
         if flags[index] == nil then
-            error(`{tostring(index)} is not a valid member of vide, 0`)
+            error(`{tostring(index)} is not a valid member of vide`, 0)
         else
             flags[index] = value
         end

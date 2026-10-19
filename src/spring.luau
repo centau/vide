@@ -10,6 +10,7 @@ local push_scope_as_child_of = graph.push_scope_as_child_of
 
 local UPDATE_RATE = 120
 local TOLERANCE_FACTOR = 10_000
+local MIN_TOLERANCE = vector.create(1e-6, 1e-6, 1e-6)
 
 type Animatable = number | CFrame | Color3 | UDim | UDim2 | Vector2 | Vector3
 
@@ -170,6 +171,7 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
 
     local function updater_effect()
         local value = source()
+        data.x0_123, data.x0_456 = data.x_123, data.x_456
         data.x1_123, data.x1_456 = type_to_vec6[typeof(value)](value)
         data.source_value = value
         springs[data] = output
@@ -219,6 +221,7 @@ local function spring<T>(source: () -> T, period: number?, damping_ratio: number
         -- set current position to value
         local v = ... :: T
         data.x_123, data.x_456 = type_to_vec6[typeof(v)](v)
+        data.x0_123, data.x0_456 = data.x_123, data.x_456
 
         -- reset velocity
         data.v_123 = vector.zero
@@ -244,6 +247,12 @@ local function get_min_vector_step(direction: vector): vector
         get_min_step(direction.y),
         get_min_step(direction.z)
     )
+end
+
+-- relative to the distance travelled, with a floor so springs can still settle at zero and large goals
+local function get_tolerance(x0: vector, x1: vector): vector
+    local distance = vector.max(vector.abs(x0 - x1), vector.abs(x1))
+    return vector.max(get_min_vector_step(distance), MIN_TOLERANCE)
 end
 
 local function step_springs(dt: number)
@@ -290,8 +299,8 @@ local function update_spring_sources()
         local x1_123, x1_456 = data.x1_123, data.x1_456
         local v_123, v_456 = data.v_123, data.v_456
 
-        local tol_123 = vector.abs(get_min_vector_step(x0_123 - x1_123))
-        local tol_456 = vector.abs(get_min_vector_step(x0_456 - x1_456))
+        local tol_123 = get_tolerance(x0_123, x1_123)
+        local tol_456 = get_tolerance(x0_456, x1_456)
 
         if
             -- position is at goal (within tolerance)

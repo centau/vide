@@ -44,6 +44,7 @@ end
 
 local function ycall<T, U>(fn: (T) -> U, arg: T): (boolean, string|U)
 
+    local n = scopes.n
     local thread = coroutine.create(xpcall)
     --local function efn(err: string) return debug.traceback(err, 3) end
     local resume_ok, run_ok, result = coroutine.resume(thread, fn, efn, arg)
@@ -51,7 +52,15 @@ local function ycall<T, U>(fn: (T) -> U, arg: T): (boolean, string|U)
     assert(resume_ok)
         
     if coroutine.status(thread) ~= "dead" then
-        return false, debug.traceback(thread, "attempt to yield in reactive scope")
+        local trace = debug.traceback(thread, "attempt to yield in reactive scope")
+
+        -- the thread can still be resumed (e.g. by task.wait), so stop it and
+        -- pop the scopes it pushed before yielding
+        if task then task.cancel(thread) else coroutine.close(thread) end
+        for i = scopes.n, n + 1, -1 do scopes[i] = nil end
+        scopes.n = n
+
+        return false, trace
     end
 
     return run_ok, result

@@ -3172,6 +3172,27 @@ TEST("strict", wrap_root(function()
         CHECK(not ok)
     end
 
+    do CASE "yield in a component"
+        local input = source(false)
+        local thread
+        local resumed = false
+
+        local destroy = root(function()
+            show(input, function()
+                thread = coroutine.running()
+                coroutine.yield()
+                resumed = true
+                return {}
+            end)
+        end)
+
+        CHECK(not pcall(input, true))
+        CHECK(not coroutine.resume(thread))
+        CHECK(not resumed)
+        CHECK(pcall(input, false))
+        CHECK(pcall(destroy))
+    end
+
     do CASE "run derived callback twice"
         local src = source(1)
         local count = 0

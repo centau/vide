@@ -633,6 +633,25 @@ TEST("effect()", wrap_root(function()
 
         CHECK(count == 2)
     end
+
+    do CASE "error does not stop other effects"
+        local src = source(0)
+
+        local count = 0
+        effect(function()
+            if src() == 1 then error("effect error") end
+        end)
+        effect(function()
+            src()
+            count += 1
+        end)
+
+        CHECK(count == 1)
+        CHECK(not pcall(src, 1))
+        CHECK(count == 2)
+        src(2)
+        CHECK(count == 3)
+    end
 end))
 
 TEST("cleanup()", wrap_root(function()
@@ -708,6 +727,46 @@ TEST("cleanup()", wrap_root(function()
         CHECK(ran.Disconnect)
         CHECK(ran.destroy)
         CHECK(ran.Destroy)
+    end
+
+    do CASE "error does not stop destruction"
+        local src = source(0)
+
+        local cleaned = false
+        local count = 0
+
+        local destroy = root(function()
+            cleanup(function() error("cleanup error") end)
+            cleanup(function() cleaned = true end)
+            effect(function()
+                src()
+                count += 1
+            end)
+        end)
+
+        CHECK(not pcall(destroy))
+        CHECK(cleaned)
+        src(1)
+        CHECK(count == 1)
+    end
+
+    do CASE "error on rerun does not stop updates"
+        local src = source(0)
+
+        local count = 0
+        effect(function()
+            src()
+            cleanup(function() if src() == 1 then error("cleanup error") end end)
+        end)
+        effect(function()
+            src()
+            count += 1
+        end)
+
+        CHECK(not pcall(src, 1))
+        CHECK(count == 2)
+        src(2)
+        CHECK(count == 3)
     end
 end))
 
@@ -1048,6 +1107,33 @@ TEST("create()", wrap_root(function()
         CHECK(parent:FindFirstChild "a")
         CHECK(not parent:FindFirstChild "b")
         CHECK(parent:FindFirstChild "c")
+    end
+
+    do CASE "children moved to another parent"
+        local other = create "Frame" {}
+
+        local child = create "Frame" {}
+        local children_a = source { child }
+        local children_b = source {}
+        create "Frame" { children_a }
+        local parent_b = create "Frame" { children_b }
+
+        children_b { child }
+        children_a {}
+        CHECK(child.Parent == parent_b)
+
+        local a = create "Frame" {}
+        local b = create "Frame" {}
+        local destroy = root(function()
+            create "Frame" { function() return a end }
+            create "Frame" { function() return { function() return b end } end }
+        end)
+
+        a.Parent = other
+        b.Parent = other
+        destroy()
+        CHECK(a.Parent == other)
+        CHECK(b.Parent == other)
     end
 
     do CASE "garbage collection test"
@@ -2822,6 +2908,16 @@ TEST("context()", function()
             end)
         end)
     end
+
+    do CASE "get context without default"
+        local ctx = context()
+
+        CHECK(not pcall(ctx))
+
+        root(function()
+            CHECK(not pcall(ctx))
+        end)
+    end
 end)
 
 TEST("nested effects cases", function()
@@ -3163,6 +3259,21 @@ TEST("strict", wrap_root(function()
         input(false)
 
         CHECK(count == 4)
+    end
+
+    do CASE "effect updating its own source"
+        local src = source(0)
+        local count = 0
+
+        effect(function()
+            count += 1
+            if count > 100 then return end
+            local v = src()
+            if v > 0 then src(v + 1) end
+        end)
+
+        CHECK(not pcall(src, 1))
+        CHECK(count < 100)
     end
 
     do CASE "destruction of active scope"

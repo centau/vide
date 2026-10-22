@@ -15,7 +15,7 @@ and identifying improper usage.
 Currently, strict mode will:
 
 1. Run reactive scopes twice when a source updates.
-2. Throw an error if yields occur where they are not allowed.
+2. Warn if yields occur where they are not allowed.
 3. Checks for `values()` input having duplicate values.
 4. Checks for duplicate nested properties at same depth.
 5. Checks for destruction of an active scope.

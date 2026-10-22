@@ -1,5 +1,7 @@
 local flags = require "./flags"
 
+local warn = warn or print
+
 export type SourceNode<T> = {
     cache: T,
     [number]: Node<T>
@@ -42,19 +44,33 @@ local function effect_traceback(err: unknown): string
     return `effect error:\n{debug.traceback(message, 2)}`
 end
 
-local function ycall<T, U>(fn: (T) -> U, arg: T): (boolean, string|U)
+-- also returns whether fn yielded, its thread is then left to finish on its own
+local function ycall<T, U>(fn: (T) -> U, arg: T): (boolean, string|U, boolean)
 
-    local thread = coroutine.create(xpcall)
+    local n = scopes.n
+    local yielded = false
+    local thread = coroutine.create(function()
+        local ok, result = xpcall(fn, efn, arg)
+        if yielded and not ok then error(result, 0) end -- no caller left to return it to
+        return ok, result
+    end)
     --local function efn(err: string) return debug.traceback(err, 3) end
-    local resume_ok, run_ok, result = coroutine.resume(thread, fn, efn, arg)
+    local resume_ok, run_ok, result = coroutine.resume(thread)
 
     assert(resume_ok)
         
     if coroutine.status(thread) ~= "dead" then
-        return false, debug.traceback(thread, "attempt to yield in reactive scope")
+        yielded = true
+        warn(debug.traceback(thread, "attempt to yield in reactive scope"))
+
+        -- the thread pops the scopes it pushed once resumed, so move the
+        -- caller's scope above them for the caller to pop
+        table.insert(scopes, table.remove(scopes, n) :: Node<any>)
+
+        return true, result, true
     end
 
-    return run_ok, result
+    return run_ok, result, false
 end
 
 local function get_scope(): Node<unknown>?
@@ -190,8 +206,10 @@ local function try_evaluate_node<T>(node: Node<T>): (boolean, string?)
             err = err or cleanup_err or owned_err
     
             push_scope(node)
-            local ok, new_value = ycall(node.effect :: (T) -> T, cur_value)
+            local ok, new_value, yielded = ycall(node.effect :: (T) -> T, cur_value)
             pop_scope()
+
+            if yielded then break end
             
             if not ok then
                 return false, `effect error stacktrace\n{new_value :: string}`
@@ -212,7 +230,7 @@ local function try_evaluate_node<T>(node: Node<T>): (boolean, string?)
         pop_scope()
 
         if not ok then
-            return false, new_value
+            return false, new_value :: any
         end
     
         node.cache = new_value

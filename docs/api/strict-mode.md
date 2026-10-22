@@ -16,11 +16,10 @@ Currently, strict mode will:
 
 1. Run reactive scopes twice when a source updates.
 2. Throw an error if yields occur where they are not allowed.
-3. Checks for `indexes()` and `values()` outputting primitive values.
-4. Checks for `values()` input having duplicate values.
-5. Checks for duplicate nested properties at same depth.
-6. Checks for destruction of an active scope.
-7. Better error reporting and stack traces.
+3. Checks for `values()` input having duplicate values.
+4. Checks for duplicate nested properties at same depth.
+5. Checks for destruction of an active scope.
+6. Better error reporting and stack traces.
 
 By rerunning reactive scopes twice each time they update, it helps ensure that
 computations are pure, and that any cleanup is done correctly.

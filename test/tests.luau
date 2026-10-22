@@ -3146,7 +3146,7 @@ end))
 TEST("strict", wrap_root(function()
     vide.strict = true
 
-    do CASE "error on derived callback yield"
+    do CASE "warn on derived callback yield"
         local src = source(1)
 
         local ok = pcall(function()
@@ -3156,10 +3156,10 @@ TEST("strict", wrap_root(function()
             end)
         end)
 
-        CHECK(not ok)
+        CHECK(ok)
     end
 
-    do CASE "error on effecter callback yield"
+    do CASE "warn on effecter callback yield"
         local src = source(1)
 
         local ok = pcall(function()
@@ -3169,26 +3169,26 @@ TEST("strict", wrap_root(function()
             end)
         end)
 
-        CHECK(not ok)
+        CHECK(ok)
     end
 
     do CASE "yield in a component"
         local input = source(false)
         local thread
-        local resumed = false
+        local output
 
         local destroy = root(function()
-            show(input, function()
+            output = show(input, function()
                 thread = coroutine.running()
                 coroutine.yield()
-                resumed = true
-                return {}
+                return "component"
             end)
         end)
 
-        CHECK(not pcall(input, true))
-        CHECK(not coroutine.resume(thread))
-        CHECK(not resumed)
+        CHECK((pcall(input, true)))
+        CHECK(output() == nil)
+        CHECK((coroutine.resume(thread)))
+        CHECK(output() == "component")
         CHECK(pcall(input, false))
         CHECK(pcall(destroy))
     end

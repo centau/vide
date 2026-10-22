@@ -230,7 +230,7 @@ local function try_evaluate_node<T>(node: Node<T>): (boolean, string?)
         pop_scope()
 
         if not ok then
-            return false, new_value
+            return false, new_value :: any
         end
     
         node.cache = new_value

@@ -131,6 +131,8 @@ Creates a new context.
 
     Calling `context()` returns a new context function.
     Call this function with no arguments to get the context value.
+    If no context is set, the default value is returned, or an error is thrown
+    if no default was given.
     Call this function with a value and a function to create a new context with
     the given value.
 

@@ -1109,6 +1109,33 @@ TEST("create()", wrap_root(function()
         CHECK(parent:FindFirstChild "c")
     end
 
+    do CASE "children moved to another parent"
+        local other = create "Frame" {}
+
+        local child = create "Frame" {}
+        local children_a = source { child }
+        local children_b = source {}
+        create "Frame" { children_a }
+        local parent_b = create "Frame" { children_b }
+
+        children_b { child }
+        children_a {}
+        CHECK(child.Parent == parent_b)
+
+        local a = create "Frame" {}
+        local b = create "Frame" {}
+        local destroy = root(function()
+            create "Frame" { function() return a end }
+            create "Frame" { function() return { function() return b end } end }
+        end)
+
+        a.Parent = other
+        b.Parent = other
+        destroy()
+        CHECK(a.Parent == other)
+        CHECK(b.Parent == other)
+    end
+
     do CASE "garbage collection test"
         local wref
 

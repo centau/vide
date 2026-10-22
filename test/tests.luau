@@ -2469,6 +2469,20 @@ TEST("actions", function()
 
         CHECK(testkit.seq(queue, { 1, 2 }))
     end
+
+    do CASE "non-consecutive priorities"
+        local queue = {}
+
+        create "Frame" {
+            action(function() table.insert(queue, 100) end, 100),
+            action(function() table.insert(queue, 2.5) end, 2.5),
+            action(function() table.insert(queue, -1) end, -1),
+            action(function() table.insert(queue, 0) end, 0),
+            action(function() table.insert(queue, 10) end, 10)
+        }
+
+        CHECK(testkit.seq(queue, { -1, 0, 2.5, 10, 100 }))
+    end
 end)
 
 TEST("changed()", wrap_root(function()

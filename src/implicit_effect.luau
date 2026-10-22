@@ -62,7 +62,7 @@ local function update_children_effect(p: {
 
             push_cleanup(assert(get_scope()), function()
                 for child in node.cache.cur_children_set do
-                    child.Parent = nil
+                    if child.Parent == p.instance then child.Parent = nil end
                 end
             end)
         end
@@ -71,7 +71,7 @@ local function update_children_effect(p: {
     process_child(new_children)
 
     for child in cur_children_set do
-        child.Parent = nil -- unparent all children that weren't in the new children set
+        if child.Parent == p.instance then child.Parent = nil end -- unparent all children that weren't in the new children set
     end
 
     table.clear(cur_children_set) -- clear cache, preserve capacity
@@ -116,7 +116,7 @@ return {
 
         push_cleanup(assert_stable_scope(), function()
             for child in node.cache.cur_children_set do
-                child.Parent = nil
+                if child.Parent == instance then child.Parent = nil end
             end
         end)
 

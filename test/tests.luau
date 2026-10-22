@@ -3196,6 +3196,15 @@ TEST("strict", wrap_root(function()
         CHECK(not ok)
     end
 
+    do CASE "error with a non-string value"
+        local ok, err = pcall(effect, function()
+            error({})
+        end)
+
+        CHECK(not ok)
+        CHECK(string.find(err, "table: "))
+    end
+
     do CASE "duplicate properties"
         local ok = pcall(function()
             create "TextLabel" {

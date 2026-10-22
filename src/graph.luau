@@ -21,10 +21,11 @@ export type Node<T> =  {
 
 local scopes = { n = 0 } :: { [number]: Node<any>, n: number } -- scopes stack
 
-local function efn(err: string)
-    local trace = debug.traceback(err, 2)
+local function efn(err: unknown)
+    local message = tostring(err)
+    local trace = debug.traceback(message, 2)
 
-    if string.find(err, "^effect error stacktrace") then -- if effect error is nested
+    if string.find(message, "^effect error stacktrace") then -- if effect error is nested
         trace = string.gsub("    " .. trace, "\n", function() -- indent entire error
             return "\n    "
         end)

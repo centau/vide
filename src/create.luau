@@ -98,6 +98,12 @@ export type Instances = {
     Camera: Camera,
     WorldModel: WorldModel,
 
+    -- styling
+    StyleSheet: StyleSheet,
+    StyleRule: StyleRule,
+    StyleDerive: StyleDerive,
+    StyleLink: StyleLink,
+    StyleQuery: StyleQuery,
     -- interaction
     ProximityPrompt: ProximityPrompt,
 

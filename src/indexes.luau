@@ -101,9 +101,10 @@ local function indexes<K, V, Obj>(
                     scope.value = nil -- set to nil for the `scope.value ~= v` check
                     if scope.timeout == nil then
                         scope.timeout = timeout(scope.delay, function() -- todo: possible redundant updates
-                            scope.destroy()
+                            local ok, err = pcall(scope.destroy)
                             scopes[i] = nil
                             update_output()
+                            if not ok then error(err, 0) end
                         end)
                     end
                 end

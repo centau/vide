@@ -1,5 +1,7 @@
 local flags = require "./flags"
 
+local warn = warn or print
+
 export type SourceNode<T> = {
     cache: T,
     [number]: Node<T>
@@ -21,10 +23,11 @@ export type Node<T> =  {
 
 local scopes = { n = 0 } :: { [number]: Node<any>, n: number } -- scopes stack
 
-local function efn(err: string)
-    local trace = debug.traceback(err, 2)
+local function efn(err: unknown)
+    local message = tostring(err)
+    local trace = debug.traceback(message, 2)
 
-    if string.find(err, "^effect error stacktrace") then -- if effect error is nested
+    if string.find(message, "^effect error stacktrace") then -- if effect error is nested
         trace = string.gsub("    " .. trace, "\n", function() -- indent entire error
             return "\n    "
         end)
@@ -41,19 +44,33 @@ local function effect_traceback(err: unknown): string
     return `effect error:\n{debug.traceback(message, 2)}`
 end
 
-local function ycall<T, U>(fn: (T) -> U, arg: T): (boolean, string|U)
+-- also returns whether fn yielded, its thread is then left to finish on its own
+local function ycall<T, U>(fn: (T) -> U, arg: T): (boolean, string|U, boolean)
 
-    local thread = coroutine.create(xpcall)
+    local n = scopes.n
+    local yielded = false
+    local thread = coroutine.create(function()
+        local ok, result = xpcall(fn, efn, arg)
+        if yielded and not ok then error(result, 0) end -- no caller left to return it to
+        return ok, result
+    end)
     --local function efn(err: string) return debug.traceback(err, 3) end
-    local resume_ok, run_ok, result = coroutine.resume(thread, fn, efn, arg)
+    local resume_ok, run_ok, result = coroutine.resume(thread)
 
     assert(resume_ok)
         
     if coroutine.status(thread) ~= "dead" then
-        return false, debug.traceback(thread, "attempt to yield in reactive scope")
+        yielded = true
+        warn(debug.traceback(thread, "attempt to yield in reactive scope"))
+
+        -- the thread pops the scopes it pushed once resumed, so move the
+        -- caller's scope above them for the caller to pop
+        table.insert(scopes, table.remove(scopes, n) :: Node<any>)
+
+        return true, result, true
     end
 
-    return run_ok, result
+    return run_ok, result, false
 end
 
 local function get_scope(): Node<unknown>?
@@ -98,15 +115,20 @@ local function push_cleanup<T>(node: Node<T>, cleanup: () -> ())
     end
 end
 
-local function flush_cleanups<T>(node: Node<T>)
+-- runs every cleanup even if one errors, returns the first error
+local function flush_cleanups<T>(node: Node<T>): string?
+    local first_err: string?
+
     if node.cleanups then
         for _, fn in node.cleanups do
             local ok, err: string? = xpcall(fn, debug.traceback)
-            if not ok then error(`cleanup error: {err}`, 0) end
+            if not ok and not first_err then first_err = `cleanup error: {err}` end
         end
 
         table.clear(node.cleanups)
     end
+
+    return first_err
 end
 
 local function find_and_swap_pop<T>(t: { T }, v: T)
@@ -125,12 +147,15 @@ local function unparent<T>(node: Node<T>)
     end
 end
 
-local function destroy<T>(node: Node<T>)
+local destroy_owned: <T>(node: Node<T>) -> string?
+
+-- always fully destroys the node, returns the first cleanup error
+local function destroy_node<T>(node: Node<T>): string?
     if flags.strict and table.find(scopes, node) then
         error("attempt to destroy an active scope", 0)
     end
 
-    flush_cleanups(node)
+    local err = flush_cleanups(node)
     unparent(node)
     
     if node.owner then
@@ -138,68 +163,85 @@ local function destroy<T>(node: Node<T>)
         node.owner = false
     end
 
-    if node.owned then
-        local owned = node.owned
-        while owned[1] do destroy(owned[1]) end
-    end
+    local owned_err = destroy_owned(node)
+    return err or owned_err
 end
 
-local function destroy_owned<T>(node: Node<T>)
+function destroy_owned<T>(node: Node<T>): string?
+    local err: string?
+
     if node.owned then
         local owned = node.owned
-        while owned[1] do destroy(owned[1]) end
+        while owned[1] do
+            local owned_err = destroy_node(owned[1])
+            err = err or owned_err
+        end
     end
+
+    return err
+end
+
+local function destroy<T>(node: Node<T>)
+    local err = destroy_node(node)
+    if err then error(err, 0) end
 end
 
 local update_queue = { n = 0 } :: { n: number, [number]: Node<any> }
 
-local function evaluate_node<T>(node: Node<T>)
+-- returns whether the cached value changed, and an error instead of throwing
+local function try_evaluate_node<T>(node: Node<T>): (boolean, string?)
     if flags.strict then
         if table.find(scopes, node) then
-            error("a scope, that should rerun due to the update of a source, is already active", 0)
+            return false, "a scope, that should rerun due to the update of a source, is already active"
         end
 
         local initial_value = node.cache
+        local err: string?
 
         for i = 1, 2 do
             local cur_value = node.cache
 
-            flush_cleanups(node)
-            destroy_owned(node)
+            local cleanup_err = flush_cleanups(node)
+            local owned_err = destroy_owned(node)
+            err = err or cleanup_err or owned_err
     
             push_scope(node)
-            local ok, new_value = ycall(node.effect :: (T) -> T, cur_value)
+            local ok, new_value, yielded = ycall(node.effect :: (T) -> T, cur_value)
             pop_scope()
+
+            if yielded then break end
             
             if not ok then
-                table.clear(update_queue)
-                update_queue.n = 0
-                error(`effect error stacktrace\n{new_value :: string}`, 0)
+                return false, `effect error stacktrace\n{new_value :: string}`
             end
 
             node.cache = new_value :: T
         end
 
-        return initial_value ~= node.cache
+        return initial_value ~= node.cache, err
     else
         local cur_value = node.cache
 
-        flush_cleanups(node)
-        destroy_owned(node)
+        local cleanup_err = flush_cleanups(node)
+        local owned_err = destroy_owned(node)
 
         push_scope(node)
         local ok, new_value = xpcall(node.effect :: (T) -> T, effect_traceback, node.cache)
         pop_scope()
 
         if not ok then
-            table.clear(update_queue)
-            update_queue.n = 0
-            error(new_value, 0)
+            return false, new_value :: any
         end
     
         node.cache = new_value
-        return cur_value ~= new_value
+        return cur_value ~= new_value, cleanup_err or owned_err
     end
+end
+
+local function evaluate_node<T>(node: Node<T>): boolean
+    local changed, err = try_evaluate_node(node)
+    if err then error(err, 0) end
+    return changed
 end
 
 local function queue_children_for_update<T>(node: SourceNode<T>)
@@ -216,21 +258,30 @@ local function get_update_queue_length()
     return update_queue.n
 end
 
+-- queued nodes are already unparented, so every one must be evaluated even if
+-- another errors; the first error is thrown after the queue is flushed
 local function flush_update_queue(from: number)
+    local first_err: string?
+
     local i = from + 1
     while i <= update_queue.n do
         local node = update_queue[i]
         --assert(node.effect)
 
-        if node.owner and evaluate_node(node) then
-            queue_children_for_update(node)
+        -- check if node is still owned in case destroyed after queued
+        if node.owner then
+            local changed, err = try_evaluate_node(node)
+            if changed then queue_children_for_update(node) end
+            first_err = first_err or err
         end
 
-        update_queue[i] = false :: any
+        update_queue[i] = false :: any -- false instead of nil to avoid sparse
         i += 1
     end
     
     update_queue.n = from
+
+    if first_err then error(first_err, 0) end
 end
 
 local function update_descendants<T>(root: SourceNode<T>)
@@ -239,21 +290,7 @@ local function update_descendants<T>(root: SourceNode<T>)
 
     if flags.batch then return end
 
-    local i = n0 + 1
-    while i <= update_queue.n do
-        local node = update_queue[i]
-        --assert(node.effect)
-
-        -- check if node is still owned in case destroyed after queued
-        if node.owner and evaluate_node(node) then
-            queue_children_for_update(node)
-        end
-
-        update_queue[i] = false :: any -- false instead of nil to avoid sparse
-        i += 1
-    end
-
-    update_queue.n = n0
+    flush_update_queue(n0)
 end
 
 local function push_scope_as_child_of<T>(node: SourceNode<T>)

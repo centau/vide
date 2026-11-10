@@ -1109,6 +1109,188 @@ TEST("create()", wrap_root(function()
         CHECK(parent:FindFirstChild "c")
     end
 
+    do CASE "nested children not reparented on outer update"
+        local a = create "Frame" {}
+        local b = create "Frame" {}
+        local c = create "Frame" {}
+
+        local nested_children = source { b }
+        local extra = source(false)
+
+        local parent = create "Frame" {
+            function()
+                return if extra() then { a, nested_children } else { nested_children }
+            end
+        }
+
+        local changes = 0
+        b:GetPropertyChangedSignal("Parent"):Connect(function() changes += 1 end)
+
+        extra(true)
+        CHECK(a.Parent == parent)
+        CHECK(b.Parent == parent)
+        extra(false)
+        CHECK(a.Parent == nil)
+        CHECK(b.Parent == parent)
+        CHECK(changes == 0)
+
+        nested_children { b, c }
+        CHECK(b.Parent == parent)
+        CHECK(c.Parent == parent)
+        nested_children { c }
+        CHECK(b.Parent == nil)
+        CHECK(c.Parent == parent)
+        CHECK(changes == 1)
+    end
+
+    do CASE "nested children not reparented on outer update in strict mode"
+        vide.strict = true
+
+        local a = create "Frame" {}
+        local b = create "Frame" {}
+
+        local nested_children = source { b }
+        local extra = source(false)
+
+        local parent = create "Frame" {
+            function()
+                return if extra() then { a, nested_children } else { nested_children }
+            end
+        }
+
+        local changes = 0
+        b:GetPropertyChangedSignal("Parent"):Connect(function() changes += 1 end)
+
+        extra(true)
+        CHECK(a.Parent == parent)
+        CHECK(b.Parent == parent)
+        CHECK(changes == 0)
+
+        vide.strict = false
+    end
+
+    do CASE "nested of nested children not reparented on outer update"
+        local a = create "Frame" {}
+        local b = create "Frame" {}
+
+        local inner = source { b }
+        local function middle() return { inner } end
+        local extra = source(false)
+        local visible = source(true)
+
+        local parent = create "Frame" {
+            function()
+                return if not visible() then {} elseif extra() then { a, middle } else { middle }
+            end
+        }
+
+        local changes = 0
+        b:GetPropertyChangedSignal("Parent"):Connect(function() changes += 1 end)
+
+        extra(true)
+        CHECK(a.Parent == parent)
+        CHECK(b.Parent == parent)
+        CHECK(changes == 0)
+
+        inner {}
+        CHECK(b.Parent == nil)
+        inner { b }
+        CHECK(b.Parent == parent)
+
+        visible(false)
+        CHECK(b.Parent == nil)
+        inner {}
+        inner { b }
+        CHECK(b.Parent == nil)
+    end
+
+    do CASE "removed nested children unparented"
+        local a = create "Frame" {}
+        local b = create "Frame" {}
+        local c = create "Frame" {}
+
+        local nested_children = source { b }
+        local visible = source(true)
+
+        local parent = create "Frame" {
+            function()
+                return if visible() then { a, nested_children } else { a }
+            end
+        }
+
+        visible(false)
+        CHECK(a.Parent == parent)
+        CHECK(b.Parent == nil)
+
+        nested_children { b, c }
+        CHECK(b.Parent == nil)
+        CHECK(c.Parent == nil)
+
+        visible(true)
+        CHECK(b.Parent == parent)
+        CHECK(c.Parent == parent)
+    end
+
+    do CASE "new nested children function on outer update"
+        local a = create "Frame" {}
+        local b = create "Frame" {}
+
+        local nested_children = source { b }
+        local extra = source(false)
+        local nested_functions = {}
+
+        local parent = create "Frame" {
+            function()
+                local nested_source = nested_children
+                local nested = function() return nested_source() end
+                table.insert(nested_functions, nested)
+                return if extra() then { a, nested } else { nested }
+            end
+        }
+
+        extra(true)
+        CHECK(nested_functions[1] ~= nested_functions[2])
+        CHECK(a.Parent == parent)
+        CHECK(b.Parent == parent)
+
+        nested_children {}
+        CHECK(b.Parent == nil)
+        nested_children { b }
+        CHECK(b.Parent == parent)
+    end
+
+    do CASE "nested children unparented on root destruction"
+        local b = create "Frame" {}
+        local c = create "Frame" {}
+
+        local inner = source { c }
+        local nested_children = source { b, function() return { inner } end }
+        local extra = source(false)
+
+        local parent
+        local destroy = root(function()
+            parent = create "Frame" {
+                function()
+                    extra()
+                    return { nested_children }
+                end
+            }
+        end)
+
+        extra(true)
+        CHECK(b.Parent == parent)
+        CHECK(c.Parent == parent)
+
+        destroy()
+        CHECK(b.Parent == nil)
+        CHECK(c.Parent == nil)
+
+        nested_children { b }
+        inner { c }
+        CHECK(b.Parent == nil)
+        CHECK(c.Parent == nil)
+    end
+
     do CASE "children moved to another parent"
         local other = create "Frame" {}
 
